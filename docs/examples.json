@@ -1,0 +1,1099 @@
+{
+  "health": {
+    "status": "ok",
+    "db": "up",
+    "time": "2026-10-20T13:33:15.330Z"
+  },
+  "authResult": {
+    "user": {
+      "id": "6ad76d7b440e640477f2f327",
+      "email": "client@fitbook.dev",
+      "role": "client",
+      "firstName": "Jamie",
+      "lastName": "Lee",
+      "avatarUrl": "https://i.pravatar.cc/300?img=32",
+      "homeArea": {
+        "city": "Chicago",
+        "state": "IL",
+        "country": "US",
+        "timezone": "America/Chicago"
+      },
+      "onboardingCompleted": true,
+      "trialUsed": true,
+      "settings": {
+        "theme": "dark"
+      },
+      "authProviders": ["password"],
+      "createdAt": "2026-10-20T13:32:43.217Z"
+    },
+    "tokens": {
+      "accessToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJyb2xlIjoiY2xpZW50IiwidHlwIjoiYWNjZXNzIiwiaWF0IjoxNzkyNTAzMTk1LCJleHAiOjE3OTI1MDQwOTUsInN1YiI6IjZhZDc2ZDdiNDQwZTY0MDQ3N2YyZjMyNyJ9.Iir1UxIYUTyDY6SZX2py15l7n62uqtU-c9pRVJehVKo",
+      "refreshToken": "fejafWrsd72dCy-a9KsUpz9QZfktGJIh6hJeR7m1Yc_8BZ5PqOehBSXJuPfxAi4N",
+      "accessTokenExpiresAt": "2026-10-20T13:48:15.000Z"
+    }
+  },
+  "errorInvalidCredentials": {
+    "error": {
+      "code": "INVALID_CREDENTIALS",
+      "message": "Email or password is incorrect."
+    }
+  },
+  "tokens": {
+    "accessToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJyb2xlIjoiY2xpZW50IiwidHlwIjoiYWNjZXNzIiwiaWF0IjoxNzkyNTAzMTk2LCJleHAiOjE3OTI1MDQwOTYsInN1YiI6IjZhZDc2ZDdiNDQwZTY0MDQ3N2YyZjMyNyJ9.JX6rEj_DvxkYuVBIrzAff9Zu_BPIAja2cHZwkISWD8U",
+    "refreshToken": "_vT7h2O_YkGDQ-1xXwMVpJvDDVqtxEoNVoB8O70ZZh8hwG_nD0e2cjtozWOIU0Ee",
+    "accessTokenExpiresAt": "2026-10-20T13:48:16.000Z"
+  },
+  "me": {
+    "id": "6ad76d7b440e640477f2f327",
+    "email": "client@fitbook.dev",
+    "role": "client",
+    "firstName": "Jamie",
+    "lastName": "Lee",
+    "avatarUrl": "https://i.pravatar.cc/300?img=32",
+    "homeArea": {
+      "city": "Chicago",
+      "state": "IL",
+      "country": "US",
+      "timezone": "America/Chicago"
+    },
+    "onboardingCompleted": true,
+    "trialUsed": true,
+    "settings": {
+      "theme": "dark"
+    },
+    "authProviders": ["password"],
+    "createdAt": "2026-10-20T13:32:43.217Z",
+    "coachProfile": null
+  },
+  "trialStatus": {
+    "eligible": false,
+    "reason": "TRIAL_ALREADY_USED"
+  },
+  "coachList": {
+    "items": [
+      {
+        "id": "6ad76d7a440e640477f2f2f9",
+        "firstName": "Maya",
+        "lastName": "Patel",
+        "avatarUrl": "https://i.pravatar.cc/300?img=47",
+        "headline": "Vinyasa & mobility yoga, on the lakefront and in your living room",
+        "specializations": ["yoga", "mobility"],
+        "experienceYears": 7,
+        "rating": {
+          "average": 4.95,
+          "count": 188
+        },
+        "homeArea": {
+          "city": "Chicago",
+          "state": "IL",
+          "country": "US",
+          "timezone": "America/Chicago"
+        },
+        "priceFrom": {
+          "amountCents": 1800,
+          "currency": "USD"
+        },
+        "kinds": ["group", "individual"]
+      },
+      {
+        "id": "6ad76d7a440e640477f2f2f3",
+        "firstName": "Alex",
+        "lastName": "Carter",
+        "avatarUrl": "https://i.pravatar.cc/300?img=12",
+        "headline": "Strength & conditioning coach for busy professionals",
+        "specializations": ["strength", "hiit", "mobility"],
+        "experienceYears": 9,
+        "rating": {
+          "average": 4.9,
+          "count": 142
+        },
+        "homeArea": {
+          "city": "Chicago",
+          "state": "IL",
+          "country": "US",
+          "timezone": "America/Chicago"
+        },
+        "priceFrom": {
+          "amountCents": 2500,
+          "currency": "USD"
+        },
+        "kinds": ["group", "individual"]
+      }
+    ],
+    "page": 1,
+    "pageSize": 3,
+    "total": 10
+  },
+  "coachDetails": {
+    "id": "6ad76d7a440e640477f2f2f3",
+    "firstName": "Alex",
+    "lastName": "Carter",
+    "avatarUrl": "https://i.pravatar.cc/300?img=12",
+    "headline": "Strength & conditioning coach for busy professionals",
+    "specializations": ["strength", "hiit", "mobility"],
+    "experienceYears": 9,
+    "rating": {
+      "average": 4.9,
+      "count": 142
+    },
+    "homeArea": {
+      "city": "Chicago",
+      "state": "IL",
+      "country": "US",
+      "timezone": "America/Chicago"
+    },
+    "priceFrom": {
+      "amountCents": 2500,
+      "currency": "USD"
+    },
+    "kinds": ["group", "individual"],
+    "bio": "I help people with full calendars get strong, move without pain and actually enjoy training. Every program starts with a movement assessment, then we build simple, progressive sessions around your schedule.\n\nBefore coaching full time I competed in powerlifting and worked with a Division I track team, so I care a lot about technique and smart progression.",
+    "certifications": [
+      {
+        "title": "Certified Strength and Conditioning Specialist (CSCS)",
+        "issuer": "NSCA",
+        "year": 2017
+      },
+      {
+        "title": "Certified Personal Trainer (CPT)",
+        "issuer": "NASM",
+        "year": 2016
+      }
+    ],
+    "highlights": [
+      "500+ clients coached",
+      "Former D1 track strength coach",
+      "Competitive powerlifter (USAPL)"
+    ],
+    "languages": ["English", "Spanish"],
+    "defaultLocation": {
+      "name": "Iron Loop Gym",
+      "address": "216 W Ohio St, Chicago, IL 60654",
+      "city": "Chicago",
+      "state": "IL",
+      "country": "US",
+      "lat": 41.8925,
+      "lng": -87.6347
+    },
+    "cancellationPolicy": {
+      "freeCancelHours": 24
+    },
+    "sessionTypes": [
+      {
+        "id": "6ad76d7a440e640477f2f2f8",
+        "coachId": "6ad76d7a440e640477f2f2f3",
+        "title": "Lunchtime Strength Circuit",
+        "kind": "group",
+        "durationMin": 60,
+        "price": {
+          "amountCents": 2500,
+          "currency": "USD"
+        },
+        "capacity": 8,
+        "location": null,
+        "description": "Small-group circuit with kettlebells and dumbbells. All levels welcome.",
+        "isActive": true
+      },
+      {
+        "id": "6ad76d7a440e640477f2f2f6",
+        "coachId": "6ad76d7a440e640477f2f2f3",
+        "title": "1:1 Strength Session",
+        "kind": "individual",
+        "durationMin": 60,
+        "price": {
+          "amountCents": 8500,
+          "currency": "USD"
+        },
+        "capacity": 1,
+        "location": null,
+        "description": "Personal strength session with technique coaching and a plan for the week.",
+        "isActive": true
+      }
+    ]
+  },
+  "slots": {
+    "items": [
+      {
+        "startAt": "2026-10-27T11:00:00.000Z",
+        "endAt": "2026-10-27T12:00:00.000Z"
+      },
+      {
+        "startAt": "2026-10-27T13:00:00.000Z",
+        "endAt": "2026-10-27T14:00:00.000Z"
+      }
+    ]
+  },
+  "groupSessions": {
+    "items": [
+      {
+        "id": "6ad76d7b440e640477f2f3aa",
+        "coachId": "6ad76d7a440e640477f2f2f3",
+        "sessionTypeId": "6ad76d7a440e640477f2f2f8",
+        "kind": "group",
+        "title": "Lunchtime Strength Circuit",
+        "startAt": "2026-10-21T17:00:00.000Z",
+        "endAt": "2026-10-21T18:00:00.000Z",
+        "durationMin": 60,
+        "capacity": 8,
+        "participantsCount": 6,
+        "spotsLeft": 2,
+        "price": {
+          "amountCents": 2500,
+          "currency": "USD"
+        },
+        "location": {
+          "name": "Iron Loop Gym",
+          "address": "216 W Ohio St, Chicago, IL 60654",
+          "city": "Chicago",
+          "state": "IL",
+          "country": "US",
+          "lat": 41.8925,
+          "lng": -87.6347
+        },
+        "status": "scheduled",
+        "cancelReason": null
+      },
+      {
+        "id": "6ad76d7b440e640477f2f3ad",
+        "coachId": "6ad76d7a440e640477f2f2f3",
+        "sessionTypeId": "6ad76d7a440e640477f2f2f8",
+        "kind": "group",
+        "title": "Lunchtime Strength Circuit",
+        "startAt": "2026-10-23T17:00:00.000Z",
+        "endAt": "2026-10-23T18:00:00.000Z",
+        "durationMin": 60,
+        "capacity": 8,
+        "participantsCount": 6,
+        "spotsLeft": 2,
+        "price": {
+          "amountCents": 2500,
+          "currency": "USD"
+        },
+        "location": {
+          "name": "Iron Loop Gym",
+          "address": "216 W Ohio St, Chicago, IL 60654",
+          "city": "Chicago",
+          "state": "IL",
+          "country": "US",
+          "lat": 41.8925,
+          "lng": -87.6347
+        },
+        "status": "scheduled",
+        "cancelReason": null
+      }
+    ]
+  },
+  "bookingPending": {
+    "id": "6ad76d9c358746da714e4d4a",
+    "status": "pending_payment",
+    "isTrial": false,
+    "price": {
+      "amountCents": 8500,
+      "currency": "USD"
+    },
+    "payment": {
+      "status": "unpaid",
+      "method": "mock",
+      "paidAt": null
+    },
+    "expiresAt": "2026-10-20T13:48:16.900Z",
+    "startAt": "2026-10-27T11:00:00.000Z",
+    "endAt": "2026-10-27T12:00:00.000Z",
+    "seriesId": null,
+    "cancellable": true,
+    "cancelDeadline": "2026-10-26T11:00:00.000Z",
+    "cancelledAt": null,
+    "cancelledBy": null,
+    "cancelReason": null,
+    "session": {
+      "id": "6ad76d9c358746da714e4d47",
+      "title": "1:1 Strength Session",
+      "kind": "individual",
+      "location": {
+        "name": "Iron Loop Gym",
+        "address": "216 W Ohio St, Chicago, IL 60654",
+        "city": "Chicago",
+        "state": "IL",
+        "country": "US",
+        "lat": 41.8925,
+        "lng": -87.6347
+      },
+      "capacity": 1,
+      "participantsCount": 1
+    },
+    "coach": {
+      "id": "6ad76d7a440e640477f2f2f3",
+      "firstName": "Alex",
+      "lastName": "Carter",
+      "avatarUrl": "https://i.pravatar.cc/300?img=12"
+    },
+    "client": {
+      "id": "6ad76d7b440e640477f2f327",
+      "firstName": "Jamie",
+      "lastName": "Lee",
+      "avatarUrl": "https://i.pravatar.cc/300?img=32"
+    },
+    "notesCount": 0,
+    "createdAt": "2026-10-20T13:33:16.900Z"
+  },
+  "errorSlotUnavailable": {
+    "error": {
+      "code": "SLOT_UNAVAILABLE",
+      "message": "This time is no longer available."
+    }
+  },
+  "errorTrialUsed": {
+    "error": {
+      "code": "TRIAL_ALREADY_USED",
+      "message": "The free trial has already been used."
+    }
+  },
+  "bookingConfirmed": {
+    "id": "6ad76d9c358746da714e4d4a",
+    "status": "confirmed",
+    "isTrial": false,
+    "price": {
+      "amountCents": 8500,
+      "currency": "USD"
+    },
+    "payment": {
+      "status": "paid",
+      "method": "mock",
+      "paidAt": "2026-10-20T13:33:17.113Z"
+    },
+    "expiresAt": null,
+    "startAt": "2026-10-27T11:00:00.000Z",
+    "endAt": "2026-10-27T12:00:00.000Z",
+    "seriesId": null,
+    "cancellable": true,
+    "cancelDeadline": "2026-10-26T11:00:00.000Z",
+    "cancelledAt": null,
+    "cancelledBy": null,
+    "cancelReason": null,
+    "session": {
+      "id": "6ad76d9c358746da714e4d47",
+      "title": "1:1 Strength Session",
+      "kind": "individual",
+      "location": {
+        "name": "Iron Loop Gym",
+        "address": "216 W Ohio St, Chicago, IL 60654",
+        "city": "Chicago",
+        "state": "IL",
+        "country": "US",
+        "lat": 41.8925,
+        "lng": -87.6347
+      },
+      "capacity": 1,
+      "participantsCount": 1
+    },
+    "coach": {
+      "id": "6ad76d7a440e640477f2f2f3",
+      "firstName": "Alex",
+      "lastName": "Carter",
+      "avatarUrl": "https://i.pravatar.cc/300?img=12"
+    },
+    "client": {
+      "id": "6ad76d7b440e640477f2f327",
+      "firstName": "Jamie",
+      "lastName": "Lee",
+      "avatarUrl": "https://i.pravatar.cc/300?img=32"
+    },
+    "notesCount": 0,
+    "createdAt": "2026-10-20T13:33:16.900Z"
+  },
+  "calendarEvent": {
+    "title": "1:1 Strength Session with Alex Carter",
+    "startAt": "2026-10-27T11:00:00.000Z",
+    "endAt": "2026-10-27T12:00:00.000Z",
+    "timezone": "America/Chicago",
+    "location": {
+      "name": "Iron Loop Gym",
+      "address": "216 W Ohio St, Chicago, IL 60654",
+      "lat": 41.8925,
+      "lng": -87.6347
+    },
+    "notes": "FitBook training with Alex Carter.\nFree cancellation up to 24h before the start.\nBooking: 6ad76d9c358746da714e4d4a"
+  },
+  "note": {
+    "id": "6ad76d9d358746da714e4d4b",
+    "bookingId": "6ad76d9c358746da714e4d4a",
+    "phase": "before",
+    "text": "Please focus on hip mobility today.",
+    "author": {
+      "id": "6ad76d7b440e640477f2f327",
+      "role": "client",
+      "firstName": "Jamie",
+      "lastName": "Lee"
+    },
+    "lastEditedBy": {
+      "id": "6ad76d7b440e640477f2f327",
+      "role": "client"
+    },
+    "createdAt": "2026-10-20T13:33:17.392Z",
+    "updatedAt": "2026-10-20T13:33:17.392Z"
+  },
+  "seriesPreview": {
+    "items": [
+      {
+        "date": "2026-10-28",
+        "startAt": "2026-10-28T23:00:00.000Z",
+        "endAt": "2026-10-29T00:00:00.000Z",
+        "available": false,
+        "reason": "EXCEPTION"
+      },
+      {
+        "date": "2026-11-04",
+        "startAt": "2026-11-05T00:00:00.000Z",
+        "endAt": "2026-11-05T01:00:00.000Z",
+        "available": true
+      }
+    ]
+  },
+  "seriesResult": {
+    "seriesId": "6ad76d9d358746da714e4d4c",
+    "bookings": [
+      {
+        "id": "6ad76d9d358746da714e4d50",
+        "status": "pending_payment",
+        "isTrial": false,
+        "price": {
+          "amountCents": 8500,
+          "currency": "USD"
+        },
+        "payment": {
+          "status": "unpaid",
+          "method": "mock",
+          "paidAt": null
+        },
+        "expiresAt": "2026-10-20T13:48:17.630Z",
+        "startAt": "2026-11-05T00:00:00.000Z",
+        "endAt": "2026-11-05T01:00:00.000Z",
+        "seriesId": "6ad76d9d358746da714e4d4c",
+        "cancellable": true,
+        "cancelDeadline": "2026-11-04T00:00:00.000Z",
+        "cancelledAt": null,
+        "cancelledBy": null,
+        "cancelReason": null,
+        "session": {
+          "id": "6ad76d9d358746da714e4d4d",
+          "title": "1:1 Strength Session",
+          "kind": "individual",
+          "location": {
+            "name": "Iron Loop Gym",
+            "address": "216 W Ohio St, Chicago, IL 60654",
+            "city": "Chicago",
+            "state": "IL",
+            "country": "US",
+            "lat": 41.8925,
+            "lng": -87.6347
+          },
+          "capacity": 1,
+          "participantsCount": 1
+        },
+        "coach": {
+          "id": "6ad76d7a440e640477f2f2f3",
+          "firstName": "Alex",
+          "lastName": "Carter",
+          "avatarUrl": "https://i.pravatar.cc/300?img=12"
+        },
+        "client": {
+          "id": "6ad76d7b440e640477f2f327",
+          "firstName": "Jamie",
+          "lastName": "Lee",
+          "avatarUrl": "https://i.pravatar.cc/300?img=32"
+        },
+        "notesCount": 0,
+        "createdAt": "2026-10-20T13:33:17.631Z"
+      },
+      {
+        "id": "6ad76d9d358746da714e4d54",
+        "status": "pending_payment",
+        "isTrial": false,
+        "price": {
+          "amountCents": 8500,
+          "currency": "USD"
+        },
+        "payment": {
+          "status": "unpaid",
+          "method": "mock",
+          "paidAt": null
+        },
+        "expiresAt": "2026-10-20T13:48:17.696Z",
+        "startAt": "2026-11-12T00:00:00.000Z",
+        "endAt": "2026-11-12T01:00:00.000Z",
+        "seriesId": "6ad76d9d358746da714e4d4c",
+        "cancellable": true,
+        "cancelDeadline": "2026-11-11T00:00:00.000Z",
+        "cancelledAt": null,
+        "cancelledBy": null,
+        "cancelReason": null,
+        "session": {
+          "id": "6ad76d9d358746da714e4d51",
+          "title": "1:1 Strength Session",
+          "kind": "individual",
+          "location": {
+            "name": "Iron Loop Gym",
+            "address": "216 W Ohio St, Chicago, IL 60654",
+            "city": "Chicago",
+            "state": "IL",
+            "country": "US",
+            "lat": 41.8925,
+            "lng": -87.6347
+          },
+          "capacity": 1,
+          "participantsCount": 1
+        },
+        "coach": {
+          "id": "6ad76d7a440e640477f2f2f3",
+          "firstName": "Alex",
+          "lastName": "Carter",
+          "avatarUrl": "https://i.pravatar.cc/300?img=12"
+        },
+        "client": {
+          "id": "6ad76d7b440e640477f2f327",
+          "firstName": "Jamie",
+          "lastName": "Lee",
+          "avatarUrl": "https://i.pravatar.cc/300?img=32"
+        },
+        "notesCount": 0,
+        "createdAt": "2026-10-20T13:33:17.697Z"
+      }
+    ],
+    "skipped": [
+      {
+        "date": "2026-10-28",
+        "reason": "EXCEPTION"
+      }
+    ]
+  },
+  "bookingList": {
+    "items": [
+      {
+        "id": "6ad76d7c440e640477f2f4f1",
+        "status": "confirmed",
+        "isTrial": false,
+        "price": {
+          "amountCents": 1800,
+          "currency": "USD"
+        },
+        "payment": {
+          "status": "paid",
+          "method": "mock",
+          "paidAt": "2026-10-11T11:00:00.000Z"
+        },
+        "expiresAt": null,
+        "startAt": "2026-10-21T11:00:00.000Z",
+        "endAt": "2026-10-21T12:00:00.000Z",
+        "seriesId": null,
+        "cancellable": true,
+        "cancelDeadline": "2026-10-20T23:00:00.000Z",
+        "cancelledAt": null,
+        "cancelledBy": null,
+        "cancelReason": null,
+        "session": {
+          "id": "6ad76d7b440e640477f2f3d4",
+          "title": "Sunrise Beach Yoga",
+          "kind": "group",
+          "location": {
+            "name": "North Avenue Beach",
+            "address": "1600 N Lake Shore Dr, Chicago, IL 60613",
+            "city": "Chicago",
+            "state": "IL",
+            "country": "US",
+            "lat": 41.9118,
+            "lng": -87.6262,
+            "comment": "Next to lifeguard tower 4"
+          },
+          "capacity": 15,
+          "participantsCount": 15
+        },
+        "coach": {
+          "id": "6ad76d7a440e640477f2f2f9",
+          "firstName": "Maya",
+          "lastName": "Patel",
+          "avatarUrl": "https://i.pravatar.cc/300?img=47"
+        },
+        "client": {
+          "id": "6ad76d7b440e640477f2f327",
+          "firstName": "Jamie",
+          "lastName": "Lee",
+          "avatarUrl": "https://i.pravatar.cc/300?img=32"
+        },
+        "notesCount": 0,
+        "createdAt": "2026-10-20T13:32:44.411Z"
+      },
+      {
+        "id": "6ad76d7c440e640477f2f4ef",
+        "status": "confirmed",
+        "isTrial": false,
+        "price": {
+          "amountCents": 2500,
+          "currency": "USD"
+        },
+        "payment": {
+          "status": "paid",
+          "method": "mock",
+          "paidAt": "2026-10-13T17:00:00.000Z"
+        },
+        "expiresAt": null,
+        "startAt": "2026-10-21T17:00:00.000Z",
+        "endAt": "2026-10-21T18:00:00.000Z",
+        "seriesId": null,
+        "cancellable": true,
+        "cancelDeadline": "2026-10-20T17:00:00.000Z",
+        "cancelledAt": null,
+        "cancelledBy": null,
+        "cancelReason": null,
+        "session": {
+          "id": "6ad76d7b440e640477f2f3aa",
+          "title": "Lunchtime Strength Circuit",
+          "kind": "group",
+          "location": {
+            "name": "Iron Loop Gym",
+            "address": "216 W Ohio St, Chicago, IL 60654",
+            "city": "Chicago",
+            "state": "IL",
+            "country": "US",
+            "lat": 41.8925,
+            "lng": -87.6347
+          },
+          "capacity": 8,
+          "participantsCount": 6
+        },
+        "coach": {
+          "id": "6ad76d7a440e640477f2f2f3",
+          "firstName": "Alex",
+          "lastName": "Carter",
+          "avatarUrl": "https://i.pravatar.cc/300?img=12"
+        },
+        "client": {
+          "id": "6ad76d7b440e640477f2f327",
+          "firstName": "Jamie",
+          "lastName": "Lee",
+          "avatarUrl": "https://i.pravatar.cc/300?img=32"
+        },
+        "notesCount": 0,
+        "createdAt": "2026-10-20T13:32:44.395Z"
+      }
+    ],
+    "page": 1,
+    "pageSize": 5,
+    "total": 14
+  },
+  "notes": {
+    "before": [
+      {
+        "id": "6ad76d7b440e640477f2f37b",
+        "bookingId": "6ad76d7b440e640477f2f356",
+        "phase": "before",
+        "text": "Left knee feels a little sore, let me know what to avoid.",
+        "author": {
+          "id": "6ad76d7b440e640477f2f327",
+          "role": "client",
+          "firstName": "Jamie",
+          "lastName": "Lee"
+        },
+        "lastEditedBy": {
+          "id": "6ad76d7b440e640477f2f327",
+          "role": "client"
+        },
+        "createdAt": "2026-10-19T16:00:00.000Z",
+        "updatedAt": "2026-10-19T16:00:00.000Z"
+      }
+    ],
+    "after": [
+      {
+        "id": "6ad76d7b440e640477f2f37c",
+        "bookingId": "6ad76d7b440e640477f2f356",
+        "phase": "after",
+        "text": "Footwork is getting much sharper. Practice the drill at home for 10 minutes.",
+        "author": {
+          "id": "6ad76d7a440e640477f2f2f3",
+          "role": "coach",
+          "firstName": "Alex",
+          "lastName": "Carter"
+        },
+        "lastEditedBy": {
+          "id": "6ad76d7a440e640477f2f2f3",
+          "role": "coach"
+        },
+        "createdAt": "2026-10-20T13:32:41.989Z",
+        "updatedAt": "2026-10-20T13:32:41.989Z"
+      }
+    ]
+  },
+  "bookingCancelled": {
+    "id": "6ad76d9c358746da714e4d4a",
+    "status": "cancelled",
+    "isTrial": false,
+    "price": {
+      "amountCents": 8500,
+      "currency": "USD"
+    },
+    "payment": {
+      "status": "paid",
+      "method": "mock",
+      "paidAt": "2026-10-20T13:33:17.113Z"
+    },
+    "expiresAt": null,
+    "startAt": "2026-10-27T11:00:00.000Z",
+    "endAt": "2026-10-27T12:00:00.000Z",
+    "seriesId": null,
+    "cancellable": false,
+    "cancelDeadline": null,
+    "cancelledAt": "2026-10-20T13:33:18.535Z",
+    "cancelledBy": "client",
+    "cancelReason": "Schedule change",
+    "session": {
+      "id": "6ad76d9c358746da714e4d47",
+      "title": "1:1 Strength Session",
+      "kind": "individual",
+      "location": {
+        "name": "Iron Loop Gym",
+        "address": "216 W Ohio St, Chicago, IL 60654",
+        "city": "Chicago",
+        "state": "IL",
+        "country": "US",
+        "lat": 41.8925,
+        "lng": -87.6347
+      },
+      "capacity": 1,
+      "participantsCount": 1
+    },
+    "coach": {
+      "id": "6ad76d7a440e640477f2f2f3",
+      "firstName": "Alex",
+      "lastName": "Carter",
+      "avatarUrl": "https://i.pravatar.cc/300?img=12"
+    },
+    "client": {
+      "id": "6ad76d7b440e640477f2f327",
+      "firstName": "Jamie",
+      "lastName": "Lee",
+      "avatarUrl": "https://i.pravatar.cc/300?img=32"
+    },
+    "notesCount": 1,
+    "createdAt": "2026-10-20T13:33:16.900Z"
+  },
+  "conversations": {
+    "items": [
+      {
+        "id": "6ad76d98440e640477f30026",
+        "coachId": "6ad76d7a440e640477f2f303",
+        "clientId": "6ad76d7b440e640477f2f327",
+        "participant": {
+          "id": "6ad76d7a440e640477f2f303",
+          "firstName": "Sofia",
+          "lastName": "Alvarez",
+          "avatarUrl": "https://i.pravatar.cc/300?img=44"
+        },
+        "lastMessage": {
+          "text": "I will add it to our notes after the session.",
+          "senderId": "6ad76d7a440e640477f2f303",
+          "createdAt": "2026-10-16T18:11:41.989Z"
+        },
+        "unreadCount": 1,
+        "lastActivityAt": "2026-10-16T18:11:41.989Z"
+      },
+      {
+        "id": "6ad76d98440e640477f30011",
+        "coachId": "6ad76d7a440e640477f2f2f3",
+        "clientId": "6ad76d7b440e640477f2f327",
+        "participant": {
+          "id": "6ad76d7a440e640477f2f2f3",
+          "firstName": "Alex",
+          "lastName": "Carter",
+          "avatarUrl": "https://i.pravatar.cc/300?img=12"
+        },
+        "lastMessage": {
+          "text": "Got it, see you at 6.",
+          "senderId": "6ad76d7a440e640477f2f2f3",
+          "createdAt": "2026-10-08T03:03:41.989Z"
+        },
+        "unreadCount": 1,
+        "lastActivityAt": "2026-10-08T03:03:41.989Z"
+      }
+    ]
+  },
+  "messages": {
+    "items": [
+      {
+        "id": "6ad76d98440e640477f3002c",
+        "conversationId": "6ad76d98440e640477f30026",
+        "senderId": "6ad76d7a440e640477f2f303",
+        "senderRole": "coach",
+        "text": "I will add it to our notes after the session.",
+        "createdAt": "2026-10-16T18:11:41.989Z",
+        "readAt": null
+      },
+      {
+        "id": "6ad76d98440e640477f3002b",
+        "conversationId": "6ad76d98440e640477f30026",
+        "senderId": "6ad76d7b440e640477f2f327",
+        "senderRole": "client",
+        "text": "Can you also send me a stretching routine?",
+        "createdAt": "2026-10-16T16:54:41.989Z",
+        "readAt": "2026-10-16T16:59:41.989Z"
+      }
+    ],
+    "nextCursor": "6ad76d98440e640477f3002a"
+  },
+  "message": {
+    "id": "6ad76d9e358746da714e4d55",
+    "conversationId": "6ad76d98440e640477f30026",
+    "senderId": "6ad76d7b440e640477f2f327",
+    "senderRole": "client",
+    "text": "See you tomorrow!",
+    "createdAt": "2026-10-20T13:33:18.873Z",
+    "readAt": null
+  },
+  "coachProfile": {
+    "userId": "6ad76d7a440e640477f2f2f3",
+    "headline": "Strength & conditioning coach for busy professionals",
+    "bio": "I help people with full calendars get strong, move without pain and actually enjoy training. Every program starts with a movement assessment, then we build simple, progressive sessions around your schedule.\n\nBefore coaching full time I competed in powerlifting and worked with a Division I track team, so I care a lot about technique and smart progression.",
+    "specializations": ["strength", "hiit", "mobility"],
+    "experienceYears": 9,
+    "certifications": [
+      {
+        "title": "Certified Strength and Conditioning Specialist (CSCS)",
+        "issuer": "NSCA",
+        "year": 2017
+      },
+      {
+        "title": "Certified Personal Trainer (CPT)",
+        "issuer": "NASM",
+        "year": 2016
+      }
+    ],
+    "highlights": [
+      "500+ clients coached",
+      "Former D1 track strength coach",
+      "Competitive powerlifter (USAPL)"
+    ],
+    "languages": ["English", "Spanish"],
+    "defaultLocation": {
+      "name": "Iron Loop Gym",
+      "address": "216 W Ohio St, Chicago, IL 60654",
+      "city": "Chicago",
+      "state": "IL",
+      "country": "US",
+      "lat": 41.8925,
+      "lng": -87.6347
+    },
+    "cancellationPolicy": {
+      "freeCancelHours": 24
+    },
+    "rating": {
+      "average": 4.9,
+      "count": 142
+    },
+    "isPublished": true,
+    "completeness": {
+      "complete": true,
+      "missing": []
+    }
+  },
+  "sessionTypes": {
+    "items": [
+      {
+        "id": "6ad76d7a440e640477f2f2f6",
+        "coachId": "6ad76d7a440e640477f2f2f3",
+        "title": "1:1 Strength Session",
+        "kind": "individual",
+        "durationMin": 60,
+        "price": {
+          "amountCents": 8500,
+          "currency": "USD"
+        },
+        "capacity": 1,
+        "location": null,
+        "description": "Personal strength session with technique coaching and a plan for the week.",
+        "isActive": true
+      },
+      {
+        "id": "6ad76d7a440e640477f2f2f7",
+        "coachId": "6ad76d7a440e640477f2f2f3",
+        "title": "1:1 Strength + Mobility (90 min)",
+        "kind": "individual",
+        "durationMin": 90,
+        "price": {
+          "amountCents": 12000,
+          "currency": "USD"
+        },
+        "capacity": 1,
+        "location": null,
+        "description": "Longer session: full strength block plus a guided mobility routine.",
+        "isActive": true
+      }
+    ]
+  },
+  "availability": {
+    "timezone": "America/Chicago",
+    "weekly": [
+      {
+        "weekday": 1,
+        "start": "06:00",
+        "end": "11:00"
+      },
+      {
+        "weekday": 1,
+        "start": "16:00",
+        "end": "20:00"
+      }
+    ],
+    "exceptions": [
+      {
+        "date": "2026-10-28",
+        "start": "16:00",
+        "end": "20:00",
+        "reason": "Physio appointment"
+      }
+    ]
+  },
+  "schedule": {
+    "items": [
+      {
+        "session": {
+          "id": "6ad76d7b440e640477f2f3aa",
+          "coachId": "6ad76d7a440e640477f2f2f3",
+          "sessionTypeId": "6ad76d7a440e640477f2f2f8",
+          "kind": "group",
+          "title": "Lunchtime Strength Circuit",
+          "startAt": "2026-10-21T17:00:00.000Z",
+          "endAt": "2026-10-21T18:00:00.000Z",
+          "durationMin": 60,
+          "capacity": 8,
+          "participantsCount": 6,
+          "spotsLeft": 2,
+          "price": {
+            "amountCents": 2500,
+            "currency": "USD"
+          },
+          "location": {
+            "name": "Iron Loop Gym",
+            "address": "216 W Ohio St, Chicago, IL 60654",
+            "city": "Chicago",
+            "state": "IL",
+            "country": "US",
+            "lat": 41.8925,
+            "lng": -87.6347
+          },
+          "status": "scheduled",
+          "cancelReason": null
+        },
+        "participants": [
+          {
+            "bookingId": "6ad76d7c440e640477f2f4ef",
+            "status": "confirmed",
+            "isTrial": false,
+            "client": {
+              "id": "6ad76d7b440e640477f2f327",
+              "firstName": "Jamie",
+              "lastName": "Lee",
+              "avatarUrl": "https://i.pravatar.cc/300?img=32"
+            },
+            "notesCount": 0
+          },
+          {
+            "bookingId": "6ad76d7d440e640477f2f57b",
+            "status": "confirmed",
+            "isTrial": false,
+            "client": {
+              "id": "6ad76d7b440e640477f2f32d",
+              "firstName": "Sophia",
+              "lastName": "Martinez",
+              "avatarUrl": "https://i.pravatar.cc/300?img=16"
+            },
+            "notesCount": 0
+          }
+        ]
+      },
+      {
+        "session": {
+          "id": "6ad76d7b440e640477f2f357",
+          "coachId": "6ad76d7a440e640477f2f2f3",
+          "sessionTypeId": "6ad76d7a440e640477f2f2f6",
+          "kind": "individual",
+          "title": "1:1 Strength Session",
+          "startAt": "2026-10-22T12:00:00.000Z",
+          "endAt": "2026-10-22T13:00:00.000Z",
+          "durationMin": 60,
+          "capacity": 1,
+          "participantsCount": 0,
+          "spotsLeft": 1,
+          "price": {
+            "amountCents": 8500,
+            "currency": "USD"
+          },
+          "location": {
+            "name": "Iron Loop Gym",
+            "address": "216 W Ohio St, Chicago, IL 60654",
+            "city": "Chicago",
+            "state": "IL",
+            "country": "US",
+            "lat": 41.8925,
+            "lng": -87.6347
+          },
+          "status": "scheduled",
+          "cancelReason": null
+        },
+        "participants": [
+          {
+            "bookingId": "6ad76d7b440e640477f2f35a",
+            "status": "confirmed",
+            "isTrial": false,
+            "client": {
+              "id": "6ad76d7b440e640477f2f327",
+              "firstName": "Jamie",
+              "lastName": "Lee",
+              "avatarUrl": "https://i.pravatar.cc/300?img=32"
+            },
+            "notesCount": 1
+          }
+        ]
+      }
+    ]
+  },
+  "coachClients": {
+    "items": [
+      {
+        "id": "6ad76d7b440e640477f2f327",
+        "firstName": "Jamie",
+        "lastName": "Lee",
+        "avatarUrl": "https://i.pravatar.cc/300?img=32",
+        "totalBookings": 15,
+        "lastBookingAt": "2026-11-12T13:00:00.000Z"
+      },
+      {
+        "id": "6ad76d7b440e640477f2f331",
+        "firstName": "Chloe",
+        "lastName": "Jackson",
+        "avatarUrl": "https://i.pravatar.cc/300?img=23",
+        "totalBookings": 10,
+        "lastBookingAt": "2026-11-02T22:00:00.000Z"
+      }
+    ]
+  },
+  "errorForbidden": {
+    "error": {
+      "code": "FORBIDDEN",
+      "message": "This action is available to coachs only."
+    }
+  },
+  "errorValidation": {
+    "error": {
+      "code": "VALIDATION_ERROR",
+      "message": "Some fields are invalid.",
+      "details": {
+        "fields": {
+          "email": "Invalid email address",
+          "password": "Invalid input: expected string, received undefined",
+          "firstName": "Invalid input: expected string, received undefined",
+          "lastName": "Invalid input: expected string, received undefined",
+          "role": "Invalid option: expected one of \"coach\"|\"client\"",
+          "homeArea": "Invalid input: expected object, received undefined"
+        }
+      }
+    }
+  }
+}
