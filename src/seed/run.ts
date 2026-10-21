@@ -213,7 +213,12 @@ async function addBooking(
     }
   }
   const price = options.isTrial ? {amountCents: 0, currency: 'USD' as const} : session.price;
-  type Payment = {status: 'unpaid' | 'paid' | 'not_required'; method: 'mock'; paidAt?: Date};
+  type Payment = {
+    status: 'unpaid' | 'paid' | 'refunded' | 'not_required';
+    method: 'mock';
+    paidAt?: Date;
+    refundedAt?: Date;
+  };
   const payment: Payment =
     options.isTrial || price.amountCents === 0
       ? {status: 'not_required', method: 'mock'}
@@ -224,6 +229,11 @@ async function addBooking(
             method: 'mock',
             paidAt: addMinutes(session.startAt, -60 * 24 * (2 + Math.floor(random() * 10))),
           };
+  if (status === 'cancelled' && payment.status === 'paid') {
+    // Cancelled paid bookings were refunded in full when they were cancelled (see cancelledAt below).
+    payment.status = 'refunded';
+    payment.refundedAt = addMinutes(session.startAt, -60 * 30);
+  }
   const booking = await BookingModel.create({
     sessionId: session._id,
     coachId: session.coachId,

@@ -18,9 +18,15 @@ const bookingSchema = new Schema(
     payment: {
       type: new Schema(
         {
-          status: {type: String, enum: ['unpaid', 'paid', 'not_required'], required: true},
+          status: {
+            type: String,
+            enum: ['unpaid', 'paid', 'refunded', 'not_required'],
+            required: true,
+          },
           method: {type: String, enum: ['mock'], default: 'mock'},
           paidAt: Date,
+          // Set when a paid booking is cancelled: the full price goes back to the client (mock, instant).
+          refundedAt: Date,
         },
         {_id: false},
       ),

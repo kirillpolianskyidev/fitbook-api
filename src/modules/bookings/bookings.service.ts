@@ -91,9 +91,10 @@ export async function toBookingDtos(bookings: BookingDoc[]): Promise<BookingDto[
       isTrial: booking.isTrial,
       price: toMoneyDto(booking.price),
       payment: {
-        status: booking.payment.status as 'unpaid' | 'paid' | 'not_required',
+        status: booking.payment.status as 'unpaid' | 'paid' | 'refunded' | 'not_required',
         method: 'mock' as const,
         paidAt: booking.payment.paidAt?.toISOString() ?? null,
+        refundedAt: booking.payment.refundedAt?.toISOString() ?? null,
       },
       expiresAt: status === 'pending_payment' ? (booking.expiresAt?.toISOString() ?? null) : null,
       startAt: booking.startAt.toISOString(),
@@ -513,20 +514,33 @@ export async function listClientBookings(client: UserDoc, query: z.infer<typeof 
 // Cancellation
 // ---------------------------------------------------------------------------------------------
 
-/** Cancels an active booking and releases its place. Returns null if it was not active anymore. */
+/**
+ * Cancels an active booking and releases its place. Returns null if it was not active anymore.
+ *
+ * Refund rule: a paid booking is always refunded in full. Clients can cancel a paid (confirmed) booking only
+ * before the coach's free-cancellation deadline (checked in cancelByClient), so their cancellations are 100%;
+ * cancellations by the coach or the system are 100% at any time. Unpaid and free bookings have nothing to refund.
+ * One atomic update, so a payment arriving at the same moment cannot slip through without a refund.
+ */
 export async function cancelBookingInternal(booking: BookingDoc, by: CancelledBy, reason?: string) {
+  const now = new Date();
+  const wasPaid = {$eq: ['$payment.status', 'paid']};
   const cancelled = await BookingModel.findOneAndUpdate(
     {_id: booking._id, status: {$in: ACTIVE}},
-    {
-      $set: {
-        status: 'cancelled',
-        cancelledAt: new Date(),
-        cancelledBy: by,
-        ...(reason && {cancelReason: reason}),
+    [
+      {
+        $set: {
+          status: 'cancelled',
+          cancelledAt: now,
+          cancelledBy: {$literal: by},
+          ...(reason && {cancelReason: {$literal: reason}}),
+          'payment.status': {$cond: [wasPaid, 'refunded', '$payment.status']},
+          'payment.refundedAt': {$cond: [wasPaid, now, '$payment.refundedAt']},
+        },
       },
-      $unset: {activeKey: 1},
-    },
-    {returnDocument: 'after'},
+      {$unset: 'activeKey'},
+    ],
+    {returnDocument: 'after', updatePipeline: true},
   );
   if (!cancelled) {
     return null;

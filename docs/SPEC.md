@@ -214,17 +214,17 @@ time is taken -> `SLOT_UNAVAILABLE`. Locks are deleted when a session is cancell
 
 ### bookings
 
-| Field                                                                | Type                                                                              | Notes                                                   |
-| -------------------------------------------------------------------- | --------------------------------------------------------------------------------- | ------------------------------------------------------- |
-| sessionId, coachId, clientId                                         | ObjectId                                                                          |                                                         |
-| seriesId                                                             | ObjectId?                                                                         |                                                         |
-| status                                                               | `'pending_payment' \| 'confirmed' \| 'cancelled' \| 'completed'`                  |                                                         |
-| isTrial                                                              | boolean                                                                           |                                                         |
-| price                                                                | Money                                                                             | 0 for trial                                             |
-| payment                                                              | `{ status: 'unpaid' \| 'paid' \| 'not_required'; method: 'mock'; paidAt?: Date }` |                                                         |
-| expiresAt                                                            | Date?                                                                             | for pending_payment                                     |
-| cancelledAt, cancelledBy (`coach \| client \| system`), cancelReason |                                                                                   |                                                         |
-| startAt, endAt                                                       | Date                                                                              | denormalized from the session for fast calendar queries |
+| Field                                                                | Type                                                                                                               | Notes                                                   |
+| -------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------- |
+| sessionId, coachId, clientId                                         | ObjectId                                                                                                           |                                                         |
+| seriesId                                                             | ObjectId?                                                                                                          |                                                         |
+| status                                                               | `'pending_payment' \| 'confirmed' \| 'cancelled' \| 'completed'`                                                   |                                                         |
+| isTrial                                                              | boolean                                                                                                            |                                                         |
+| price                                                                | Money                                                                                                              | 0 for trial                                             |
+| payment                                                              | `{ status: 'unpaid' \| 'paid' \| 'refunded' \| 'not_required'; method: 'mock'; paidAt?: Date; refundedAt?: Date }` |                                                         |
+| expiresAt                                                            | Date?                                                                                                              | for pending_payment                                     |
+| cancelledAt, cancelledBy (`coach \| client \| system`), cancelReason |                                                                                                                    |                                                         |
+| startAt, endAt                                                       | Date                                                                                                               | denormalized from the session for fast calendar queries |
 
 Indexes: `clientId + startAt`, `coachId + startAt`, `sessionId + clientId` unique (a client can join a session once),
 `status + expiresAt`.
@@ -354,6 +354,10 @@ Job every minute: pending bookings past `expiresAt` -> `cancelled` (`cancelledBy
   (details include `freeCancelHours` and `deadline`). A cancelled trial does NOT give the trial back.
 - Coach: may cancel any future booking of theirs with a reason.
 - Cancelling an individual booking cancels its session and frees locks; for group it decrements participants.
+- Refunds (mock, instant): cancelling a booking with `payment.status = 'paid'` always refunds 100%: `payment.status
+= 'refunded'`, `payment.refundedAt = now` (one atomic update together with the cancellation). Clients can cancel a
+  paid booking only before the deadline, so their refunds are always full; cancellations by the coach (booking or
+  whole group session) and by the system are refunded at any time. `unpaid` and `not_required` stay as they are.
 
 ### Completion
 

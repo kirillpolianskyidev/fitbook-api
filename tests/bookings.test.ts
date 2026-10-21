@@ -1,9 +1,11 @@
 import {describe, expect, it} from 'vitest';
 
 import {
+  cancelBookingInternal,
   completePastSessions,
   releaseExpiredPendingBookings,
 } from '../src/modules/bookings/bookings.service.js';
+import {runMigrations} from '../src/db/migrations.js';
 import {BookingModel} from '../src/models/booking.js';
 import {TrainingSessionModel} from '../src/models/trainingSession.js';
 import {
@@ -36,7 +38,7 @@ describe('individual bookings', () => {
       status: 'pending_payment',
       isTrial: false,
       price: {amountCents: 6500, currency: 'USD'},
-      payment: {status: 'unpaid', method: 'mock', paidAt: null},
+      payment: {status: 'unpaid', method: 'mock', paidAt: null, refundedAt: null},
       cancellable: true,
       session: {
         kind: 'individual',
@@ -493,5 +495,181 @@ describe('access', () => {
     expect(details.body.participants).toHaveLength(1);
     const clients = await api().get('/api/v1/coach/clients').set(coach.auth);
     expect(clients.body.items[0]).toMatchObject({id: client.user.id, totalBookings: 2});
+  });
+});
+
+describe('refunds', () => {
+  const pay = (auth: Record<string, string>, id: string) =>
+    api().post(`/api/v1/bookings/${id}/pay`).set(auth);
+  const cancelAsClient = (auth: Record<string, string>, id: string) =>
+    api().post(`/api/v1/bookings/${id}/cancel`).set(auth).send({});
+  const cancelAsCoach = (auth: Record<string, string>, id: string) =>
+    api().post(`/api/v1/coach/bookings/${id}/cancel`).set(auth).send({reason: 'Sick'});
+  const expectRefunded = (payment: {status: string; refundedAt: string | null}) => {
+    expect(payment.status).toBe('refunded');
+    expect(Date.now() - Date.parse(payment.refundedAt!)).toBeLessThan(60_000);
+  };
+
+  it('client cancels a paid booking before the deadline -> 100% refund', async () => {
+    const coach = await publishedCoach({freeCancelHours: 24});
+    const client = await registerUser('client');
+    const booking = await book(client.auth, {
+      sessionTypeId: coach.individualTypeId,
+      startAt: chicagoAt(6, '10:00'),
+    });
+    const paid = await pay(client.auth, booking.body.id);
+    expect(paid.body.payment).toMatchObject({status: 'paid', refundedAt: null});
+
+    const res = await cancelAsClient(client.auth, booking.body.id);
+    expect(res.status).toBe(200);
+    expect(res.body).toMatchObject({status: 'cancelled', cancelledBy: 'client'});
+    expect(res.body.price).toEqual(paid.body.price);
+    expect(res.body.payment.paidAt).toBe(paid.body.payment.paidAt);
+    expectRefunded(res.body.payment);
+
+    // The refund is visible in the booking details and in the past / upcoming lists.
+    const details = await api().get(`/api/v1/bookings/${booking.body.id}`).set(client.auth);
+    expectRefunded(details.body.payment);
+  });
+
+  it('client cannot cancel a paid booking after the deadline (no refund)', async () => {
+    const coach = await publishedCoach({freeCancelHours: 48});
+    const client = await registerUser('client');
+    const booking = await book(client.auth, {
+      sessionTypeId: coach.individualTypeId,
+      startAt: chicagoAt(1, '21:00'),
+    });
+    await pay(client.auth, booking.body.id);
+    const res = await cancelAsClient(client.auth, booking.body.id);
+    expect(res.status).toBe(409);
+    expect(res.body.error.code).toBe('CANCELLATION_WINDOW_PASSED');
+    const details = await api().get(`/api/v1/bookings/${booking.body.id}`).set(client.auth);
+    expect(details.body).toMatchObject({
+      status: 'confirmed',
+      payment: {status: 'paid', refundedAt: null},
+    });
+  });
+
+  it('coach cancels a paid booking -> 100% refund, even inside the client deadline', async () => {
+    const coach = await publishedCoach({freeCancelHours: 72});
+    const client = await registerUser('client');
+    const booking = await book(client.auth, {
+      sessionTypeId: coach.individualTypeId,
+      startAt: chicagoAt(1, '21:00'),
+    });
+    await pay(client.auth, booking.body.id);
+    const res = await cancelAsCoach(coach.auth, booking.body.id);
+    expect(res.body).toMatchObject({status: 'cancelled', cancelledBy: 'coach'});
+    expectRefunded(res.body.payment);
+  });
+
+  it('coach cancels a group session -> every paid participant is refunded, unpaid stay unpaid', async () => {
+    const coach = await publishedCoach({groupCapacity: 3});
+    const sessionId = await groupSession(coach, chicagoAt(4, '18:00'));
+    const a = await registerUser('client');
+    const b = await registerUser('client');
+    const paidBooking = await book(a.auth, {sessionId});
+    await pay(a.auth, paidBooking.body.id);
+    const unpaidBooking = await book(b.auth, {sessionId});
+
+    await api()
+      .post(`/api/v1/coach/group-sessions/${sessionId}/cancel`)
+      .set(coach.auth)
+      .send({reason: 'Storm warning'});
+    const paidAfter = await api().get(`/api/v1/bookings/${paidBooking.body.id}`).set(a.auth);
+    expect(paidAfter.body.status).toBe('cancelled');
+    expectRefunded(paidAfter.body.payment);
+    const unpaidAfter = await api().get(`/api/v1/bookings/${unpaidBooking.body.id}`).set(b.auth);
+    expect(unpaidAfter.body.payment).toMatchObject({status: 'unpaid', refundedAt: null});
+  });
+
+  it('system cancellation of a paid booking -> 100% refund', async () => {
+    const coach = await publishedCoach();
+    const client = await registerUser('client');
+    const booking = await book(client.auth, {
+      sessionTypeId: coach.individualTypeId,
+      startAt: chicagoAt(5, '12:00'),
+    });
+    await pay(client.auth, booking.body.id);
+    const doc = await BookingModel.findById(booking.body.id);
+    const cancelled = await cancelBookingInternal(doc!, 'system', 'COACH_ACCOUNT_CLOSED');
+    expect(cancelled!.payment.status).toBe('refunded');
+    expect(cancelled!.payment.refundedAt).toBeInstanceOf(Date);
+  });
+
+  it('unpaid and free bookings have nothing to refund', async () => {
+    const coach = await publishedCoach();
+    const client = await registerUser('client');
+    const unpaid = await book(client.auth, {
+      sessionTypeId: coach.individualTypeId,
+      startAt: chicagoAt(5, '09:00'),
+    });
+    expect((await cancelAsClient(client.auth, unpaid.body.id)).body.payment).toMatchObject({
+      status: 'unpaid',
+      refundedAt: null,
+    });
+    // Expired unpaid booking released by the system.
+    const expiring = await book(client.auth, {
+      sessionTypeId: coach.individualTypeId,
+      startAt: chicagoAt(5, '11:00'),
+    });
+    await BookingModel.updateOne({_id: expiring.body.id}, {expiresAt: new Date(Date.now() - 1000)});
+    await releaseExpiredPendingBookings();
+    const released = await api().get(`/api/v1/bookings/${expiring.body.id}`).set(client.auth);
+    expect(released.body).toMatchObject({
+      cancelledBy: 'system',
+      payment: {status: 'unpaid', refundedAt: null},
+    });
+    // Free trial.
+    const trial = await book(client.auth, {
+      sessionTypeId: coach.individualTypeId,
+      startAt: chicagoAt(7, '10:00'),
+      isTrial: true,
+    });
+    expect((await cancelAsClient(client.auth, trial.body.id)).body.payment).toMatchObject({
+      status: 'not_required',
+      refundedAt: null,
+    });
+  });
+
+  it('a refunded booking cannot be paid or refunded twice', async () => {
+    const coach = await publishedCoach();
+    const client = await registerUser('client');
+    const booking = await book(client.auth, {
+      sessionTypeId: coach.individualTypeId,
+      startAt: chicagoAt(6, '15:00'),
+    });
+    await pay(client.auth, booking.body.id);
+    const first = await cancelAsClient(client.auth, booking.body.id);
+    expect((await pay(client.auth, booking.body.id)).body.error.code).toBe('BOOKING_NOT_PAYABLE');
+    expect((await cancelAsClient(client.auth, booking.body.id)).status).toBe(409);
+    const details = await api().get(`/api/v1/bookings/${booking.body.id}`).set(client.auth);
+    expect(details.body.payment.refundedAt).toBe(first.body.payment.refundedAt);
+  });
+
+  it('migration marks paid bookings cancelled before refunds existed as refunded', async () => {
+    const coach = await publishedCoach();
+    const client = await registerUser('client');
+    const booking = await book(client.auth, {
+      sessionTypeId: coach.individualTypeId,
+      startAt: chicagoAt(6, '17:00'),
+    });
+    const cancelledAt = new Date('2026-10-01T10:00:00.000Z');
+    await BookingModel.updateOne(
+      {_id: booking.body.id},
+      {
+        $set: {
+          status: 'cancelled',
+          cancelledAt,
+          cancelledBy: 'client',
+          payment: {status: 'paid', method: 'mock', paidAt: new Date('2026-09-30T10:00:00.000Z')},
+        },
+        $unset: {activeKey: 1},
+      },
+    );
+    await runMigrations();
+    await runMigrations(); // idempotent
+    const doc = await BookingModel.findById(booking.body.id).lean();
+    expect(doc!.payment).toMatchObject({status: 'refunded', refundedAt: cancelledAt});
   });
 });

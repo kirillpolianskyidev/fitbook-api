@@ -1343,8 +1343,10 @@
             "enum": [
               "unpaid",
               "paid",
+              "refunded",
               "not_required"
-            ]
+            ],
+            "description": "refunded: a paid booking was cancelled (by the client before the deadline, by the coach or by the system) and the full price was returned."
           },
           "method": {
             "type": "string",
@@ -1357,12 +1359,20 @@
               "string",
               "null"
             ]
+          },
+          "refundedAt": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "When the full price was returned"
           }
         },
         "required": [
           "status",
           "method",
-          "paidAt"
+          "paidAt",
+          "refundedAt"
         ]
       },
       "UserSummary": {

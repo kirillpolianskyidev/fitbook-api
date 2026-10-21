@@ -1,4 +1,5 @@
 import {logger} from '../lib/logger.js';
+import {BookingModel} from '../models/booking.js';
 import {UserModel} from '../models/user.js';
 
 /**
@@ -16,6 +17,27 @@ export async function runMigrations() {
     logger.info(
       {users: verified.modifiedCount},
       'Migration: marked existing users as email-verified',
+    );
+  }
+
+  // 2026-10: refunds. Every cancellation of a paid booking now refunds the full price; paid bookings cancelled
+  // before that are marked refunded at their cancellation time.
+  const refunded = await BookingModel.updateMany(
+    {status: 'cancelled', 'payment.status': 'paid'},
+    [
+      {
+        $set: {
+          'payment.status': 'refunded',
+          'payment.refundedAt': {$ifNull: ['$cancelledAt', '$$NOW']},
+        },
+      },
+    ],
+    {updatePipeline: true},
+  );
+  if (refunded.modifiedCount > 0) {
+    logger.info(
+      {bookings: refunded.modifiedCount},
+      'Migration: marked cancelled paid bookings refunded',
     );
   }
 }

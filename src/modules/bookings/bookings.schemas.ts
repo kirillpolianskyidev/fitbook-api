@@ -17,9 +17,14 @@ export const BookingStatusSchema = z
 
 export const PaymentSchema = z
   .object({
-    status: z.enum(['unpaid', 'paid', 'not_required']),
+    status: z.enum(['unpaid', 'paid', 'refunded', 'not_required']).meta({
+      description:
+        'refunded: a paid booking was cancelled (by the client before the deadline, by the coach or by the ' +
+        'system) and the full price was returned.',
+    }),
     method: z.literal('mock'),
     paidAt: z.string().nullable(),
+    refundedAt: z.string().nullable().meta({description: 'When the full price was returned'}),
   })
   .meta({id: 'Payment'});
 

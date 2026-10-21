@@ -170,6 +170,12 @@ ${example('errorResendTooEarly', 'Example: resend before resendAvailableAt')}
   \`comment\` (meeting point). Otherwise the training type or coach default location is used.
 - **Cancellation:** use \`booking.cancellable\` and \`booking.cancelDeadline\` to show the button and the deadline.
   Confirmed bookings can be cancelled only before the coach's \`freeCancelHours\`; unpaid ones any time before start.
+- **Refunds (mock, instant):** cancelling a **paid** booking always returns the full price:
+  \`payment.status\` becomes \`refunded\` and \`payment.refundedAt\` is set. The client can cancel only before
+  \`cancelDeadline\` (after it -> \`409 CANCELLATION_WINDOW_PASSED\`, nothing changes); cancellations by the coach
+  (single booking or a whole group session) or by the system are refunded at any time. Unpaid
+  (\`unpaid\`) and free (\`not_required\`, trial) bookings have nothing to refund and keep their status.
+  Show e.g. "Refunded $65.00" using \`price\` when \`payment.status === 'refunded'\`.
 - **Device calendar:** \`GET /bookings/:id/calendar-event\` returns title, start/end, location and notes for the
   native "add event" dialog.
 - **Calendar tab:** \`GET /bookings?scope=upcoming\` (ascending) and \`GET /bookings?scope=past\` (descending).
@@ -224,7 +230,7 @@ ${example('errorValidation', 'Example: validation error')}
 ## 8. Enums
 
 - Role: \`coach | client\`; Theme: \`light | dark | system\`; Training kind: \`individual | group\`
-- Booking status: \`pending_payment | confirmed | cancelled | completed\`; Payment status: \`unpaid | paid | not_required\`
+- Booking status: \`pending_payment | confirmed | cancelled | completed\`; Payment status: \`unpaid | paid | refunded | not_required\`
 - Session status: \`scheduled | cancelled | completed\`; Note phase: \`before | after\`
 - Specializations: ${SPECIALIZATIONS.map(s => `\`${s}\``).join(', ')}
 - States: 2-letter US state codes (\`IL\`, \`NY\`, ...); country is always \`US\`.
