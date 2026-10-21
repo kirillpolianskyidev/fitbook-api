@@ -40,6 +40,21 @@ docker run -d --name mailpit -p 8025:8025 -p 1025:1025 axllent/mailpit
 Without Mailpit the email (with the code) is printed in the server log. Outside production every email code is
 also logged.
 
+### Real email delivery (Brevo, free)
+
+Set in `.env` (login and SMTP key from Brevo -> SMTP & API -> SMTP; `MAIL_FROM` must be a sender verified in Brevo):
+
+```
+SMTP_HOST=smtp-relay.brevo.com
+SMTP_PORT=587
+SMTP_SECURE=false
+SMTP_USER=xxxxxxx@smtp-brevo.com
+SMTP_PASS=<SMTP key>
+MAIL_FROM="FitBook <you@example.com>"
+```
+
+Without `SMTP_USER` emails go to the local Mailpit. Production refuses to start without a real SMTP service.
+
 ### Email codes (sign up and every password sign-in)
 
 `POST /auth/register` and `POST /auth/login` return `{ verification }` and email a 6-digit code; tokens come from

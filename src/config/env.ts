@@ -13,6 +13,14 @@ const EnvSchema = z.object({
   CORS_ORIGINS: z.string().default('*'),
   SMTP_HOST: z.string().default('localhost'),
   SMTP_PORT: z.coerce.number().int().default(1025),
+  /** Login / password (SMTP key) of a real SMTP service, e.g. Brevo. Empty -> local Mailpit without auth. */
+  SMTP_USER: z.string().default(''),
+  SMTP_PASS: z.string().default(''),
+  /** true for implicit TLS (port 465); false uses STARTTLS (port 587), required when SMTP_USER is set. */
+  SMTP_SECURE: z
+    .enum(['true', 'false', ''])
+    .default('')
+    .transform(value => value === 'true'),
   MAIL_FROM: z.string().default('FitBook <no-reply@fitbook.dev>'),
   GOOGLE_CLIENT_IDS: z.string().default(''),
   APPLE_BUNDLE_ID: z.string().default(''),
@@ -31,7 +39,22 @@ const EnvSchema = z.object({
   LOG_LEVEL: z.enum(['fatal', 'error', 'warn', 'info', 'debug', 'trace', 'silent']).default('info'),
 });
 
-const parsed = EnvSchema.safeParse(process.env);
+const parsed = EnvSchema.superRefine((value, ctx) => {
+  if (Boolean(value.SMTP_USER) !== Boolean(value.SMTP_PASS)) {
+    ctx.addIssue({
+      code: 'custom',
+      path: ['SMTP_PASS'],
+      message: 'Set both SMTP_USER and SMTP_PASS',
+    });
+  }
+  if (value.NODE_ENV === 'production' && !value.SMTP_USER) {
+    ctx.addIssue({
+      code: 'custom',
+      path: ['SMTP_USER'],
+      message: 'Production needs a real SMTP service (SMTP_HOST, SMTP_USER, SMTP_PASS)',
+    });
+  }
+}).safeParse(process.env);
 if (!parsed.success) {
   console.error('Invalid environment configuration:', z.treeifyError(parsed.error));
   process.exit(1);
