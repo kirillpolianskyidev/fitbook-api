@@ -6,9 +6,10 @@ import type {HomeArea, Role} from '../../lib/schemas.js';
 import {toIso} from '../../lib/time.js';
 import {AvailabilityModel} from '../../models/availability.js';
 import {CoachProfileModel} from '../../models/coachProfile.js';
-import {RefreshTokenModel} from '../../models/refreshToken.js';
 import {TrialClaimModel} from '../../models/trialClaim.js';
 import {UserModel, type UserDoc} from '../../models/user.js';
+import {issueTokens, revokeAllRefreshTokens} from '../auth/tokens.js';
+import {invalidateVerifications} from '../auth/verification.service.js';
 import type {UserDto} from './users.schemas.js';
 
 type SummarySource = {
@@ -118,10 +119,12 @@ export async function updateMe(
   return user;
 }
 
+/** Changes the password, signs out every other session and returns a new token pair for this device. */
 export async function changePassword(
   user: UserDoc,
   currentPassword: string | undefined,
   newPassword: string,
+  userAgent?: string,
 ) {
   if (user.passwordHash) {
     if (!currentPassword || !(await verifyPassword(currentPassword, user.passwordHash))) {
@@ -133,7 +136,9 @@ export async function changePassword(
     user.authProviders.push({provider: 'password'});
   }
   await user.save();
-  await RefreshTokenModel.updateMany({userId: user._id, revokedAt: null}, {revokedAt: new Date()});
+  await revokeAllRefreshTokens(user);
+  await invalidateVerifications(user._id);
+  return issueTokens(user, undefined, userAgent);
 }
 
 export async function trialStatus(user: UserDoc) {

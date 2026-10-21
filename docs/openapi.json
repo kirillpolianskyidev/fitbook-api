@@ -31,6 +31,8 @@
                   "VALIDATION_ERROR",
                   "RESET_CODE_INVALID",
                   "RESET_CODE_EXPIRED",
+                  "VERIFICATION_CODE_INVALID",
+                  "VERIFICATION_CODE_EXPIRED",
                   "UNAUTHORIZED",
                   "TOKEN_EXPIRED",
                   "INVALID_CREDENTIALS",
@@ -71,112 +73,69 @@
           "error"
         ]
       },
-      "AuthResult": {
+      "VerificationResult": {
         "type": "object",
         "properties": {
-          "user": {
-            "$ref": "#/components/schemas/User"
-          },
-          "tokens": {
-            "$ref": "#/components/schemas/Tokens"
+          "verification": {
+            "$ref": "#/components/schemas/Verification"
           }
         },
         "required": [
-          "user",
-          "tokens"
+          "verification"
         ]
       },
-      "User": {
+      "Verification": {
         "type": "object",
         "properties": {
           "id": {
-            "type": "string"
+            "type": "string",
+            "description": "Send it back to POST /auth/verify and /auth/verify/resend."
+          },
+          "purpose": {
+            "type": "string",
+            "enum": [
+              "signup",
+              "login"
+            ],
+            "description": "signup: confirm a new / unverified email. login: second sign-in step."
           },
           "email": {
             "type": "string",
-            "format": "email"
+            "description": "Where the code was sent."
           },
-          "role": {
-            "$ref": "#/components/schemas/Role"
-          },
-          "firstName": {
-            "type": "string"
-          },
-          "lastName": {
-            "type": "string"
-          },
-          "avatarUrl": {
-            "type": [
-              "string",
-              "null"
+          "codeLength": {
+            "type": "number",
+            "enum": [
+              6
             ]
           },
-          "homeArea": {
-            "$ref": "#/components/schemas/HomeArea"
+          "expiresAt": {
+            "type": "string",
+            "description": "When the current code stops working (10 minutes)."
           },
-          "onboardingCompleted": {
-            "type": "boolean"
-          },
-          "trialUsed": {
-            "type": "boolean"
-          },
-          "settings": {
-            "type": "object",
-            "properties": {
-              "theme": {
-                "$ref": "#/components/schemas/Theme"
-              }
-            },
-            "required": [
-              "theme"
-            ]
-          },
-          "authProviders": {
-            "type": "array",
-            "items": {
-              "type": "string",
-              "enum": [
-                "password",
-                "google",
-                "apple"
-              ]
-            }
-          },
-          "createdAt": {
-            "type": "string"
+          "resendAvailableAt": {
+            "type": "string",
+            "description": "When \"Resend code\" becomes allowed (60 seconds after each send)."
           }
         },
         "required": [
           "id",
+          "purpose",
           "email",
-          "role",
-          "firstName",
-          "lastName",
-          "avatarUrl",
-          "homeArea",
-          "onboardingCompleted",
-          "trialUsed",
-          "settings",
-          "authProviders",
-          "createdAt"
+          "codeLength",
+          "expiresAt",
+          "resendAvailableAt"
         ]
       },
       "Role": {
-        "type": [
-          "string",
-          "null"
-        ],
+        "type": "string",
         "enum": [
           "coach",
-          "client",
-          null
+          "client"
         ]
       },
       "HomeArea": {
-        "type": [
-          "object",
-          "null"
-        ],
+        "type": "object",
         "properties": {
           "city": {
             "type": "string",
@@ -260,6 +219,116 @@
         ],
         "description": "Where the user trains or coaches"
       },
+      "AuthResult": {
+        "type": "object",
+        "properties": {
+          "user": {
+            "$ref": "#/components/schemas/User"
+          },
+          "tokens": {
+            "$ref": "#/components/schemas/Tokens"
+          }
+        },
+        "required": [
+          "user",
+          "tokens"
+        ]
+      },
+      "User": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "email": {
+            "type": "string",
+            "format": "email"
+          },
+          "role": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/Role"
+              },
+              {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              }
+            ]
+          },
+          "firstName": {
+            "type": "string"
+          },
+          "lastName": {
+            "type": "string"
+          },
+          "avatarUrl": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "homeArea": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/HomeArea"
+              },
+              {
+                "type": [
+                  "object",
+                  "null"
+                ]
+              }
+            ]
+          },
+          "onboardingCompleted": {
+            "type": "boolean"
+          },
+          "trialUsed": {
+            "type": "boolean"
+          },
+          "settings": {
+            "type": "object",
+            "properties": {
+              "theme": {
+                "$ref": "#/components/schemas/Theme"
+              }
+            },
+            "required": [
+              "theme"
+            ]
+          },
+          "authProviders": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "enum": [
+                "password",
+                "google",
+                "apple"
+              ]
+            }
+          },
+          "createdAt": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "email",
+          "role",
+          "firstName",
+          "lastName",
+          "avatarUrl",
+          "homeArea",
+          "onboardingCompleted",
+          "trialUsed",
+          "settings",
+          "authProviders",
+          "createdAt"
+        ]
+      },
       "Theme": {
         "type": "string",
         "enum": [
@@ -309,7 +378,17 @@
             "format": "email"
           },
           "role": {
-            "$ref": "#/components/schemas/Role"
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/Role"
+              },
+              {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              }
+            ]
           },
           "firstName": {
             "type": "string"
@@ -324,7 +403,17 @@
             ]
           },
           "homeArea": {
-            "$ref": "#/components/schemas/HomeArea"
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/HomeArea"
+              },
+              {
+                "type": [
+                  "object",
+                  "null"
+                ]
+              }
+            ]
           },
           "onboardingCompleted": {
             "type": "boolean"
@@ -1926,7 +2015,8 @@
         "tags": [
           "Auth"
         ],
-        "summary": "Register with email and password (role and home area required)",
+        "summary": "Register with email and password (role and home area required). Emails a 6-digit code; tokens come from POST /auth/verify.",
+        "description": "An email of an unverified account is not taken: that account is overwritten with the new data and its previous codes stop working.",
         "x-auth": "public",
         "requestBody": {
           "content": {
@@ -1980,7 +2070,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/AuthResult"
+                  "$ref": "#/components/schemas/VerificationResult"
                 }
               }
             }
@@ -2023,7 +2113,7 @@
         "tags": [
           "Auth"
         ],
-        "summary": "Sign in with email and password",
+        "summary": "Check email and password and email a 6-digit code (purpose \"login\", or \"signup\" for an unverified email). Tokens come from POST /auth/verify.",
         "x-auth": "public",
         "requestBody": {
           "content": {
@@ -2054,7 +2144,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/AuthResult"
+                  "$ref": "#/components/schemas/VerificationResult"
                 }
               }
             }
@@ -2092,12 +2182,159 @@
         }
       }
     },
+    "/api/v1/auth/verify": {
+      "post": {
+        "tags": [
+          "Auth"
+        ],
+        "summary": "Check the emailed code and start a session",
+        "description": "Errors in order: NOT_FOUND (unknown id), VERIFICATION_CODE_EXPIRED (used, code older than 10 minutes or verification older than 30 minutes), TOO_MANY_ATTEMPTS (5 wrong codes; a resend resets it), VERIFICATION_CODE_INVALID (details.attemptsLeft). A signup verification also confirms the email.",
+        "x-auth": "public",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "verificationId": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 64
+                  },
+                  "code": {
+                    "type": "string",
+                    "pattern": "^\\d{6}$"
+                  }
+                },
+                "required": [
+                  "verificationId",
+                  "code"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AuthResult"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "VERIFICATION_CODE_INVALID, VERIFICATION_CODE_EXPIRED, VALIDATION_ERROR",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "NOT_FOUND",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "TOO_MANY_ATTEMPTS, RATE_LIMITED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/auth/verify/resend": {
+      "post": {
+        "tags": [
+          "Auth"
+        ],
+        "summary": "Email a new code for the same verification (old code stops working, attempts reset)",
+        "description": "Allowed from resendAvailableAt (60 seconds after each send), at most 5 times. Too early -> RATE_LIMITED with details.retryAfterSeconds. Used, expired or resend limit reached -> VERIFICATION_CODE_EXPIRED (sign in / sign up again).",
+        "x-auth": "public",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "verificationId": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 64
+                  }
+                },
+                "required": [
+                  "verificationId"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VerificationResult"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "VERIFICATION_CODE_EXPIRED, VALIDATION_ERROR",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "NOT_FOUND",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "RATE_LIMITED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/auth/google": {
       "post": {
         "tags": [
           "Auth"
         ],
-        "summary": "Sign in with a Google ID token. New accounts must complete POST /me/onboarding.",
+        "summary": "Sign in with a Google ID token (no email code). New accounts must complete POST /me/onboarding.",
         "x-auth": "public",
         "requestBody": {
           "content": {
@@ -2156,7 +2393,7 @@
         "tags": [
           "Auth"
         ],
-        "summary": "Sign in with an Apple identity token. New accounts must complete POST /me/onboarding.",
+        "summary": "Sign in with an Apple identity token (no email code). New accounts must complete POST /me/onboarding.",
         "x-auth": "public",
         "requestBody": {
           "content": {
@@ -2256,6 +2493,16 @@
           },
           "400": {
             "description": "VALIDATION_ERROR",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED",
             "content": {
               "application/json": {
                 "schema": {
@@ -2445,7 +2692,7 @@
         "tags": [
           "Auth"
         ],
-        "summary": "Set a new password with the reset token (signs out all sessions)",
+        "summary": "Set a new password with the reset token: signs out all sessions, confirms the email and starts a new session (no extra code)",
         "x-auth": "public",
         "requestBody": {
           "content": {
@@ -2473,11 +2720,28 @@
           }
         },
         "responses": {
-          "204": {
-            "description": "No content"
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AuthResult"
+                }
+              }
+            }
           },
           "400": {
             "description": "RESET_CODE_EXPIRED, VALIDATION_ERROR",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "RATE_LIMITED",
             "content": {
               "application/json": {
                 "schema": {
@@ -2712,7 +2976,7 @@
         "tags": [
           "Me"
         ],
-        "summary": "Change or set password (current password required if one exists). Revokes refresh tokens.",
+        "summary": "Change or set password (current password required if one exists). Signs out all other sessions and returns a new token pair for this device.",
         "security": [
           {
             "bearerAuth": []
@@ -2743,8 +3007,15 @@
           }
         },
         "responses": {
-          "204": {
-            "description": "No content"
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Tokens"
+                }
+              }
+            }
           },
           "400": {
             "description": "VALIDATION_ERROR",

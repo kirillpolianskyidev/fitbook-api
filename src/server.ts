@@ -3,6 +3,7 @@ import http from 'node:http';
 import {createApp} from './app.js';
 import {env} from './config/env.js';
 import {connectDb, disconnectDb} from './db/connect.js';
+import {runMigrations} from './db/migrations.js';
 import './jobs/bookingJobs.js';
 import {startJobs} from './jobs/index.js';
 import {logger} from './lib/logger.js';
@@ -10,6 +11,7 @@ import {attachRealtime} from './realtime/socket.js';
 
 async function main() {
   await connectDb();
+  await runMigrations();
   const app = createApp();
   const server = http.createServer(app);
   attachRealtime(server);

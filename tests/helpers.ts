@@ -5,6 +5,7 @@ import {afterAll, beforeAll, beforeEach} from 'vitest';
 import {createApp} from '../src/app.js';
 import {mongoUri} from '../src/config/env.js';
 import {connectDb, disconnectDb} from '../src/db/connect.js';
+import {outbox} from '../src/lib/mailer.js';
 import * as models from '../src/models/index.js';
 
 export const app = createApp();
@@ -62,10 +63,37 @@ export async function registerUser(
   if (res.status !== 201) {
     throw new Error(`register failed: ${res.status} ${JSON.stringify(res.body)}`);
   }
+  const session = await verifyWithEmailedCode(body.email as string, res.body.verification.id);
   return {
-    user: res.body.user as {id: string; email: string},
-    token: res.body.tokens.accessToken as string,
-    refreshToken: res.body.tokens.refreshToken as string,
-    auth: {Authorization: `Bearer ${res.body.tokens.accessToken}`},
+    user: session.user as {id: string; email: string},
+    token: session.tokens.accessToken as string,
+    refreshToken: session.tokens.refreshToken as string,
+    auth: {Authorization: `Bearer ${session.tokens.accessToken}`},
   };
+}
+
+/** The last code emailed to this address (tests collect emails in `outbox`). */
+export function lastCode(email: string) {
+  const mail = outbox.findLast(m => m.to === email.toLowerCase() && /code: \d{6}/.test(m.subject));
+  if (!mail) throw new Error(`no code emailed to ${email}`);
+  return /(\d{6})/.exec(mail.subject)![1]!;
+}
+
+export async function verifyWithEmailedCode(email: string, verificationId: string) {
+  const res = await api()
+    .post('/api/v1/auth/verify')
+    .send({verificationId, code: lastCode(email)});
+  if (res.status !== 200) {
+    throw new Error(`verify failed: ${res.status} ${JSON.stringify(res.body)}`);
+  }
+  return res.body as {user: {id: string; email: string}; tokens: Record<string, string>};
+}
+
+/** Email + password sign-in including the code step. */
+export async function login(email: string, password = 'Password123!') {
+  const res = await api().post('/api/v1/auth/login').send({email, password});
+  if (res.status !== 200) {
+    throw new Error(`login failed: ${res.status} ${JSON.stringify(res.body)}`);
+  }
+  return verifyWithEmailedCode(email, res.body.verification.id);
 }

@@ -2,7 +2,7 @@ import {afterEach, describe, expect, it, vi} from 'vitest';
 
 import {outbox} from '../src/lib/mailer.js';
 import {socialVerifiers} from '../src/modules/auth/social.js';
-import {api, CHICAGO, registerUser, useTestDb} from './helpers.js';
+import {api, CHICAGO, login, registerUser, useTestDb} from './helpers.js';
 
 useTestDb();
 afterEach(() => {
@@ -61,6 +61,9 @@ describe('auth', () => {
       .post('/api/v1/auth/login')
       .send({email: user.email, password: 'Password123!'});
     expect(ok.status).toBe(200);
+    expect(ok.body.verification.purpose).toBe('login');
+    expect(ok.body.tokens).toBeUndefined();
+    expect((await login(user.email)).user.id).toBe(user.id);
     const bad = await api().post('/api/v1/auth/login').send({email: user.email, password: 'nope'});
     expect(bad.status).toBe(401);
     expect(bad.body.error.code).toBe('INVALID_CREDENTIALS');
@@ -92,7 +95,7 @@ describe('auth', () => {
   });
 
   it('resets the password with an emailed code', async () => {
-    const {user} = await registerUser('client');
+    const {user, refreshToken} = await registerUser('client');
     outbox.length = 0;
     expect(
       (await api().post('/api/v1/auth/password/forgot').send({email: user.email})).status,
@@ -101,7 +104,7 @@ describe('auth', () => {
       (await api().post('/api/v1/auth/password/forgot').send({email: 'nobody@test.dev'})).status,
     ).toBe(204);
     expect(outbox).toHaveLength(1);
-    const code = /code is (\d{6})/.exec(outbox[0]!.text)![1]!;
+    const code = /reset code is (\d{6})/.exec(outbox[0]!.text)![1]!;
 
     const wrong = await api()
       .post('/api/v1/auth/password/verify-code')
@@ -115,7 +118,14 @@ describe('auth', () => {
     const reset = await api()
       .post('/api/v1/auth/password/reset')
       .send({resetToken: verified.body.resetToken, newPassword: 'NewPassword9'});
-    expect(reset.status).toBe(204);
+    expect(reset.status).toBe(200);
+    expect(reset.body.user.id).toBe(user.id);
+    const me = await api()
+      .get('/api/v1/me')
+      .set({Authorization: `Bearer ${reset.body.tokens.accessToken}`});
+    expect(me.status).toBe(200);
+    // All old sessions are signed out.
+    expect((await api().post('/api/v1/auth/refresh').send({refreshToken})).status).toBe(401);
     expect(
       (await api().post('/api/v1/auth/login').send({email: user.email, password: 'NewPassword9'}))
         .status,
@@ -198,14 +208,16 @@ describe('auth', () => {
       .set(auth)
       .send({currentPassword: 'x', newPassword: 'Another123'});
     expect(wrong.body.error.code).toBe('INVALID_CREDENTIALS');
-    expect(
-      (
-        await api()
-          .patch('/api/v1/me/password')
-          .set(auth)
-          .send({currentPassword: 'Password123!', newPassword: 'Another123'})
-      ).status,
-    ).toBe(204);
+    const changed = await api()
+      .patch('/api/v1/me/password')
+      .set(auth)
+      .send({currentPassword: 'Password123!', newPassword: 'Another123'});
+    expect(changed.status).toBe(200);
+    expect(changed.body).toEqual({
+      accessToken: expect.any(String),
+      refreshToken: expect.any(String),
+      accessTokenExpiresAt: expect.any(String),
+    });
     expect(
       (await api().post('/api/v1/auth/login').send({email: user.email, password: 'Another123'}))
         .status,

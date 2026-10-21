@@ -2,6 +2,7 @@ export * from './availability.js';
 export * from './booking.js';
 export * from './bookingSeries.js';
 export * from './coachProfile.js';
+export * from './emailVerification.js';
 export * from './conversation.js';
 export * from './message.js';
 export * from './note.js';

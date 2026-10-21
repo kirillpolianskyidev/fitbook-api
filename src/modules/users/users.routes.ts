@@ -1,4 +1,5 @@
 import {route} from '../../lib/route.js';
+import {TokensSchema} from '../auth/auth.schemas.js';
 import {CoachProfileModel} from '../../models/coachProfile.js';
 import {
   ChangePasswordBody,
@@ -72,15 +73,16 @@ route({
   path: '/me/password',
   tags: ['Me'],
   summary:
-    'Change or set password (current password required if one exists). Revokes refresh tokens.',
+    'Change or set password (current password required if one exists). Signs out all other sessions and ' +
+    'returns a new token pair for this device.',
   auth: 'user',
   allowNotOnboarded: true,
-  status: 204,
+  status: 200,
   body: ChangePasswordBody,
+  response: TokensSchema,
   errors: ['INVALID_CREDENTIALS'],
-  handler: async ({user, body}) => {
-    await changePassword(user, body.currentPassword, body.newPassword);
-  },
+  handler: ({user, body, req}) =>
+    changePassword(user, body.currentPassword, body.newPassword, req.get('user-agent')),
 });
 
 route({

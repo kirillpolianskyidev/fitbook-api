@@ -12,6 +12,8 @@ const userSchema = new Schema(
     lastName: {type: String, default: '', trim: true},
     avatarUrl: {type: String},
     homeArea: {type: homeAreaSchema, default: null},
+    // null until the email is confirmed with a code (or by Google / Apple / a password reset).
+    emailVerifiedAt: {type: Date, default: null},
     authProviders: {
       type: [
         new Schema(

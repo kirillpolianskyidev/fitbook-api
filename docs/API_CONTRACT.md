@@ -25,30 +25,63 @@ Find the Mac's LAN IP with `ipconfig getifaddr en0`. Debug builds of React Nativ
 
 ## 3. Authentication
 
-1. `POST /auth/register` (role `client` or `coach`, plus `homeArea`: city, 2-letter state, IANA time zone) or
-   `POST /auth/login` returns `{ user, tokens }`.
-2. Send `Authorization: Bearer <accessToken>` on every request (access token lives 15 minutes).
-3. On `401 TOKEN_EXPIRED` call `POST /auth/refresh` with the refresh token **once**, store **both** new tokens
+Email + password sign-in takes two steps: the password, then a 6-digit code sent by email. Tokens are issued only
+after the code is verified (on sign up the code also confirms the email).
+
+1. `POST /auth/register` (role `client` or `coach`, plus `homeArea`: city, 2-letter state, IANA time zone)
+   -> `201 { verification }`, or `POST /auth/login` -> `200 { verification }`. No tokens yet.
+   `verification = { id, purpose: "signup" | "login", email, codeLength: 6, expiresAt, resendAvailableAt }`.
+   Login of an account whose email is not confirmed yet returns `purpose: "signup"`.
+   Registering again with an unconfirmed email is allowed (fix a typo and resubmit): the account is overwritten.
+2. Code screen: when 6 digits are entered call `POST /auth/verify { verificationId, code }` -> `{ user, tokens }`
+   (same shape as the old login response). Errors: `VERIFICATION_CODE_INVALID` (`details.attemptsLeft`),
+   `TOO_MANY_ATTEMPTS` (5 wrong codes, a resend gives a new code), `VERIFICATION_CODE_EXPIRED` / `NOT_FOUND`
+   (go back to sign in / sign up). The code lives 10 minutes (`expiresAt`), the whole verification 30 minutes.
+3. "Resend code" is enabled from `resendAvailableAt` (60 s after each send): `POST /auth/verify/resend
+{ verificationId }` -> `{ verification }` (same id, new dates; the previous code stops working). Too early ->
+   `429 RATE_LIMITED` with `details.retryAfterSeconds`; after 5 resends -> `VERIFICATION_CODE_EXPIRED`.
+   Local development: the email arrives in Mailpit (http://localhost:8025) and the code is printed in the server log;
+   with `AUTH_DEV_FIXED_CODE=000000` in `.env` the code `000000` is accepted too (never in production).
+4. Send `Authorization: Bearer <accessToken>` on every request (access token lives 15 minutes).
+5. On `401 TOKEN_EXPIRED` call `POST /auth/refresh` with the refresh token **once**, store **both** new tokens
    (refresh tokens rotate; an old one is rejected and revokes the session), then retry. If refresh fails -> sign out.
-4. `POST /auth/logout` with the refresh token on sign out.
-5. Google / Apple: send the provider token to `/auth/google` (`idToken`) or `/auth/apple` (`identityToken`,
-   plus `firstName`/`lastName` from the first Apple sign-in). If `user.onboardingCompleted` is false, show
-   onboarding and call `POST /me/onboarding` with `role` and `homeArea`; until then other endpoints return
-   `403 ONBOARDING_REQUIRED`.
-6. Forgot password: `/auth/password/forgot` (always 204) -> 6-digit code by email (local: Mailpit
-   http://localhost:8025 or the server log) -> `/auth/password/verify-code` -> `resetToken` ->
-   `/auth/password/reset`.
+   Refresh never asks for a code.
+6. `POST /auth/logout` with the refresh token on sign out.
+7. Google / Apple (no email code): send the provider token to `/auth/google` (`idToken`) or `/auth/apple`
+   (`identityToken`, plus `firstName`/`lastName` from the first Apple sign-in) -> `{ user, tokens }`. If
+   `user.onboardingCompleted` is false, show onboarding and call `POST /me/onboarding` with `role` and
+   `homeArea`; until then other endpoints return `403 ONBOARDING_REQUIRED`.
+8. Forgot password: `/auth/password/forgot` (always 204) -> 6-digit code by email -> `/auth/password/verify-code`
+   -> `resetToken` -> `/auth/password/reset` -> `{ user, tokens }`: signed in, no extra code (all other sessions
+   are signed out).
+9. Change password: `PATCH /me/password` -> `{ tokens }`: store the new pair; this device stays signed in, other
+   devices are signed out.
 
 The role decides the app: **client** -> coach catalog, booking, my calendar, chat, settings; **coach** -> work
 calendar (schedule), sessions with participants and notes, training types and prices, availability, cancellation
 policy, chat, settings. Theme preference is stored in `user.settings.theme` (`light | dark | system`).
 
-**Example: login response**
+**Example: POST /auth/login (or /auth/register) response**
+
+```json
+{
+  "verification": {
+    "id": "cc4755a446fa3843fae36e756df83761",
+    "purpose": "login",
+    "email": "client@fitbook.dev",
+    "codeLength": 6,
+    "expiresAt": "2026-10-21T14:39:13.954Z",
+    "resendAvailableAt": "2026-10-21T14:30:13.954Z"
+  }
+}
+```
+
+**Example: POST /auth/verify response**
 
 ```json
 {
   "user": {
-    "id": "6ad76d7b440e640477f2f327",
+    "id": "6ad8cc30149bc424af3ea610",
     "email": "client@fitbook.dev",
     "role": "client",
     "firstName": "Jamie",
@@ -66,12 +99,40 @@ policy, chat, settings. Theme preference is stored in `user.settings.theme` (`li
       "theme": "dark"
     },
     "authProviders": ["password"],
-    "createdAt": "2026-10-20T13:32:43.217Z"
+    "createdAt": "2026-10-21T14:29:04.512Z"
   },
   "tokens": {
-    "accessToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJyb2xlIjoiY2xpZW50IiwidHlwIjoiYWNjZXNzIiwiaWF0IjoxNzkyNTAzMTk1LCJleHAiOjE3OTI1MDQwOTUsInN1YiI6IjZhZDc2ZDdiNDQwZTY0MDQ3N2YyZjMyNyJ9.Iir1UxIYUTyDY6SZX2py15l7n62uqtU-c9pRVJehVKo",
-    "refreshToken": "fejafWrsd72dCy-a9KsUpz9QZfktGJIh6hJeR7m1Yc_8BZ5PqOehBSXJuPfxAi4N",
-    "accessTokenExpiresAt": "2026-10-20T13:48:15.000Z"
+    "accessToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJyb2xlIjoiY2xpZW50IiwidHlwIjoiYWNjZXNzIiwiaWF0IjoxNzkyNTkyOTU0LCJleHAiOjE3OTI1OTM4NTQsInN1YiI6IjZhZDhjYzMwMTQ5YmM0MjRhZjNlYTYxMCJ9.OJFgParaK8FJVsh5pdtJO2k5CTfYfo0vo8MOKjJq6J0",
+    "refreshToken": "rOlyM4P5Vbj_5y4jUXaA8COW4mkrvpKf7m4ngt-GmWAkDCIlIhH2zVoZ64hkS6au",
+    "accessTokenExpiresAt": "2026-10-21T14:44:14.000Z"
+  }
+}
+```
+
+**Example: wrong code**
+
+```json
+{
+  "error": {
+    "code": "VERIFICATION_CODE_INVALID",
+    "message": "The code is incorrect.",
+    "details": {
+      "attemptsLeft": 4
+    }
+  }
+}
+```
+
+**Example: resend before resendAvailableAt**
+
+```json
+{
+  "error": {
+    "code": "RATE_LIMITED",
+    "message": "Wait before requesting a new code.",
+    "details": {
+      "retryAfterSeconds": 60
+    }
   }
 }
 ```
@@ -104,7 +165,7 @@ or `system`).
 
 ```json
 {
-  "id": "6ad76d9c358746da714e4d4a",
+  "id": "6ad8cc3ae04e745046948ed4",
   "status": "pending_payment",
   "isTrial": false,
   "price": {
@@ -116,17 +177,17 @@ or `system`).
     "method": "mock",
     "paidAt": null
   },
-  "expiresAt": "2026-10-20T13:48:16.900Z",
-  "startAt": "2026-10-27T11:00:00.000Z",
-  "endAt": "2026-10-27T12:00:00.000Z",
+  "expiresAt": "2026-10-21T14:44:14.915Z",
+  "startAt": "2026-10-28T11:00:00.000Z",
+  "endAt": "2026-10-28T12:00:00.000Z",
   "seriesId": null,
   "cancellable": true,
-  "cancelDeadline": "2026-10-26T11:00:00.000Z",
+  "cancelDeadline": "2026-10-27T11:00:00.000Z",
   "cancelledAt": null,
   "cancelledBy": null,
   "cancelReason": null,
   "session": {
-    "id": "6ad76d9c358746da714e4d47",
+    "id": "6ad8cc3ae04e745046948ed1",
     "title": "1:1 Strength Session",
     "kind": "individual",
     "location": {
@@ -142,19 +203,19 @@ or `system`).
     "participantsCount": 1
   },
   "coach": {
-    "id": "6ad76d7a440e640477f2f2f3",
+    "id": "6ad8cc30149bc424af3ea5dc",
     "firstName": "Alex",
     "lastName": "Carter",
     "avatarUrl": "https://i.pravatar.cc/300?img=12"
   },
   "client": {
-    "id": "6ad76d7b440e640477f2f327",
+    "id": "6ad8cc30149bc424af3ea610",
     "firstName": "Jamie",
     "lastName": "Lee",
     "avatarUrl": "https://i.pravatar.cc/300?img=32"
   },
   "notesCount": 0,
-  "createdAt": "2026-10-20T13:33:16.900Z"
+  "createdAt": "2026-10-21T14:29:14.917Z"
 }
 ```
 
@@ -164,16 +225,16 @@ or `system`).
 {
   "items": [
     {
-      "date": "2026-10-28",
-      "startAt": "2026-10-28T23:00:00.000Z",
-      "endAt": "2026-10-29T00:00:00.000Z",
+      "date": "2026-10-29",
+      "startAt": "2026-10-29T23:00:00.000Z",
+      "endAt": "2026-10-30T00:00:00.000Z",
       "available": false,
       "reason": "EXCEPTION"
     },
     {
-      "date": "2026-11-04",
-      "startAt": "2026-11-05T00:00:00.000Z",
-      "endAt": "2026-11-05T01:00:00.000Z",
+      "date": "2026-11-05",
+      "startAt": "2026-11-06T00:00:00.000Z",
+      "endAt": "2026-11-06T01:00:00.000Z",
       "available": true
     }
   ]
@@ -195,9 +256,9 @@ Profile (`/coach/profile`, publish when `completeness.complete`), training types
   "items": [
     {
       "session": {
-        "id": "6ad76d7b440e640477f2f3aa",
-        "coachId": "6ad76d7a440e640477f2f2f3",
-        "sessionTypeId": "6ad76d7a440e640477f2f2f8",
+        "id": "6ad8cc30149bc424af3ea68f",
+        "coachId": "6ad8cc30149bc424af3ea5dc",
+        "sessionTypeId": "6ad8cc30149bc424af3ea5e1",
         "kind": "group",
         "title": "Lunchtime Strength Circuit",
         "startAt": "2026-10-21T17:00:00.000Z",
@@ -224,11 +285,11 @@ Profile (`/coach/profile`, publish when `completeness.complete`), training types
       },
       "participants": [
         {
-          "bookingId": "6ad76d7c440e640477f2f4ef",
+          "bookingId": "6ad8cc31149bc424af3ea7d7",
           "status": "confirmed",
           "isTrial": false,
           "client": {
-            "id": "6ad76d7b440e640477f2f327",
+            "id": "6ad8cc30149bc424af3ea610",
             "firstName": "Jamie",
             "lastName": "Lee",
             "avatarUrl": "https://i.pravatar.cc/300?img=32"
@@ -236,11 +297,11 @@ Profile (`/coach/profile`, publish when `completeness.complete`), training types
           "notesCount": 0
         },
         {
-          "bookingId": "6ad76d7d440e640477f2f57b",
+          "bookingId": "6ad8cc31149bc424af3ea863",
           "status": "confirmed",
           "isTrial": false,
           "client": {
-            "id": "6ad76d7b440e640477f2f32d",
+            "id": "6ad8cc30149bc424af3ea616",
             "firstName": "Sophia",
             "lastName": "Martinez",
             "avatarUrl": "https://i.pravatar.cc/300?img=16"
@@ -251,9 +312,9 @@ Profile (`/coach/profile`, publish when `completeness.complete`), training types
     },
     {
       "session": {
-        "id": "6ad76d7b440e640477f2f357",
-        "coachId": "6ad76d7a440e640477f2f2f3",
-        "sessionTypeId": "6ad76d7a440e640477f2f2f6",
+        "id": "6ad8cc30149bc424af3ea638",
+        "coachId": "6ad8cc30149bc424af3ea5dc",
+        "sessionTypeId": "6ad8cc30149bc424af3ea5df",
         "kind": "individual",
         "title": "1:1 Strength Session",
         "startAt": "2026-10-22T12:00:00.000Z",
@@ -280,11 +341,11 @@ Profile (`/coach/profile`, publish when `completeness.complete`), training types
       },
       "participants": [
         {
-          "bookingId": "6ad76d7b440e640477f2f35a",
+          "bookingId": "6ad8cc30149bc424af3ea63b",
           "status": "confirmed",
           "isTrial": false,
           "client": {
-            "id": "6ad76d7b440e640477f2f327",
+            "id": "6ad8cc30149bc424af3ea610",
             "firstName": "Jamie",
             "lastName": "Lee",
             "avatarUrl": "https://i.pravatar.cc/300?img=32"
@@ -319,40 +380,40 @@ readAt }`, `conversation:updated { conversation }`, `typing { conversationId, us
 {
   "items": [
     {
-      "id": "6ad76d98440e640477f30026",
-      "coachId": "6ad76d7a440e640477f2f303",
-      "clientId": "6ad76d7b440e640477f2f327",
+      "id": "6ad8cc37149bc424af3eb34c",
+      "coachId": "6ad8cc30149bc424af3ea5ec",
+      "clientId": "6ad8cc30149bc424af3ea610",
       "participant": {
-        "id": "6ad76d7a440e640477f2f303",
+        "id": "6ad8cc30149bc424af3ea5ec",
         "firstName": "Sofia",
         "lastName": "Alvarez",
         "avatarUrl": "https://i.pravatar.cc/300?img=44"
       },
       "lastMessage": {
         "text": "I will add it to our notes after the session.",
-        "senderId": "6ad76d7a440e640477f2f303",
-        "createdAt": "2026-10-16T18:11:41.989Z"
+        "senderId": "6ad8cc30149bc424af3ea5ec",
+        "createdAt": "2026-10-17T20:13:03.600Z"
       },
       "unreadCount": 1,
-      "lastActivityAt": "2026-10-16T18:11:41.989Z"
+      "lastActivityAt": "2026-10-17T20:13:03.600Z"
     },
     {
-      "id": "6ad76d98440e640477f30011",
-      "coachId": "6ad76d7a440e640477f2f2f3",
-      "clientId": "6ad76d7b440e640477f2f327",
+      "id": "6ad8cc37149bc424af3eb337",
+      "coachId": "6ad8cc30149bc424af3ea5dc",
+      "clientId": "6ad8cc30149bc424af3ea610",
       "participant": {
-        "id": "6ad76d7a440e640477f2f2f3",
+        "id": "6ad8cc30149bc424af3ea5dc",
         "firstName": "Alex",
         "lastName": "Carter",
         "avatarUrl": "https://i.pravatar.cc/300?img=12"
       },
       "lastMessage": {
         "text": "Got it, see you at 6.",
-        "senderId": "6ad76d7a440e640477f2f2f3",
-        "createdAt": "2026-10-08T03:03:41.989Z"
+        "senderId": "6ad8cc30149bc424af3ea5dc",
+        "createdAt": "2026-10-09T04:17:03.600Z"
       },
       "unreadCount": 1,
-      "lastActivityAt": "2026-10-08T03:03:41.989Z"
+      "lastActivityAt": "2026-10-09T04:17:03.600Z"
     }
   ]
 }
@@ -363,31 +424,33 @@ readAt }`, `conversation:updated { conversation }`, `typing { conversationId, us
 Every error: `{ "error": { "code": "SLOT_UNAVAILABLE", "message": "...", "details": { } } }`. Map `code` to
 localized app strings; `message` is an English fallback.
 
-| Code                         | HTTP | Default message                                            | Suggested UI handling                                     |
-| ---------------------------- | ---- | ---------------------------------------------------------- | --------------------------------------------------------- |
-| `VALIDATION_ERROR`           | 400  | Some fields are invalid.                                   | Show `details.fields[field]` under each input.            |
-| `RESET_CODE_INVALID`         | 400  | The code is incorrect.                                     |                                                           |
-| `RESET_CODE_EXPIRED`         | 400  | The code has expired. Request a new one.                   |                                                           |
-| `UNAUTHORIZED`               | 401  | Authentication required.                                   | Sign out locally and show the login screen.               |
-| `TOKEN_EXPIRED`              | 401  | Access token expired.                                      | Call `/auth/refresh` once and retry the request.          |
-| `INVALID_CREDENTIALS`        | 401  | Email or password is incorrect.                            |                                                           |
-| `SOCIAL_TOKEN_INVALID`       | 401  | Sign-in with this provider failed.                         |                                                           |
-| `FORBIDDEN`                  | 403  | You do not have access to this resource.                   |                                                           |
-| `ONBOARDING_REQUIRED`        | 403  | Complete your profile first.                               | Open the onboarding screen (role + city/state).           |
-| `NOT_FOUND`                  | 404  | Not found.                                                 |                                                           |
-| `EMAIL_TAKEN`                | 409  | An account with this email already exists.                 |                                                           |
-| `SLOT_UNAVAILABLE`           | 409  | This time is no longer available.                          | Reload slots and ask the user to pick another time.       |
-| `SESSION_FULL`               | 409  | This group session is full.                                | Refresh the group list; offer other sessions.             |
-| `ALREADY_BOOKED`             | 409  | You have already booked this session.                      |                                                           |
-| `TRIAL_ALREADY_USED`         | 409  | The free trial has already been used.                      | Hide the free-trial option; continue with a paid booking. |
-| `CANCELLATION_WINDOW_PASSED` | 409  | It is too late to cancel this training.                    | Explain the coach policy using `details.freeCancelHours`. |
-| `BOOKING_NOT_PAYABLE`        | 409  | This booking cannot be paid.                               | Reload the booking; it was paid or released.              |
-| `TRIAL_NOT_ALLOWED`          | 422  | The free trial is available for individual trainings only. |                                                           |
-| `PROFILE_INCOMPLETE`         | 422  | Complete the profile before publishing.                    |                                                           |
-| `SESSION_TYPE_INACTIVE`      | 422  | This training type is not available.                       |                                                           |
-| `RATE_LIMITED`               | 429  | Too many requests. Try again later.                        | Ask to try again later.                                   |
-| `TOO_MANY_ATTEMPTS`          | 429  | Too many attempts. Request a new code.                     |                                                           |
-| `INTERNAL`                   | 500  | Something went wrong.                                      |                                                           |
+| Code                         | HTTP | Default message                                            | Suggested UI handling                                              |
+| ---------------------------- | ---- | ---------------------------------------------------------- | ------------------------------------------------------------------ |
+| `VALIDATION_ERROR`           | 400  | Some fields are invalid.                                   | Show `details.fields[field]` under each input.                     |
+| `RESET_CODE_INVALID`         | 400  | The code is incorrect.                                     |                                                                    |
+| `RESET_CODE_EXPIRED`         | 400  | The code has expired. Request a new one.                   |                                                                    |
+| `VERIFICATION_CODE_INVALID`  | 400  | The code is incorrect.                                     | Show under the code cells, clear them; `details.attemptsLeft`.     |
+| `VERIFICATION_CODE_EXPIRED`  | 400  | The code has expired. Request a new one.                   | Show "Back to sign in" (or "Resend code" if still allowed).        |
+| `UNAUTHORIZED`               | 401  | Authentication required.                                   | Sign out locally and show the login screen.                        |
+| `TOKEN_EXPIRED`              | 401  | Access token expired.                                      | Call `/auth/refresh` once and retry the request.                   |
+| `INVALID_CREDENTIALS`        | 401  | Email or password is incorrect.                            |                                                                    |
+| `SOCIAL_TOKEN_INVALID`       | 401  | Sign-in with this provider failed.                         |                                                                    |
+| `FORBIDDEN`                  | 403  | You do not have access to this resource.                   |                                                                    |
+| `ONBOARDING_REQUIRED`        | 403  | Complete your profile first.                               | Open the onboarding screen (role + city/state).                    |
+| `NOT_FOUND`                  | 404  | Not found.                                                 |                                                                    |
+| `EMAIL_TAKEN`                | 409  | An account with this email already exists.                 |                                                                    |
+| `SLOT_UNAVAILABLE`           | 409  | This time is no longer available.                          | Reload slots and ask the user to pick another time.                |
+| `SESSION_FULL`               | 409  | This group session is full.                                | Refresh the group list; offer other sessions.                      |
+| `ALREADY_BOOKED`             | 409  | You have already booked this session.                      |                                                                    |
+| `TRIAL_ALREADY_USED`         | 409  | The free trial has already been used.                      | Hide the free-trial option; continue with a paid booking.          |
+| `CANCELLATION_WINDOW_PASSED` | 409  | It is too late to cancel this training.                    | Explain the coach policy using `details.freeCancelHours`.          |
+| `BOOKING_NOT_PAYABLE`        | 409  | This booking cannot be paid.                               | Reload the booking; it was paid or released.                       |
+| `TRIAL_NOT_ALLOWED`          | 422  | The free trial is available for individual trainings only. |                                                                    |
+| `PROFILE_INCOMPLETE`         | 422  | Complete the profile before publishing.                    |                                                                    |
+| `SESSION_TYPE_INACTIVE`      | 422  | This training type is not available.                       |                                                                    |
+| `RATE_LIMITED`               | 429  | Too many requests. Try again later.                        | Ask to try again later (`details.retryAfterSeconds` when present). |
+| `TOO_MANY_ATTEMPTS`          | 429  | Too many attempts. Request a new code.                     | Disable input; offer "Resend code".                                |
+| `INTERNAL`                   | 500  | Something went wrong.                                      |                                                                    |
 
 **Example: validation error**
 
@@ -428,27 +491,29 @@ localized app strings; `message` is an English fallback.
 
 ### Auth
 
-| Method | Path                         | Who      | What                                                                                  | OK  | Errors (besides validation/auth)                                             |
-| ------ | ---------------------------- | -------- | ------------------------------------------------------------------------------------- | --- | ---------------------------------------------------------------------------- |
-| `POST` | `/auth/register`             | public   | Register with email and password (role and home area required)                        | 201 | `EMAIL_TAKEN` `RATE_LIMITED`                                                 |
-| `POST` | `/auth/login`                | public   | Sign in with email and password                                                       | 200 | `INVALID_CREDENTIALS` `RATE_LIMITED`                                         |
-| `POST` | `/auth/google`               | public   | Sign in with a Google ID token. New accounts must complete POST /me/onboarding.       | 200 | `SOCIAL_TOKEN_INVALID`                                                       |
-| `POST` | `/auth/apple`                | public   | Sign in with an Apple identity token. New accounts must complete POST /me/onboarding. | 200 | `SOCIAL_TOKEN_INVALID`                                                       |
-| `POST` | `/auth/refresh`              | public   | Exchange a refresh token for new tokens (rotation; reuse revokes the session family)  | 200 |                                                                              |
-| `POST` | `/auth/logout`               | any user | Revoke a refresh token                                                                | 204 |                                                                              |
-| `POST` | `/auth/password/forgot`      | public   | Email a 6-digit reset code (always 204, no user enumeration)                          | 204 | `RATE_LIMITED`                                                               |
-| `POST` | `/auth/password/verify-code` | public   | Verify the reset code and get a short-lived reset token                               | 200 | `RESET_CODE_INVALID` `RESET_CODE_EXPIRED` `TOO_MANY_ATTEMPTS` `RATE_LIMITED` |
-| `POST` | `/auth/password/reset`       | public   | Set a new password with the reset token (signs out all sessions)                      | 204 | `RESET_CODE_EXPIRED`                                                         |
+| Method | Path                         | Who      | What                                                                                                                                          | OK  | Errors (besides validation/auth)                                                                       |
+| ------ | ---------------------------- | -------- | --------------------------------------------------------------------------------------------------------------------------------------------- | --- | ------------------------------------------------------------------------------------------------------ |
+| `POST` | `/auth/register`             | public   | Register with email and password (role and home area required). Emails a 6-digit code; tokens come from POST /auth/verify.                    | 201 | `EMAIL_TAKEN` `RATE_LIMITED`                                                                           |
+| `POST` | `/auth/login`                | public   | Check email and password and email a 6-digit code (purpose "login", or "signup" for an unverified email). Tokens come from POST /auth/verify. | 200 | `INVALID_CREDENTIALS` `RATE_LIMITED`                                                                   |
+| `POST` | `/auth/verify`               | public   | Check the emailed code and start a session                                                                                                    | 200 | `VERIFICATION_CODE_INVALID` `VERIFICATION_CODE_EXPIRED` `NOT_FOUND` `TOO_MANY_ATTEMPTS` `RATE_LIMITED` |
+| `POST` | `/auth/verify/resend`        | public   | Email a new code for the same verification (old code stops working, attempts reset)                                                           | 200 | `VERIFICATION_CODE_EXPIRED` `NOT_FOUND` `RATE_LIMITED`                                                 |
+| `POST` | `/auth/google`               | public   | Sign in with a Google ID token (no email code). New accounts must complete POST /me/onboarding.                                               | 200 | `SOCIAL_TOKEN_INVALID`                                                                                 |
+| `POST` | `/auth/apple`                | public   | Sign in with an Apple identity token (no email code). New accounts must complete POST /me/onboarding.                                         | 200 | `SOCIAL_TOKEN_INVALID`                                                                                 |
+| `POST` | `/auth/refresh`              | public   | Exchange a refresh token for new tokens (rotation; reuse revokes the session family)                                                          | 200 |                                                                                                        |
+| `POST` | `/auth/logout`               | any user | Revoke a refresh token                                                                                                                        | 204 |                                                                                                        |
+| `POST` | `/auth/password/forgot`      | public   | Email a 6-digit reset code (always 204, no user enumeration)                                                                                  | 204 | `RATE_LIMITED`                                                                                         |
+| `POST` | `/auth/password/verify-code` | public   | Verify the reset code and get a short-lived reset token                                                                                       | 200 | `RESET_CODE_INVALID` `RESET_CODE_EXPIRED` `TOO_MANY_ATTEMPTS` `RATE_LIMITED`                           |
+| `POST` | `/auth/password/reset`       | public   | Set a new password with the reset token: signs out all sessions, confirms the email and starts a new session (no extra code)                  | 200 | `RESET_CODE_EXPIRED` `RATE_LIMITED`                                                                    |
 
 ### Me
 
-| Method  | Path             | Who      | What                                                                                      | OK  | Errors (besides validation/auth) |
-| ------- | ---------------- | -------- | ----------------------------------------------------------------------------------------- | --- | -------------------------------- |
-| `GET`   | `/me`            | any user | Current user                                                                              | 200 |                                  |
-| `PATCH` | `/me`            | any user | Update name, avatar, home area or theme                                                   | 200 |                                  |
-| `POST`  | `/me/onboarding` | any user | Complete onboarding for social sign-in accounts (role + home area)                        | 200 | `FORBIDDEN`                      |
-| `PATCH` | `/me/password`   | any user | Change or set password (current password required if one exists). Revokes refresh tokens. | 204 | `INVALID_CREDENTIALS`            |
-| `GET`   | `/me/trial`      | client   | Is the free trial still available for me?                                                 | 200 | `FORBIDDEN`                      |
+| Method  | Path             | Who      | What                                                                                                                                         | OK  | Errors (besides validation/auth) |
+| ------- | ---------------- | -------- | -------------------------------------------------------------------------------------------------------------------------------------------- | --- | -------------------------------- |
+| `GET`   | `/me`            | any user | Current user                                                                                                                                 | 200 |                                  |
+| `PATCH` | `/me`            | any user | Update name, avatar, home area or theme                                                                                                      | 200 |                                  |
+| `POST`  | `/me/onboarding` | any user | Complete onboarding for social sign-in accounts (role + home area)                                                                           | 200 | `FORBIDDEN`                      |
+| `PATCH` | `/me/password`   | any user | Change or set password (current password required if one exists). Signs out all other sessions and returns a new token pair for this device. | 200 | `INVALID_CREDENTIALS`            |
+| `GET`   | `/me/trial`      | client   | Is the free trial still available for me?                                                                                                    | 200 | `FORBIDDEN`                      |
 
 ### Coaches
 
@@ -536,7 +601,7 @@ localized app strings; `message` is an English fallback.
 
 ```json
 {
-  "id": "6ad76d7b440e640477f2f327",
+  "id": "6ad8cc30149bc424af3ea610",
   "email": "client@fitbook.dev",
   "role": "client",
   "firstName": "Jamie",
@@ -554,7 +619,7 @@ localized app strings; `message` is an English fallback.
     "theme": "dark"
   },
   "authProviders": ["password"],
-  "createdAt": "2026-10-20T13:32:43.217Z",
+  "createdAt": "2026-10-21T14:29:04.512Z",
   "coachProfile": null
 }
 ```
@@ -565,7 +630,7 @@ localized app strings; `message` is an English fallback.
 {
   "items": [
     {
-      "id": "6ad76d7a440e640477f2f2f9",
+      "id": "6ad8cc30149bc424af3ea5e2",
       "firstName": "Maya",
       "lastName": "Patel",
       "avatarUrl": "https://i.pravatar.cc/300?img=47",
@@ -589,7 +654,7 @@ localized app strings; `message` is an English fallback.
       "kinds": ["group", "individual"]
     },
     {
-      "id": "6ad76d7a440e640477f2f2f3",
+      "id": "6ad8cc30149bc424af3ea5dc",
       "firstName": "Alex",
       "lastName": "Carter",
       "avatarUrl": "https://i.pravatar.cc/300?img=12",
@@ -623,7 +688,7 @@ localized app strings; `message` is an English fallback.
 
 ```json
 {
-  "id": "6ad76d7a440e640477f2f2f3",
+  "id": "6ad8cc30149bc424af3ea5dc",
   "firstName": "Alex",
   "lastName": "Carter",
   "avatarUrl": "https://i.pravatar.cc/300?img=12",
@@ -678,8 +743,8 @@ localized app strings; `message` is an English fallback.
   },
   "sessionTypes": [
     {
-      "id": "6ad76d7a440e640477f2f2f8",
-      "coachId": "6ad76d7a440e640477f2f2f3",
+      "id": "6ad8cc30149bc424af3ea5e1",
+      "coachId": "6ad8cc30149bc424af3ea5dc",
       "title": "Lunchtime Strength Circuit",
       "kind": "group",
       "durationMin": 60,
@@ -693,8 +758,8 @@ localized app strings; `message` is an English fallback.
       "isActive": true
     },
     {
-      "id": "6ad76d7a440e640477f2f2f6",
-      "coachId": "6ad76d7a440e640477f2f2f3",
+      "id": "6ad8cc30149bc424af3ea5df",
+      "coachId": "6ad8cc30149bc424af3ea5dc",
       "title": "1:1 Strength Session",
       "kind": "individual",
       "durationMin": 60,
@@ -717,12 +782,12 @@ localized app strings; `message` is an English fallback.
 {
   "items": [
     {
-      "startAt": "2026-10-27T11:00:00.000Z",
-      "endAt": "2026-10-27T12:00:00.000Z"
+      "startAt": "2026-10-28T11:00:00.000Z",
+      "endAt": "2026-10-28T12:00:00.000Z"
     },
     {
-      "startAt": "2026-10-27T13:00:00.000Z",
-      "endAt": "2026-10-27T14:00:00.000Z"
+      "startAt": "2026-10-28T11:30:00.000Z",
+      "endAt": "2026-10-28T12:30:00.000Z"
     }
   ]
 }
@@ -734,9 +799,9 @@ localized app strings; `message` is an English fallback.
 {
   "items": [
     {
-      "id": "6ad76d7b440e640477f2f3aa",
-      "coachId": "6ad76d7a440e640477f2f2f3",
-      "sessionTypeId": "6ad76d7a440e640477f2f2f8",
+      "id": "6ad8cc30149bc424af3ea68f",
+      "coachId": "6ad8cc30149bc424af3ea5dc",
+      "sessionTypeId": "6ad8cc30149bc424af3ea5e1",
       "kind": "group",
       "title": "Lunchtime Strength Circuit",
       "startAt": "2026-10-21T17:00:00.000Z",
@@ -762,9 +827,9 @@ localized app strings; `message` is an English fallback.
       "cancelReason": null
     },
     {
-      "id": "6ad76d7b440e640477f2f3ad",
-      "coachId": "6ad76d7a440e640477f2f2f3",
-      "sessionTypeId": "6ad76d7a440e640477f2f2f8",
+      "id": "6ad8cc30149bc424af3ea692",
+      "coachId": "6ad8cc30149bc424af3ea5dc",
+      "sessionTypeId": "6ad8cc30149bc424af3ea5e1",
       "kind": "group",
       "title": "Lunchtime Strength Circuit",
       "startAt": "2026-10-23T17:00:00.000Z",
@@ -797,7 +862,7 @@ localized app strings; `message` is an English fallback.
 
 ```json
 {
-  "id": "6ad76d9c358746da714e4d4a",
+  "id": "6ad8cc3ae04e745046948ed4",
   "status": "confirmed",
   "isTrial": false,
   "price": {
@@ -807,19 +872,19 @@ localized app strings; `message` is an English fallback.
   "payment": {
     "status": "paid",
     "method": "mock",
-    "paidAt": "2026-10-20T13:33:17.113Z"
+    "paidAt": "2026-10-21T14:29:14.962Z"
   },
   "expiresAt": null,
-  "startAt": "2026-10-27T11:00:00.000Z",
-  "endAt": "2026-10-27T12:00:00.000Z",
+  "startAt": "2026-10-28T11:00:00.000Z",
+  "endAt": "2026-10-28T12:00:00.000Z",
   "seriesId": null,
   "cancellable": true,
-  "cancelDeadline": "2026-10-26T11:00:00.000Z",
+  "cancelDeadline": "2026-10-27T11:00:00.000Z",
   "cancelledAt": null,
   "cancelledBy": null,
   "cancelReason": null,
   "session": {
-    "id": "6ad76d9c358746da714e4d47",
+    "id": "6ad8cc3ae04e745046948ed1",
     "title": "1:1 Strength Session",
     "kind": "individual",
     "location": {
@@ -835,19 +900,19 @@ localized app strings; `message` is an English fallback.
     "participantsCount": 1
   },
   "coach": {
-    "id": "6ad76d7a440e640477f2f2f3",
+    "id": "6ad8cc30149bc424af3ea5dc",
     "firstName": "Alex",
     "lastName": "Carter",
     "avatarUrl": "https://i.pravatar.cc/300?img=12"
   },
   "client": {
-    "id": "6ad76d7b440e640477f2f327",
+    "id": "6ad8cc30149bc424af3ea610",
     "firstName": "Jamie",
     "lastName": "Lee",
     "avatarUrl": "https://i.pravatar.cc/300?img=32"
   },
   "notesCount": 0,
-  "createdAt": "2026-10-20T13:33:16.900Z"
+  "createdAt": "2026-10-21T14:29:14.917Z"
 }
 ```
 
@@ -855,7 +920,7 @@ localized app strings; `message` is an English fallback.
 
 ```json
 {
-  "id": "6ad76d9c358746da714e4d4a",
+  "id": "6ad8cc3ae04e745046948ed4",
   "status": "cancelled",
   "isTrial": false,
   "price": {
@@ -865,19 +930,19 @@ localized app strings; `message` is an English fallback.
   "payment": {
     "status": "paid",
     "method": "mock",
-    "paidAt": "2026-10-20T13:33:17.113Z"
+    "paidAt": "2026-10-21T14:29:14.962Z"
   },
   "expiresAt": null,
-  "startAt": "2026-10-27T11:00:00.000Z",
-  "endAt": "2026-10-27T12:00:00.000Z",
+  "startAt": "2026-10-28T11:00:00.000Z",
+  "endAt": "2026-10-28T12:00:00.000Z",
   "seriesId": null,
   "cancellable": false,
   "cancelDeadline": null,
-  "cancelledAt": "2026-10-20T13:33:18.535Z",
+  "cancelledAt": "2026-10-21T14:29:15.181Z",
   "cancelledBy": "client",
   "cancelReason": "Schedule change",
   "session": {
-    "id": "6ad76d9c358746da714e4d47",
+    "id": "6ad8cc3ae04e745046948ed1",
     "title": "1:1 Strength Session",
     "kind": "individual",
     "location": {
@@ -893,19 +958,19 @@ localized app strings; `message` is an English fallback.
     "participantsCount": 1
   },
   "coach": {
-    "id": "6ad76d7a440e640477f2f2f3",
+    "id": "6ad8cc30149bc424af3ea5dc",
     "firstName": "Alex",
     "lastName": "Carter",
     "avatarUrl": "https://i.pravatar.cc/300?img=12"
   },
   "client": {
-    "id": "6ad76d7b440e640477f2f327",
+    "id": "6ad8cc30149bc424af3ea610",
     "firstName": "Jamie",
     "lastName": "Lee",
     "avatarUrl": "https://i.pravatar.cc/300?img=32"
   },
   "notesCount": 1,
-  "createdAt": "2026-10-20T13:33:16.900Z"
+  "createdAt": "2026-10-21T14:29:14.917Z"
 }
 ```
 
@@ -913,10 +978,10 @@ localized app strings; `message` is an English fallback.
 
 ```json
 {
-  "seriesId": "6ad76d9d358746da714e4d4c",
+  "seriesId": "6ad8cc3be04e745046948ed6",
   "bookings": [
     {
-      "id": "6ad76d9d358746da714e4d50",
+      "id": "6ad8cc3be04e745046948eda",
       "status": "pending_payment",
       "isTrial": false,
       "price": {
@@ -928,17 +993,17 @@ localized app strings; `message` is an English fallback.
         "method": "mock",
         "paidAt": null
       },
-      "expiresAt": "2026-10-20T13:48:17.630Z",
-      "startAt": "2026-11-05T00:00:00.000Z",
-      "endAt": "2026-11-05T01:00:00.000Z",
-      "seriesId": "6ad76d9d358746da714e4d4c",
+      "expiresAt": "2026-10-21T14:44:15.092Z",
+      "startAt": "2026-11-06T00:00:00.000Z",
+      "endAt": "2026-11-06T01:00:00.000Z",
+      "seriesId": "6ad8cc3be04e745046948ed6",
       "cancellable": true,
-      "cancelDeadline": "2026-11-04T00:00:00.000Z",
+      "cancelDeadline": "2026-11-05T00:00:00.000Z",
       "cancelledAt": null,
       "cancelledBy": null,
       "cancelReason": null,
       "session": {
-        "id": "6ad76d9d358746da714e4d4d",
+        "id": "6ad8cc3be04e745046948ed7",
         "title": "1:1 Strength Session",
         "kind": "individual",
         "location": {
@@ -954,22 +1019,22 @@ localized app strings; `message` is an English fallback.
         "participantsCount": 1
       },
       "coach": {
-        "id": "6ad76d7a440e640477f2f2f3",
+        "id": "6ad8cc30149bc424af3ea5dc",
         "firstName": "Alex",
         "lastName": "Carter",
         "avatarUrl": "https://i.pravatar.cc/300?img=12"
       },
       "client": {
-        "id": "6ad76d7b440e640477f2f327",
+        "id": "6ad8cc30149bc424af3ea610",
         "firstName": "Jamie",
         "lastName": "Lee",
         "avatarUrl": "https://i.pravatar.cc/300?img=32"
       },
       "notesCount": 0,
-      "createdAt": "2026-10-20T13:33:17.631Z"
+      "createdAt": "2026-10-21T14:29:15.093Z"
     },
     {
-      "id": "6ad76d9d358746da714e4d54",
+      "id": "6ad8cc3be04e745046948ede",
       "status": "pending_payment",
       "isTrial": false,
       "price": {
@@ -981,17 +1046,17 @@ localized app strings; `message` is an English fallback.
         "method": "mock",
         "paidAt": null
       },
-      "expiresAt": "2026-10-20T13:48:17.696Z",
-      "startAt": "2026-11-12T00:00:00.000Z",
-      "endAt": "2026-11-12T01:00:00.000Z",
-      "seriesId": "6ad76d9d358746da714e4d4c",
+      "expiresAt": "2026-10-21T14:44:15.104Z",
+      "startAt": "2026-11-13T00:00:00.000Z",
+      "endAt": "2026-11-13T01:00:00.000Z",
+      "seriesId": "6ad8cc3be04e745046948ed6",
       "cancellable": true,
-      "cancelDeadline": "2026-11-11T00:00:00.000Z",
+      "cancelDeadline": "2026-11-12T00:00:00.000Z",
       "cancelledAt": null,
       "cancelledBy": null,
       "cancelReason": null,
       "session": {
-        "id": "6ad76d9d358746da714e4d51",
+        "id": "6ad8cc3be04e745046948edb",
         "title": "1:1 Strength Session",
         "kind": "individual",
         "location": {
@@ -1007,24 +1072,24 @@ localized app strings; `message` is an English fallback.
         "participantsCount": 1
       },
       "coach": {
-        "id": "6ad76d7a440e640477f2f2f3",
+        "id": "6ad8cc30149bc424af3ea5dc",
         "firstName": "Alex",
         "lastName": "Carter",
         "avatarUrl": "https://i.pravatar.cc/300?img=12"
       },
       "client": {
-        "id": "6ad76d7b440e640477f2f327",
+        "id": "6ad8cc30149bc424af3ea610",
         "firstName": "Jamie",
         "lastName": "Lee",
         "avatarUrl": "https://i.pravatar.cc/300?img=32"
       },
       "notesCount": 0,
-      "createdAt": "2026-10-20T13:33:17.697Z"
+      "createdAt": "2026-10-21T14:29:15.105Z"
     }
   ],
   "skipped": [
     {
-      "date": "2026-10-28",
+      "date": "2026-10-29",
       "reason": "EXCEPTION"
     }
   ]
@@ -1036,8 +1101,8 @@ localized app strings; `message` is an English fallback.
 ```json
 {
   "title": "1:1 Strength Session with Alex Carter",
-  "startAt": "2026-10-27T11:00:00.000Z",
-  "endAt": "2026-10-27T12:00:00.000Z",
+  "startAt": "2026-10-28T11:00:00.000Z",
+  "endAt": "2026-10-28T12:00:00.000Z",
   "timezone": "America/Chicago",
   "location": {
     "name": "Iron Loop Gym",
@@ -1045,7 +1110,7 @@ localized app strings; `message` is an English fallback.
     "lat": 41.8925,
     "lng": -87.6347
   },
-  "notes": "FitBook training with Alex Carter.\nFree cancellation up to 24h before the start.\nBooking: 6ad76d9c358746da714e4d4a"
+  "notes": "FitBook training with Alex Carter.\nFree cancellation up to 24h before the start.\nBooking: 6ad8cc3ae04e745046948ed4"
 }
 ```
 
@@ -1055,18 +1120,18 @@ localized app strings; `message` is an English fallback.
 {
   "before": [
     {
-      "id": "6ad76d7b440e640477f2f37b",
-      "bookingId": "6ad76d7b440e640477f2f356",
+      "id": "6ad8cc30149bc424af3ea660",
+      "bookingId": "6ad8cc30149bc424af3ea637",
       "phase": "before",
-      "text": "Left knee feels a little sore, let me know what to avoid.",
+      "text": "Can we work on my squat depth today?",
       "author": {
-        "id": "6ad76d7b440e640477f2f327",
+        "id": "6ad8cc30149bc424af3ea610",
         "role": "client",
         "firstName": "Jamie",
         "lastName": "Lee"
       },
       "lastEditedBy": {
-        "id": "6ad76d7b440e640477f2f327",
+        "id": "6ad8cc30149bc424af3ea610",
         "role": "client"
       },
       "createdAt": "2026-10-19T16:00:00.000Z",
@@ -1075,22 +1140,22 @@ localized app strings; `message` is an English fallback.
   ],
   "after": [
     {
-      "id": "6ad76d7b440e640477f2f37c",
-      "bookingId": "6ad76d7b440e640477f2f356",
+      "id": "6ad8cc30149bc424af3ea661",
+      "bookingId": "6ad8cc30149bc424af3ea637",
       "phase": "after",
-      "text": "Footwork is getting much sharper. Practice the drill at home for 10 minutes.",
+      "text": "Good effort. Remember: shoulders down and back during presses.",
       "author": {
-        "id": "6ad76d7a440e640477f2f2f3",
+        "id": "6ad8cc30149bc424af3ea5dc",
         "role": "coach",
         "firstName": "Alex",
         "lastName": "Carter"
       },
       "lastEditedBy": {
-        "id": "6ad76d7a440e640477f2f2f3",
+        "id": "6ad8cc30149bc424af3ea5dc",
         "role": "coach"
       },
-      "createdAt": "2026-10-20T13:32:41.989Z",
-      "updatedAt": "2026-10-20T13:32:41.989Z"
+      "createdAt": "2026-10-20T14:00:00.000Z",
+      "updatedAt": "2026-10-20T14:00:00.000Z"
     }
   ]
 }
@@ -1102,25 +1167,25 @@ localized app strings; `message` is an English fallback.
 {
   "items": [
     {
-      "id": "6ad76d98440e640477f3002c",
-      "conversationId": "6ad76d98440e640477f30026",
-      "senderId": "6ad76d7a440e640477f2f303",
+      "id": "6ad8cc37149bc424af3eb352",
+      "conversationId": "6ad8cc37149bc424af3eb34c",
+      "senderId": "6ad8cc30149bc424af3ea5ec",
       "senderRole": "coach",
       "text": "I will add it to our notes after the session.",
-      "createdAt": "2026-10-16T18:11:41.989Z",
+      "createdAt": "2026-10-17T20:13:03.600Z",
       "readAt": null
     },
     {
-      "id": "6ad76d98440e640477f3002b",
-      "conversationId": "6ad76d98440e640477f30026",
-      "senderId": "6ad76d7b440e640477f2f327",
+      "id": "6ad8cc37149bc424af3eb351",
+      "conversationId": "6ad8cc37149bc424af3eb34c",
+      "senderId": "6ad8cc30149bc424af3ea610",
       "senderRole": "client",
       "text": "Can you also send me a stretching routine?",
-      "createdAt": "2026-10-16T16:54:41.989Z",
-      "readAt": "2026-10-16T16:59:41.989Z"
+      "createdAt": "2026-10-17T19:44:03.600Z",
+      "readAt": "2026-10-17T19:49:03.600Z"
     }
   ],
-  "nextCursor": "6ad76d98440e640477f3002a"
+  "nextCursor": "6ad8cc37149bc424af3eb350"
 }
 ```
 
@@ -1128,7 +1193,7 @@ localized app strings; `message` is an English fallback.
 
 ```json
 {
-  "userId": "6ad76d7a440e640477f2f2f3",
+  "userId": "6ad8cc30149bc424af3ea5dc",
   "headline": "Strength & conditioning coach for busy professionals",
   "bio": "I help people with full calendars get strong, move without pain and actually enjoy training. Every program starts with a movement assessment, then we build simple, progressive sessions around your schedule.\n\nBefore coaching full time I competed in powerlifting and worked with a Division I track team, so I care a lot about technique and smart progression.",
   "specializations": ["strength", "hiit", "mobility"],
@@ -1181,8 +1246,8 @@ localized app strings; `message` is an English fallback.
 {
   "items": [
     {
-      "id": "6ad76d7a440e640477f2f2f6",
-      "coachId": "6ad76d7a440e640477f2f2f3",
+      "id": "6ad8cc30149bc424af3ea5df",
+      "coachId": "6ad8cc30149bc424af3ea5dc",
       "title": "1:1 Strength Session",
       "kind": "individual",
       "durationMin": 60,
@@ -1196,8 +1261,8 @@ localized app strings; `message` is an English fallback.
       "isActive": true
     },
     {
-      "id": "6ad76d7a440e640477f2f2f7",
-      "coachId": "6ad76d7a440e640477f2f2f3",
+      "id": "6ad8cc30149bc424af3ea5e0",
+      "coachId": "6ad8cc30149bc424af3ea5dc",
       "title": "1:1 Strength + Mobility (90 min)",
       "kind": "individual",
       "durationMin": 90,
@@ -1233,7 +1298,7 @@ localized app strings; `message` is an English fallback.
   ],
   "exceptions": [
     {
-      "date": "2026-10-28",
+      "date": "2026-10-29",
       "start": "16:00",
       "end": "20:00",
       "reason": "Physio appointment"
@@ -1248,20 +1313,20 @@ localized app strings; `message` is an English fallback.
 {
   "items": [
     {
-      "id": "6ad76d7b440e640477f2f327",
+      "id": "6ad8cc30149bc424af3ea610",
       "firstName": "Jamie",
       "lastName": "Lee",
       "avatarUrl": "https://i.pravatar.cc/300?img=32",
       "totalBookings": 15,
-      "lastBookingAt": "2026-11-12T13:00:00.000Z"
+      "lastBookingAt": "2026-11-19T13:00:00.000Z"
     },
     {
-      "id": "6ad76d7b440e640477f2f331",
+      "id": "6ad8cc30149bc424af3ea61a",
       "firstName": "Chloe",
       "lastName": "Jackson",
       "avatarUrl": "https://i.pravatar.cc/300?img=23",
-      "totalBookings": 10,
-      "lastBookingAt": "2026-11-02T22:00:00.000Z"
+      "totalBookings": 13,
+      "lastBookingAt": "2026-11-11T14:00:00.000Z"
     }
   ]
 }
@@ -1300,9 +1365,21 @@ localized app strings; `message` is an English fallback.
 }
 ```
 
+**Error: VERIFICATION_CODE_EXPIRED**
+
+```json
+{
+  "error": {
+    "code": "VERIFICATION_CODE_EXPIRED",
+    "message": "The code has expired. Request a new one."
+  }
+}
+```
+
 ## 11. Demo accounts (seeded)
 
-Password for all: `Password123!`
+Password for all: `Password123!`. Every password sign-in asks for an emailed code (Mailpit / server log, or
+`000000` with `AUTH_DEV_FIXED_CODE=000000`). The demo accounts already have a confirmed email.
 
 | Email                   | Who                                                                                                                  |
 | ----------------------- | -------------------------------------------------------------------------------------------------------------------- |
