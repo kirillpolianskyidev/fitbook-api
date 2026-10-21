@@ -74,6 +74,8 @@ const UI_HINTS: Partial<Record<ErrorCode, string>> = {
   VERIFICATION_CODE_INVALID: 'Show under the code cells, clear them; `details.attemptsLeft`.',
   VERIFICATION_CODE_EXPIRED: 'Show "Back to sign in" (or "Resend code" if still allowed).',
   TOO_MANY_ATTEMPTS: 'Disable input; offer "Resend code".',
+  EMAIL_DELIVERY_FAILED:
+    'Show an alert with `message` (the code email could not be sent) and let the user retry.',
 };
 
 const errorTable = (Object.keys(ERROR_STATUS) as ErrorCode[])
@@ -125,6 +127,8 @@ after the code is verified (on sign up the code also confirms the email).
 3. "Resend code" is enabled from \`resendAvailableAt\` (60 s after each send): \`POST /auth/verify/resend
    { verificationId }\` -> \`{ verification }\` (same id, new dates; the previous code stops working). Too early ->
    \`429 RATE_LIMITED\` with \`details.retryAfterSeconds\`; after 5 resends -> \`VERIFICATION_CODE_EXPIRED\`.
+   If the email with the code cannot be sent, register / login / resend answer \`503 EMAIL_DELIVERY_FAILED\`
+   (stay on the form, show an alert, let the user retry; nothing was sent, so there is no code screen).
    Local development: the email arrives in Mailpit (http://localhost:8025) and the code is printed in the server log;
    with \`AUTH_DEV_FIXED_CODE=000000\` in \`.env\` the code \`000000\` is accepted too (never in production).
 4. Send \`Authorization: Bearer <accessToken>\` on every request (access token lives 15 minutes).

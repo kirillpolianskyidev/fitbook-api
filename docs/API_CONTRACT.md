@@ -40,6 +40,8 @@ after the code is verified (on sign up the code also confirms the email).
 3. "Resend code" is enabled from `resendAvailableAt` (60 s after each send): `POST /auth/verify/resend
 { verificationId }` -> `{ verification }` (same id, new dates; the previous code stops working). Too early ->
    `429 RATE_LIMITED` with `details.retryAfterSeconds`; after 5 resends -> `VERIFICATION_CODE_EXPIRED`.
+   If the email with the code cannot be sent, register / login / resend answer `503 EMAIL_DELIVERY_FAILED`
+   (stay on the form, show an alert, let the user retry; nothing was sent, so there is no code screen).
    Local development: the email arrives in Mailpit (http://localhost:8025) and the code is printed in the server log;
    with `AUTH_DEV_FIXED_CODE=000000` in `.env` the code `000000` is accepted too (never in production).
 4. Send `Authorization: Bearer <accessToken>` on every request (access token lives 15 minutes).
@@ -424,33 +426,34 @@ readAt }`, `conversation:updated { conversation }`, `typing { conversationId, us
 Every error: `{ "error": { "code": "SLOT_UNAVAILABLE", "message": "...", "details": { } } }`. Map `code` to
 localized app strings; `message` is an English fallback.
 
-| Code                         | HTTP | Default message                                            | Suggested UI handling                                              |
-| ---------------------------- | ---- | ---------------------------------------------------------- | ------------------------------------------------------------------ |
-| `VALIDATION_ERROR`           | 400  | Some fields are invalid.                                   | Show `details.fields[field]` under each input.                     |
-| `RESET_CODE_INVALID`         | 400  | The code is incorrect.                                     |                                                                    |
-| `RESET_CODE_EXPIRED`         | 400  | The code has expired. Request a new one.                   |                                                                    |
-| `VERIFICATION_CODE_INVALID`  | 400  | The code is incorrect.                                     | Show under the code cells, clear them; `details.attemptsLeft`.     |
-| `VERIFICATION_CODE_EXPIRED`  | 400  | The code has expired. Request a new one.                   | Show "Back to sign in" (or "Resend code" if still allowed).        |
-| `UNAUTHORIZED`               | 401  | Authentication required.                                   | Sign out locally and show the login screen.                        |
-| `TOKEN_EXPIRED`              | 401  | Access token expired.                                      | Call `/auth/refresh` once and retry the request.                   |
-| `INVALID_CREDENTIALS`        | 401  | Email or password is incorrect.                            |                                                                    |
-| `SOCIAL_TOKEN_INVALID`       | 401  | Sign-in with this provider failed.                         |                                                                    |
-| `FORBIDDEN`                  | 403  | You do not have access to this resource.                   |                                                                    |
-| `ONBOARDING_REQUIRED`        | 403  | Complete your profile first.                               | Open the onboarding screen (role + city/state).                    |
-| `NOT_FOUND`                  | 404  | Not found.                                                 |                                                                    |
-| `EMAIL_TAKEN`                | 409  | An account with this email already exists.                 |                                                                    |
-| `SLOT_UNAVAILABLE`           | 409  | This time is no longer available.                          | Reload slots and ask the user to pick another time.                |
-| `SESSION_FULL`               | 409  | This group session is full.                                | Refresh the group list; offer other sessions.                      |
-| `ALREADY_BOOKED`             | 409  | You have already booked this session.                      |                                                                    |
-| `TRIAL_ALREADY_USED`         | 409  | The free trial has already been used.                      | Hide the free-trial option; continue with a paid booking.          |
-| `CANCELLATION_WINDOW_PASSED` | 409  | It is too late to cancel this training.                    | Explain the coach policy using `details.freeCancelHours`.          |
-| `BOOKING_NOT_PAYABLE`        | 409  | This booking cannot be paid.                               | Reload the booking; it was paid or released.                       |
-| `TRIAL_NOT_ALLOWED`          | 422  | The free trial is available for individual trainings only. |                                                                    |
-| `PROFILE_INCOMPLETE`         | 422  | Complete the profile before publishing.                    |                                                                    |
-| `SESSION_TYPE_INACTIVE`      | 422  | This training type is not available.                       |                                                                    |
-| `RATE_LIMITED`               | 429  | Too many requests. Try again later.                        | Ask to try again later (`details.retryAfterSeconds` when present). |
-| `TOO_MANY_ATTEMPTS`          | 429  | Too many attempts. Request a new code.                     | Disable input; offer "Resend code".                                |
-| `INTERNAL`                   | 500  | Something went wrong.                                      |                                                                    |
+| Code                         | HTTP | Default message                                                        | Suggested UI handling                                                                   |
+| ---------------------------- | ---- | ---------------------------------------------------------------------- | --------------------------------------------------------------------------------------- |
+| `VALIDATION_ERROR`           | 400  | Some fields are invalid.                                               | Show `details.fields[field]` under each input.                                          |
+| `RESET_CODE_INVALID`         | 400  | The code is incorrect.                                                 |                                                                                         |
+| `RESET_CODE_EXPIRED`         | 400  | The code has expired. Request a new one.                               |                                                                                         |
+| `VERIFICATION_CODE_INVALID`  | 400  | The code is incorrect.                                                 | Show under the code cells, clear them; `details.attemptsLeft`.                          |
+| `VERIFICATION_CODE_EXPIRED`  | 400  | The code has expired. Request a new one.                               | Show "Back to sign in" (or "Resend code" if still allowed).                             |
+| `UNAUTHORIZED`               | 401  | Authentication required.                                               | Sign out locally and show the login screen.                                             |
+| `TOKEN_EXPIRED`              | 401  | Access token expired.                                                  | Call `/auth/refresh` once and retry the request.                                        |
+| `INVALID_CREDENTIALS`        | 401  | Email or password is incorrect.                                        |                                                                                         |
+| `SOCIAL_TOKEN_INVALID`       | 401  | Sign-in with this provider failed.                                     |                                                                                         |
+| `FORBIDDEN`                  | 403  | You do not have access to this resource.                               |                                                                                         |
+| `ONBOARDING_REQUIRED`        | 403  | Complete your profile first.                                           | Open the onboarding screen (role + city/state).                                         |
+| `NOT_FOUND`                  | 404  | Not found.                                                             |                                                                                         |
+| `EMAIL_TAKEN`                | 409  | An account with this email already exists.                             |                                                                                         |
+| `SLOT_UNAVAILABLE`           | 409  | This time is no longer available.                                      | Reload slots and ask the user to pick another time.                                     |
+| `SESSION_FULL`               | 409  | This group session is full.                                            | Refresh the group list; offer other sessions.                                           |
+| `ALREADY_BOOKED`             | 409  | You have already booked this session.                                  |                                                                                         |
+| `TRIAL_ALREADY_USED`         | 409  | The free trial has already been used.                                  | Hide the free-trial option; continue with a paid booking.                               |
+| `CANCELLATION_WINDOW_PASSED` | 409  | It is too late to cancel this training.                                | Explain the coach policy using `details.freeCancelHours`.                               |
+| `BOOKING_NOT_PAYABLE`        | 409  | This booking cannot be paid.                                           | Reload the booking; it was paid or released.                                            |
+| `TRIAL_NOT_ALLOWED`          | 422  | The free trial is available for individual trainings only.             |                                                                                         |
+| `PROFILE_INCOMPLETE`         | 422  | Complete the profile before publishing.                                |                                                                                         |
+| `SESSION_TYPE_INACTIVE`      | 422  | This training type is not available.                                   |                                                                                         |
+| `RATE_LIMITED`               | 429  | Too many requests. Try again later.                                    | Ask to try again later (`details.retryAfterSeconds` when present).                      |
+| `TOO_MANY_ATTEMPTS`          | 429  | Too many attempts. Request a new code.                                 | Disable input; offer "Resend code".                                                     |
+| `INTERNAL`                   | 500  | Something went wrong.                                                  |                                                                                         |
+| `EMAIL_DELIVERY_FAILED`      | 503  | We couldn't send the email with your code. Try again in a few minutes. | Show an alert with `message` (the code email could not be sent) and let the user retry. |
 
 **Example: validation error**
 
@@ -493,10 +496,10 @@ localized app strings; `message` is an English fallback.
 
 | Method | Path                         | Who      | What                                                                                                                                          | OK  | Errors (besides validation/auth)                                                                       |
 | ------ | ---------------------------- | -------- | --------------------------------------------------------------------------------------------------------------------------------------------- | --- | ------------------------------------------------------------------------------------------------------ |
-| `POST` | `/auth/register`             | public   | Register with email and password (role and home area required). Emails a 6-digit code; tokens come from POST /auth/verify.                    | 201 | `EMAIL_TAKEN` `RATE_LIMITED`                                                                           |
-| `POST` | `/auth/login`                | public   | Check email and password and email a 6-digit code (purpose "login", or "signup" for an unverified email). Tokens come from POST /auth/verify. | 200 | `INVALID_CREDENTIALS` `RATE_LIMITED`                                                                   |
+| `POST` | `/auth/register`             | public   | Register with email and password (role and home area required). Emails a 6-digit code; tokens come from POST /auth/verify.                    | 201 | `EMAIL_TAKEN` `RATE_LIMITED` `EMAIL_DELIVERY_FAILED`                                                   |
+| `POST` | `/auth/login`                | public   | Check email and password and email a 6-digit code (purpose "login", or "signup" for an unverified email). Tokens come from POST /auth/verify. | 200 | `INVALID_CREDENTIALS` `RATE_LIMITED` `EMAIL_DELIVERY_FAILED`                                           |
 | `POST` | `/auth/verify`               | public   | Check the emailed code and start a session                                                                                                    | 200 | `VERIFICATION_CODE_INVALID` `VERIFICATION_CODE_EXPIRED` `NOT_FOUND` `TOO_MANY_ATTEMPTS` `RATE_LIMITED` |
-| `POST` | `/auth/verify/resend`        | public   | Email a new code for the same verification (old code stops working, attempts reset)                                                           | 200 | `VERIFICATION_CODE_EXPIRED` `NOT_FOUND` `RATE_LIMITED`                                                 |
+| `POST` | `/auth/verify/resend`        | public   | Email a new code for the same verification (old code stops working, attempts reset)                                                           | 200 | `VERIFICATION_CODE_EXPIRED` `NOT_FOUND` `RATE_LIMITED` `EMAIL_DELIVERY_FAILED`                         |
 | `POST` | `/auth/google`               | public   | Sign in with a Google ID token (no email code). New accounts must complete POST /me/onboarding.                                               | 200 | `SOCIAL_TOKEN_INVALID`                                                                                 |
 | `POST` | `/auth/apple`                | public   | Sign in with an Apple identity token (no email code). New accounts must complete POST /me/onboarding.                                         | 200 | `SOCIAL_TOKEN_INVALID`                                                                                 |
 | `POST` | `/auth/refresh`              | public   | Exchange a refresh token for new tokens (rotation; reuse revokes the session family)                                                          | 200 |                                                                                                        |

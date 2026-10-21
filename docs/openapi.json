@@ -52,7 +52,8 @@
                   "SESSION_TYPE_INACTIVE",
                   "RATE_LIMITED",
                   "TOO_MANY_ATTEMPTS",
-                  "INTERNAL"
+                  "INTERNAL",
+                  "EMAIL_DELIVERY_FAILED"
                 ]
               },
               "message": {
@@ -2104,6 +2105,16 @@
                 }
               }
             }
+          },
+          "503": {
+            "description": "EMAIL_DELIVERY_FAILED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
           }
         }
       }
@@ -2171,6 +2182,16 @@
           },
           "429": {
             "description": "RATE_LIMITED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "EMAIL_DELIVERY_FAILED",
             "content": {
               "application/json": {
                 "schema": {
@@ -2318,6 +2339,16 @@
           },
           "429": {
             "description": "RATE_LIMITED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "EMAIL_DELIVERY_FAILED",
             "content": {
               "application/json": {
                 "schema": {

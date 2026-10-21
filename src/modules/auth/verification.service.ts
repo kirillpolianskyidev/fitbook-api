@@ -86,7 +86,13 @@ export async function startVerification(user: UserDoc, purpose: VerificationPurp
     resendAvailableAt: new Date(now + RESEND_COOLDOWN_MS),
     expiresAt: new Date(now + VERIFICATION_TTL_MS),
   });
-  await sendCode(user, purpose, code);
+  try {
+    await sendCode(user, purpose, code);
+  } catch (error) {
+    // The code never reached the user: this verification must not be usable.
+    await EmailVerificationModel.updateOne({_id: id}, {invalidatedAt: new Date()});
+    throw error;
+  }
   return {verification: toVerificationDto(verification, user.email)};
 }
 
@@ -201,6 +207,15 @@ export async function resendCode(verificationId: string) {
       retryAfterSeconds: Math.ceil(RESEND_COOLDOWN_MS / 1000),
     });
   }
-  await sendCode(user, updated.purpose as VerificationPurpose, code);
+  try {
+    await sendCode(user, updated.purpose as VerificationPurpose, code);
+  } catch (error) {
+    // Not delivered: it does not count as a resend and the user may retry right away.
+    await EmailVerificationModel.updateOne(
+      {_id: updated._id},
+      {resendAvailableAt: new Date(), $inc: {resendCount: -1}},
+    );
+    throw error;
+  }
   return {verification: toVerificationDto(updated, user.email)};
 }

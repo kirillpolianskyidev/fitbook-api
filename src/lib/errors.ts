@@ -24,6 +24,7 @@ export const ERROR_STATUS = {
   RATE_LIMITED: 429,
   TOO_MANY_ATTEMPTS: 429,
   INTERNAL: 500,
+  EMAIL_DELIVERY_FAILED: 503,
 } as const;
 
 export type ErrorCode = keyof typeof ERROR_STATUS;
@@ -54,6 +55,7 @@ export const ERROR_MESSAGES: Record<ErrorCode, string> = {
   RATE_LIMITED: 'Too many requests. Try again later.',
   TOO_MANY_ATTEMPTS: 'Too many attempts. Request a new code.',
   INTERNAL: 'Something went wrong.',
+  EMAIL_DELIVERY_FAILED: "We couldn't send the email with your code. Try again in a few minutes.",
 };
 
 export class AppError extends Error {

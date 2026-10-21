@@ -244,11 +244,16 @@ export async function forgotPassword(email: string) {
     codeHash: sha256(code),
     expiresAt: new Date(Date.now() + RESET_CODE_TTL_MIN * 60_000),
   });
-  await sendMail({
-    to: user.email,
-    subject: 'Your FitBook password reset code',
-    text: `Hi ${user.firstName},\n\nYour password reset code is ${code}. It is valid for ${RESET_CODE_TTL_MIN} minutes.\n\nIf you did not request it, ignore this email.\n\nFitBook`,
-  });
+  try {
+    await sendMail({
+      to: user.email,
+      subject: 'Your FitBook password reset code',
+      text: `Hi ${user.firstName},\n\nYour password reset code is ${code}. It is valid for ${RESET_CODE_TTL_MIN} minutes.\n\nIf you did not request it, ignore this email.\n\nFitBook`,
+    });
+  } catch (error) {
+    // Always 204: an error here would reveal that the account exists. The failure is logged by the mailer.
+    if (!(error instanceof AppError && error.code === 'EMAIL_DELIVERY_FAILED')) throw error;
+  }
 }
 
 export async function verifyResetCode(email: string, code: string) {

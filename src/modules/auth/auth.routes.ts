@@ -39,7 +39,7 @@ route({
   middleware: [authRateLimit, emailSendRateLimit],
   body: RegisterBody,
   response: VerificationResultSchema,
-  errors: ['EMAIL_TAKEN', 'RATE_LIMITED'],
+  errors: ['EMAIL_TAKEN', 'RATE_LIMITED', 'EMAIL_DELIVERY_FAILED'],
   handler: ({body}) => auth.register(body),
 });
 
@@ -55,7 +55,7 @@ route({
   middleware: [authRateLimit, emailSendRateLimit],
   body: LoginBody,
   response: VerificationResultSchema,
-  errors: ['INVALID_CREDENTIALS', 'RATE_LIMITED'],
+  errors: ['INVALID_CREDENTIALS', 'RATE_LIMITED', 'EMAIL_DELIVERY_FAILED'],
   handler: ({body}) => auth.login(body),
 });
 
@@ -97,7 +97,7 @@ route({
   middleware: [verificationIpRateLimit, verificationRateLimit],
   body: ResendBody,
   response: VerificationResultSchema,
-  errors: ['VERIFICATION_CODE_EXPIRED', 'NOT_FOUND', 'RATE_LIMITED'],
+  errors: ['VERIFICATION_CODE_EXPIRED', 'NOT_FOUND', 'RATE_LIMITED', 'EMAIL_DELIVERY_FAILED'],
   handler: ({body}) => auth.resendVerification(body.verificationId),
 });
 

@@ -3,7 +3,7 @@ import {afterEach, beforeEach, describe, expect, it, vi} from 'vitest';
 
 import {env} from '../src/config/env.js';
 import {runMigrations} from '../src/db/migrations.js';
-import {outbox} from '../src/lib/mailer.js';
+import {mailTransport, outbox} from '../src/lib/mailer.js';
 import {EmailVerificationModel} from '../src/models/emailVerification.js';
 import {UserModel} from '../src/models/user.js';
 import {socialVerifiers} from '../src/modules/auth/social.js';
@@ -17,6 +17,7 @@ afterEach(() => {
   vi.restoreAllMocks();
   env.AUTH_DEV_FIXED_CODE = undefined;
   env.NODE_ENV = 'test';
+  env.SMTP_USER = '';
 });
 
 const v1 = '/api/v1';
@@ -475,5 +476,77 @@ describe('migration', () => {
     await register(email);
     await runMigrations();
     expect((await UserModel.findOne({email}))!.emailVerifiedAt).toBeNull();
+  });
+});
+
+describe('email delivery failures', () => {
+  /** A real email service is configured, but it cannot be reached (e.g. a VPN blocks the SMTP port). */
+  function smtpDown() {
+    env.SMTP_USER = 'login@smtp-brevo.com';
+    return vi.spyOn(mailTransport, 'deliver').mockRejectedValue(new Error('Connection timeout'));
+  }
+  const expectDeliveryFailed = (res: {
+    status: number;
+    body: {error: {code: string; message: string}};
+  }) => {
+    expect(res.status).toBe(503);
+    expect(res.body.error).toEqual({
+      code: 'EMAIL_DELIVERY_FAILED',
+      message: "We couldn't send the email with your code. Try again in a few minutes.",
+    });
+  };
+
+  it('register: 503, no usable verification, retry works once email is back', async () => {
+    const email = newEmail();
+    const deliver = smtpDown();
+    expectDeliveryFailed(await register(email));
+    expect(await EmailVerificationModel.countDocuments({invalidatedAt: null})).toBe(0);
+    expect((await UserModel.findOne({email}))!.emailVerifiedAt).toBeNull();
+
+    deliver.mockRestore();
+    const retry = await register(email);
+    expect(retry.status).toBe(201);
+    expect((await verify(retry.body.verification.id, lastCode(email))).status).toBe(200);
+  });
+
+  it('login: 503 and the undelivered verification cannot be used', async () => {
+    const {user} = await registerUser('client');
+    env.AUTH_DEV_FIXED_CODE = '000000';
+    smtpDown();
+    expectDeliveryFailed(
+      await api().post(`${v1}/auth/login`).send({email: user.email, password: PASSWORD}),
+    );
+    const pending = await EmailVerificationModel.findOne({invalidatedAt: null, consumedAt: null});
+    expect(pending).toBeNull();
+  });
+
+  it('resend: 503, does not count as a resend and can be retried immediately', async () => {
+    const email = newEmail();
+    const {body} = await register(email);
+    const id = body.verification.id as string;
+    await allowResend(id);
+    const deliver = smtpDown();
+    expectDeliveryFailed(await resend(id));
+    const stored = await EmailVerificationModel.findById(id);
+    expect(stored!.resendCount).toBe(0);
+    expect(stored!.resendAvailableAt.getTime()).toBeLessThanOrEqual(Date.now());
+
+    deliver.mockRestore();
+    const retry = await resend(id);
+    expect(retry.status).toBe(200);
+    expect((await verify(id, lastCode(email))).status).toBe(200);
+  });
+
+  it('forgot password stays 204 (no account enumeration)', async () => {
+    const {user} = await registerUser('client');
+    smtpDown();
+    const res = await api().post(`${v1}/auth/password/forgot`).send({email: user.email});
+    expect(res.status).toBe(204);
+  });
+
+  it('local development without SMTP credentials falls back to the log', async () => {
+    vi.spyOn(mailTransport, 'deliver').mockRejectedValue(new Error('connect ECONNREFUSED'));
+    const res = await register(newEmail());
+    expect(res.status).toBe(201);
   });
 });

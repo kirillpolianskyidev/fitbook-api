@@ -513,31 +513,32 @@ createdAt, updatedAt }`
 All errors: `{ "error": { "code": "SLOT_UNAVAILABLE", "message": "This time is no longer available.", "details": {} } }`.
 Validation errors list fields: `details: { fields: { email: "Invalid email" } }`.
 
-| HTTP | Code                                    | When                                                                                                    |
-| ---- | --------------------------------------- | ------------------------------------------------------------------------------------------------------- |
-| 400  | VALIDATION_ERROR                        | zod validation failed                                                                                   |
-| 400  | RESET_CODE_INVALID / RESET_CODE_EXPIRED | password reset                                                                                          |
-| 400  | VERIFICATION_CODE_INVALID               | wrong email code in `/auth/verify` (`details.attemptsLeft`)                                             |
-| 400  | VERIFICATION_CODE_EXPIRED               | email code or verification no longer valid (used, expired, replaced, resend limit)                      |
-| 401  | UNAUTHORIZED                            | no / invalid token                                                                                      |
-| 401  | TOKEN_EXPIRED                           | access token expired (client should refresh)                                                            |
-| 401  | INVALID_CREDENTIALS                     | wrong email or password                                                                                 |
-| 401  | SOCIAL_TOKEN_INVALID                    | Google / Apple token rejected                                                                           |
-| 403  | FORBIDDEN                               | wrong role or not a participant                                                                         |
-| 403  | ONBOARDING_REQUIRED                     | social account without role / homeArea                                                                  |
-| 404  | NOT_FOUND                               | resource missing or not visible                                                                         |
-| 409  | EMAIL_TAKEN                             | register                                                                                                |
-| 409  | SLOT_UNAVAILABLE                        | time already taken / not in availability                                                                |
-| 409  | SESSION_FULL                            | group capacity reached                                                                                  |
-| 409  | ALREADY_BOOKED                          | client already in this session                                                                          |
-| 409  | TRIAL_ALREADY_USED                      | second trial (account or email)                                                                         |
-| 409  | CANCELLATION_WINDOW_PASSED              | too late to cancel (`details.freeCancelHours`, `details.deadline`)                                      |
-| 409  | BOOKING_NOT_PAYABLE                     | not pending or expired                                                                                  |
-| 422  | TRIAL_NOT_ALLOWED                       | trial requested for a group session                                                                     |
-| 422  | PROFILE_INCOMPLETE                      | publishing an incomplete coach profile (`details.missing`)                                              |
-| 422  | SESSION_TYPE_INACTIVE                   | booking an inactive type                                                                                |
-| 429  | RATE_LIMITED / TOO_MANY_ATTEMPTS        | limits (`RATE_LIMITED` on resend has `details.retryAfterSeconds`; 5 wrong codes -> `TOO_MANY_ATTEMPTS`) |
-| 500  | INTERNAL                                | unexpected (no stack traces in responses)                                                               |
+| HTTP | Code                                    | When                                                                                                                |
+| ---- | --------------------------------------- | ------------------------------------------------------------------------------------------------------------------- |
+| 400  | VALIDATION_ERROR                        | zod validation failed                                                                                               |
+| 400  | RESET_CODE_INVALID / RESET_CODE_EXPIRED | password reset                                                                                                      |
+| 400  | VERIFICATION_CODE_INVALID               | wrong email code in `/auth/verify` (`details.attemptsLeft`)                                                         |
+| 400  | VERIFICATION_CODE_EXPIRED               | email code or verification no longer valid (used, expired, replaced, resend limit)                                  |
+| 401  | UNAUTHORIZED                            | no / invalid token                                                                                                  |
+| 401  | TOKEN_EXPIRED                           | access token expired (client should refresh)                                                                        |
+| 401  | INVALID_CREDENTIALS                     | wrong email or password                                                                                             |
+| 401  | SOCIAL_TOKEN_INVALID                    | Google / Apple token rejected                                                                                       |
+| 403  | FORBIDDEN                               | wrong role or not a participant                                                                                     |
+| 403  | ONBOARDING_REQUIRED                     | social account without role / homeArea                                                                              |
+| 404  | NOT_FOUND                               | resource missing or not visible                                                                                     |
+| 409  | EMAIL_TAKEN                             | register                                                                                                            |
+| 409  | SLOT_UNAVAILABLE                        | time already taken / not in availability                                                                            |
+| 409  | SESSION_FULL                            | group capacity reached                                                                                              |
+| 409  | ALREADY_BOOKED                          | client already in this session                                                                                      |
+| 409  | TRIAL_ALREADY_USED                      | second trial (account or email)                                                                                     |
+| 409  | CANCELLATION_WINDOW_PASSED              | too late to cancel (`details.freeCancelHours`, `details.deadline`)                                                  |
+| 409  | BOOKING_NOT_PAYABLE                     | not pending or expired                                                                                              |
+| 422  | TRIAL_NOT_ALLOWED                       | trial requested for a group session                                                                                 |
+| 422  | PROFILE_INCOMPLETE                      | publishing an incomplete coach profile (`details.missing`)                                                          |
+| 422  | SESSION_TYPE_INACTIVE                   | booking an inactive type                                                                                            |
+| 429  | RATE_LIMITED / TOO_MANY_ATTEMPTS        | limits (`RATE_LIMITED` on resend has `details.retryAfterSeconds`; 5 wrong codes -> `TOO_MANY_ATTEMPTS`)             |
+| 503  | EMAIL_DELIVERY_FAILED                   | register / login / verify/resend: the email with the code could not be sent (the verification is not usable; retry) |
+| 500  | INTERNAL                                | unexpected (no stack traces in responses)                                                                           |
 
 `message` is a human-readable English text; the mobile app maps `code` to its own localized strings.
 
