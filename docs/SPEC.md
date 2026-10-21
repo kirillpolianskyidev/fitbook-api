@@ -133,6 +133,7 @@ also registered for OpenAPI). Business rules live in services, never in controll
 | firstName, lastName  | string                                                                       |                                                                                                       |
 | avatarUrl            | string?                                                                      |                                                                                                       |
 | homeArea             | HomeArea \| null                                                             | required for completed accounts                                                                       |
+| emailVerifiedAt      | Date \| null                                                                 | null until the email is confirmed (code, Google / Apple, password reset)                              |
 | authProviders        | `{ provider: 'password' \| 'google' \| 'apple', providerUserId?: string }[]` |                                                                                                       |
 | onboardingCompleted  | boolean                                                                      | false for new social accounts until role + homeArea are set                                           |
 | trialUsed            | boolean                                                                      | clients only                                                                                          |
@@ -141,6 +142,14 @@ also registered for OpenAPI). Business rules live in services, never in controll
 
 Indexes: `email` unique, `emailKey`, `authProviders.provider + authProviders.providerUserId` unique sparse,
 `role + homeArea.state + homeArea.city`.
+
+### emailVerifications
+
+`{ _id (random 128-bit hex, returned as verification id), userId, purpose: 'signup' | 'login', codeHash
+(HMAC-SHA256 of the 6 digits, never the plain code), codeExpiresAt (now + 10 min, renewed with every code), attempts
+(wrong attempts for the current code, max 5), resendAvailableAt (now + 60 s after every send), resendCount (max 5),
+expiresAt (createdAt + 30 min), consumedAt, invalidatedAt }`. A new verification invalidates the user's pending
+ones. TTL index removes records one day after `expiresAt`.
 
 ### coachProfiles (1:1 with coach user)
 
@@ -262,17 +271,26 @@ unread: { coach: number, client: number }, updatedAt }`
 
 - Email registration requires: email, password (min 8, at least 1 letter and 1 digit), firstName, lastName,
   role, homeArea `{ city, state, timezone }` (country is always `US`).
-- Google / Apple sign-in: verify the token; find the user by provider id, then by email (link the provider);
-  otherwise create a user with `onboardingCompleted: false`. The client then calls `POST /me/onboarding`
+- Email codes: register and every email + password login email a 6-digit code and return a `Verification`; tokens are
+  issued only by `POST /auth/verify`. Register with the email of an unverified account overwrites that account;
+  with a verified one -> `EMAIL_TAKEN`. Login of an unverified account gets `purpose: 'signup'`. Codes come from a
+  CSPRNG, are stored as HMAC, compared in constant time and are single use. Refresh never asks for a code.
+  `AUTH_DEV_FIXED_CODE` (6 digits) is accepted as a valid code outside production; non-production servers also log
+  the code.
+- Google / Apple sign-in (no email code): verify the token; find the user by provider id, then by email (link the
+  provider; an unverified password account with that email is discarded instead, to prevent account pre-hijacking);
+  otherwise create a user with `onboardingCompleted: false`. Sets `emailVerifiedAt` when the provider verified it. The client then calls `POST /me/onboarding`
   `{ role, homeArea, firstName?, lastName? }`.
-- A new coach gets an empty coachProfile (`isPublished: false`), empty availability and default
+- A new coach gets (once the email is verified) an empty coachProfile (`isPublished: false`), empty availability and default
   `cancellationPolicy.freeCancelHours = 24`. The coach becomes visible after filling headline, bio,
   specializations, experienceYears, at least one active session type and weekly availability, then publishing.
 
 ### Password reset
 
 `forgot` always returns 204 (no user enumeration), emails a 6-digit code valid 15 minutes. `verify-code` returns a
-short-lived `resetToken` (JWT, 10 min). `reset` sets the new password and revokes all refresh tokens.
+short-lived `resetToken` (JWT, 10 min). `reset` sets the new password, confirms the email, revokes all refresh
+tokens and pending email codes, and returns a new session (`AuthResult`). `PATCH /me/password` revokes all refresh
+tokens and returns a new `Tokens` pair for the caller.
 Max 5 wrong codes -> `TOO_MANY_ATTEMPTS`.
 
 ### Slots for individual bookings
@@ -365,7 +383,9 @@ notes, url? }` (title like "Strength 1:1 with Alex Carter"; notes include short 
 
 ### Rate limits
 
-`/auth/login`, `/auth/register`, `/auth/password/*`: 10 requests / 15 min per IP + email. Everything else 300 / 15 min.
+`/auth/login`, `/auth/register`, `/auth/password/*`: 10 requests / 15 min per IP + email; `/auth/login` and
+`/auth/register` also 20 / hour per email from any IP. `/auth/verify` and `/auth/verify/resend`: 20 / 15 min per
+IP + verification id and 60 / 15 min per IP. Everything else 300 / 15 min.
 
 ---
 
@@ -377,17 +397,20 @@ Legend: 🔓 public, 👤 any authenticated, 🏋️ coach, 🙋 client.
 
 | Method | Path                       | Who | Body / query                                               | Response                                                         |
 | ------ | -------------------------- | --- | ---------------------------------------------------------- | ---------------------------------------------------------------- |
-| POST   | /auth/register             | 🔓  | `{ email, password, firstName, lastName, role, homeArea }` | 201 `AuthResult`                                                 |
-| POST   | /auth/login                | 🔓  | `{ email, password }`                                      | 200 `AuthResult`                                                 |
+| POST   | /auth/register             | 🔓  | `{ email, password, firstName, lastName, role, homeArea }` | 201 `{ verification: Verification }`                             |
+| POST   | /auth/login                | 🔓  | `{ email, password }`                                      | 200 `{ verification: Verification }`                             |
+| POST   | /auth/verify               | 🔓  | `{ verificationId, code }`                                 | 200 `AuthResult`                                                 |
+| POST   | /auth/verify/resend        | 🔓  | `{ verificationId }`                                       | 200 `{ verification: Verification }` (same id, new dates)        |
 | POST   | /auth/google               | 🔓  | `{ idToken }`                                              | 200 `AuthResult` (`user.onboardingCompleted` may be false)       |
 | POST   | /auth/apple                | 🔓  | `{ identityToken, firstName?, lastName? }`                 | 200 `AuthResult`                                                 |
 | POST   | /auth/refresh              | 🔓  | `{ refreshToken }`                                         | 200 `Tokens` (rotates; reuse of an old token revokes the family) |
 | POST   | /auth/logout               | 👤  | `{ refreshToken }`                                         | 204                                                              |
 | POST   | /auth/password/forgot      | 🔓  | `{ email }`                                                | 204                                                              |
 | POST   | /auth/password/verify-code | 🔓  | `{ email, code }`                                          | 200 `{ resetToken }`                                             |
-| POST   | /auth/password/reset       | 🔓  | `{ resetToken, newPassword }`                              | 204                                                              |
+| POST   | /auth/password/reset       | 🔓  | `{ resetToken, newPassword }`                              | 200 `AuthResult`                                                 |
 
-`AuthResult = { user: User, tokens: Tokens }`, `Tokens = { accessToken, refreshToken, accessTokenExpiresAt }`.
+`AuthResult = { user: User, tokens: Tokens }`, `Tokens = { accessToken, refreshToken, accessTokenExpiresAt }`,
+`Verification = { id, purpose: 'signup' | 'login', email, codeLength: 6, expiresAt, resendAvailableAt }`.
 
 ### Me
 
@@ -396,7 +419,7 @@ Legend: 🔓 public, 👤 any authenticated, 🏋️ coach, 🙋 client.
 | GET    | /me            | 👤  |                                                                             | `User` (+ `coachProfile` summary for coaches)          |
 | PATCH  | /me            | 👤  | `{ firstName?, lastName?, avatarUrl?, homeArea?, settings?: { theme } }`    | `User`                                                 |
 | POST   | /me/onboarding | 👤  | `{ role, homeArea, firstName?, lastName? }`                                 | `User`                                                 |
-| PATCH  | /me/password   | 👤  | `{ currentPassword?, newPassword }` (current required if a password exists) | 204                                                    |
+| PATCH  | /me/password   | 👤  | `{ currentPassword?, newPassword }` (current required if a password exists) | 200 `Tokens` (other sessions signed out)               |
 | GET    | /me/trial      | 🙋  |                                                                             | `{ eligible: boolean, reason?: 'TRIAL_ALREADY_USED' }` |
 
 `User = { id, email, role, firstName, lastName, avatarUrl, homeArea, onboardingCompleted, trialUsed, settings,
@@ -490,29 +513,31 @@ createdAt, updatedAt }`
 All errors: `{ "error": { "code": "SLOT_UNAVAILABLE", "message": "This time is no longer available.", "details": {} } }`.
 Validation errors list fields: `details: { fields: { email: "Invalid email" } }`.
 
-| HTTP | Code                                    | When                                                               |
-| ---- | --------------------------------------- | ------------------------------------------------------------------ |
-| 400  | VALIDATION_ERROR                        | zod validation failed                                              |
-| 400  | RESET_CODE_INVALID / RESET_CODE_EXPIRED | password reset                                                     |
-| 401  | UNAUTHORIZED                            | no / invalid token                                                 |
-| 401  | TOKEN_EXPIRED                           | access token expired (client should refresh)                       |
-| 401  | INVALID_CREDENTIALS                     | wrong email or password                                            |
-| 401  | SOCIAL_TOKEN_INVALID                    | Google / Apple token rejected                                      |
-| 403  | FORBIDDEN                               | wrong role or not a participant                                    |
-| 403  | ONBOARDING_REQUIRED                     | social account without role / homeArea                             |
-| 404  | NOT_FOUND                               | resource missing or not visible                                    |
-| 409  | EMAIL_TAKEN                             | register                                                           |
-| 409  | SLOT_UNAVAILABLE                        | time already taken / not in availability                           |
-| 409  | SESSION_FULL                            | group capacity reached                                             |
-| 409  | ALREADY_BOOKED                          | client already in this session                                     |
-| 409  | TRIAL_ALREADY_USED                      | second trial (account or email)                                    |
-| 409  | CANCELLATION_WINDOW_PASSED              | too late to cancel (`details.freeCancelHours`, `details.deadline`) |
-| 409  | BOOKING_NOT_PAYABLE                     | not pending or expired                                             |
-| 422  | TRIAL_NOT_ALLOWED                       | trial requested for a group session                                |
-| 422  | PROFILE_INCOMPLETE                      | publishing an incomplete coach profile (`details.missing`)         |
-| 422  | SESSION_TYPE_INACTIVE                   | booking an inactive type                                           |
-| 429  | RATE_LIMITED / TOO_MANY_ATTEMPTS        | limits                                                             |
-| 500  | INTERNAL                                | unexpected (no stack traces in responses)                          |
+| HTTP | Code                                    | When                                                                                                    |
+| ---- | --------------------------------------- | ------------------------------------------------------------------------------------------------------- |
+| 400  | VALIDATION_ERROR                        | zod validation failed                                                                                   |
+| 400  | RESET_CODE_INVALID / RESET_CODE_EXPIRED | password reset                                                                                          |
+| 400  | VERIFICATION_CODE_INVALID               | wrong email code in `/auth/verify` (`details.attemptsLeft`)                                             |
+| 400  | VERIFICATION_CODE_EXPIRED               | email code or verification no longer valid (used, expired, replaced, resend limit)                      |
+| 401  | UNAUTHORIZED                            | no / invalid token                                                                                      |
+| 401  | TOKEN_EXPIRED                           | access token expired (client should refresh)                                                            |
+| 401  | INVALID_CREDENTIALS                     | wrong email or password                                                                                 |
+| 401  | SOCIAL_TOKEN_INVALID                    | Google / Apple token rejected                                                                           |
+| 403  | FORBIDDEN                               | wrong role or not a participant                                                                         |
+| 403  | ONBOARDING_REQUIRED                     | social account without role / homeArea                                                                  |
+| 404  | NOT_FOUND                               | resource missing or not visible                                                                         |
+| 409  | EMAIL_TAKEN                             | register                                                                                                |
+| 409  | SLOT_UNAVAILABLE                        | time already taken / not in availability                                                                |
+| 409  | SESSION_FULL                            | group capacity reached                                                                                  |
+| 409  | ALREADY_BOOKED                          | client already in this session                                                                          |
+| 409  | TRIAL_ALREADY_USED                      | second trial (account or email)                                                                         |
+| 409  | CANCELLATION_WINDOW_PASSED              | too late to cancel (`details.freeCancelHours`, `details.deadline`)                                      |
+| 409  | BOOKING_NOT_PAYABLE                     | not pending or expired                                                                                  |
+| 422  | TRIAL_NOT_ALLOWED                       | trial requested for a group session                                                                     |
+| 422  | PROFILE_INCOMPLETE                      | publishing an incomplete coach profile (`details.missing`)                                              |
+| 422  | SESSION_TYPE_INACTIVE                   | booking an inactive type                                                                                |
+| 429  | RATE_LIMITED / TOO_MANY_ATTEMPTS        | limits (`RATE_LIMITED` on resend has `details.retryAfterSeconds`; 5 wrong codes -> `TOO_MANY_ATTEMPTS`) |
+| 500  | INTERNAL                                | unexpected (no stack traces in responses)                                                               |
 
 `message` is a human-readable English text; the mobile app maps `code` to its own localized strings.
 

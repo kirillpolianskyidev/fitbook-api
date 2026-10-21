@@ -19,6 +19,7 @@
     "test:watch": "vitest",
     "seed": "tsx src/seed/run.ts",
     "seed:reset": "tsx src/seed/run.ts --reset",
+    "migrate": "tsx src/scripts/migrate.ts",
     "openapi": "tsx src/scripts/writeOpenApi.ts",
     "validate": "npm run typecheck && npm run lint && npm run format:check && npm test",
     "smoke": "tsx src/scripts/smoke.ts",

@@ -70,7 +70,10 @@ const UI_HINTS: Partial<Record<ErrorCode, string>> = {
   TRIAL_ALREADY_USED: 'Hide the free-trial option; continue with a paid booking.',
   CANCELLATION_WINDOW_PASSED: 'Explain the coach policy using `details.freeCancelHours`.',
   BOOKING_NOT_PAYABLE: 'Reload the booking; it was paid or released.',
-  RATE_LIMITED: 'Ask to try again later.',
+  RATE_LIMITED: 'Ask to try again later (`details.retryAfterSeconds` when present).',
+  VERIFICATION_CODE_INVALID: 'Show under the code cells, clear them; `details.attemptsLeft`.',
+  VERIFICATION_CODE_EXPIRED: 'Show "Back to sign in" (or "Resend code" if still allowed).',
+  TOO_MANY_ATTEMPTS: 'Disable input; offer "Resend code".',
 };
 
 const errorTable = (Object.keys(ERROR_STATUS) as ErrorCode[])
@@ -107,25 +110,46 @@ Find the Mac's LAN IP with \`ipconfig getifaddr en0\`. Debug builds of React Nat
 
 ## 3. Authentication
 
-1. \`POST /auth/register\` (role \`client\` or \`coach\`, plus \`homeArea\`: city, 2-letter state, IANA time zone) or
-   \`POST /auth/login\` returns \`{ user, tokens }\`.
-2. Send \`Authorization: Bearer <accessToken>\` on every request (access token lives 15 minutes).
-3. On \`401 TOKEN_EXPIRED\` call \`POST /auth/refresh\` with the refresh token **once**, store **both** new tokens
+Email + password sign-in takes two steps: the password, then a 6-digit code sent by email. Tokens are issued only
+after the code is verified (on sign up the code also confirms the email).
+
+1. \`POST /auth/register\` (role \`client\` or \`coach\`, plus \`homeArea\`: city, 2-letter state, IANA time zone)
+   -> \`201 { verification }\`, or \`POST /auth/login\` -> \`200 { verification }\`. No tokens yet.
+   \`verification = { id, purpose: "signup" | "login", email, codeLength: 6, expiresAt, resendAvailableAt }\`.
+   Login of an account whose email is not confirmed yet returns \`purpose: "signup"\`.
+   Registering again with an unconfirmed email is allowed (fix a typo and resubmit): the account is overwritten.
+2. Code screen: when 6 digits are entered call \`POST /auth/verify { verificationId, code }\` -> \`{ user, tokens }\`
+   (same shape as the old login response). Errors: \`VERIFICATION_CODE_INVALID\` (\`details.attemptsLeft\`),
+   \`TOO_MANY_ATTEMPTS\` (5 wrong codes, a resend gives a new code), \`VERIFICATION_CODE_EXPIRED\` / \`NOT_FOUND\`
+   (go back to sign in / sign up). The code lives 10 minutes (\`expiresAt\`), the whole verification 30 minutes.
+3. "Resend code" is enabled from \`resendAvailableAt\` (60 s after each send): \`POST /auth/verify/resend
+   { verificationId }\` -> \`{ verification }\` (same id, new dates; the previous code stops working). Too early ->
+   \`429 RATE_LIMITED\` with \`details.retryAfterSeconds\`; after 5 resends -> \`VERIFICATION_CODE_EXPIRED\`.
+   Local development: the email arrives in Mailpit (http://localhost:8025) and the code is printed in the server log;
+   with \`AUTH_DEV_FIXED_CODE=000000\` in \`.env\` the code \`000000\` is accepted too (never in production).
+4. Send \`Authorization: Bearer <accessToken>\` on every request (access token lives 15 minutes).
+5. On \`401 TOKEN_EXPIRED\` call \`POST /auth/refresh\` with the refresh token **once**, store **both** new tokens
    (refresh tokens rotate; an old one is rejected and revokes the session), then retry. If refresh fails -> sign out.
-4. \`POST /auth/logout\` with the refresh token on sign out.
-5. Google / Apple: send the provider token to \`/auth/google\` (\`idToken\`) or \`/auth/apple\` (\`identityToken\`,
-   plus \`firstName\`/\`lastName\` from the first Apple sign-in). If \`user.onboardingCompleted\` is false, show
-   onboarding and call \`POST /me/onboarding\` with \`role\` and \`homeArea\`; until then other endpoints return
-   \`403 ONBOARDING_REQUIRED\`.
-6. Forgot password: \`/auth/password/forgot\` (always 204) -> 6-digit code by email (local: Mailpit
-   http://localhost:8025 or the server log) -> \`/auth/password/verify-code\` -> \`resetToken\` ->
-   \`/auth/password/reset\`.
+   Refresh never asks for a code.
+6. \`POST /auth/logout\` with the refresh token on sign out.
+7. Google / Apple (no email code): send the provider token to \`/auth/google\` (\`idToken\`) or \`/auth/apple\`
+   (\`identityToken\`, plus \`firstName\`/\`lastName\` from the first Apple sign-in) -> \`{ user, tokens }\`. If
+   \`user.onboardingCompleted\` is false, show onboarding and call \`POST /me/onboarding\` with \`role\` and
+   \`homeArea\`; until then other endpoints return \`403 ONBOARDING_REQUIRED\`.
+8. Forgot password: \`/auth/password/forgot\` (always 204) -> 6-digit code by email -> \`/auth/password/verify-code\`
+   -> \`resetToken\` -> \`/auth/password/reset\` -> \`{ user, tokens }\`: signed in, no extra code (all other sessions
+   are signed out).
+9. Change password: \`PATCH /me/password\` -> \`{ tokens }\`: store the new pair; this device stays signed in, other
+   devices are signed out.
 
 The role decides the app: **client** -> coach catalog, booking, my calendar, chat, settings; **coach** -> work
 calendar (schedule), sessions with participants and notes, training types and prices, availability, cancellation
 policy, chat, settings. Theme preference is stored in \`user.settings.theme\` (\`light | dark | system\`).
 
-${example('authResult', 'Example: login response')}
+${example('verification', 'Example: POST /auth/login (or /auth/register) response')}
+${example('authResult', 'Example: POST /auth/verify response')}
+${example('errorCodeInvalid', 'Example: wrong code')}
+${example('errorResendTooEarly', 'Example: resend before resendAvailableAt')}
 
 ## 4. Booking flows (client)
 
@@ -225,10 +249,12 @@ ${example('coachClients', 'GET /coach/clients')}
 ${example('errorSlotUnavailable', 'Error: SLOT_UNAVAILABLE')}
 ${example('errorTrialUsed', 'Error: TRIAL_ALREADY_USED')}
 ${example('errorForbidden', 'Error: FORBIDDEN')}
+${example('errorCodeExpired', 'Error: VERIFICATION_CODE_EXPIRED')}
 
 ## 11. Demo accounts (seeded)
 
-Password for all: \`Password123!\`
+Password for all: \`Password123!\`. Every password sign-in asks for an emailed code (Mailpit / server log, or
+\`000000\` with \`AUTH_DEV_FIXED_CODE=000000\`). The demo accounts already have a confirmed email.
 
 | Email | Who |
 | --- | --- |

@@ -17,7 +17,7 @@ Interactive docs while the server runs: http://localhost:3000/docs.
 - Node.js 22+ (`node -v`)
 - MongoDB running locally on `127.0.0.1:27017` (`mongosh --quiet --eval "db.version()"`)
   - Homebrew: `brew services start mongodb-community`
-- Optional: Docker for Mailpit (to see password-reset emails)
+- Optional: Docker for Mailpit (to see sign-in / sign-up codes and password-reset emails)
 
 ## Setup
 
@@ -31,17 +31,29 @@ npm run seed:reset     # creates the "fitbook" database with demo data
 npm run dev            # http://localhost:3000  (docs: /docs)
 ```
 
-Optional Mailpit (password-reset emails appear at http://localhost:8025):
+Optional Mailpit (code emails appear at http://localhost:8025):
 
 ```bash
 docker run -d --name mailpit -p 8025:8025 -p 1025:1025 axllent/mailpit
 ```
 
-Without Mailpit the email (with the code) is printed in the server log.
+Without Mailpit the email (with the code) is printed in the server log. Outside production every email code is
+also logged.
+
+### Email codes (sign up and every password sign-in)
+
+`POST /auth/register` and `POST /auth/login` return `{ verification }` and email a 6-digit code; tokens come from
+`POST /auth/verify { verificationId, code }`. For demo / e2e runs set `AUTH_DEV_FIXED_CODE=000000` in `.env`: the code
+`000000` is then accepted as well (ignored when `NODE_ENV=production`). Google / Apple sign-in, refresh, password
+reset and password change do not ask for a code.
+
+Existing users count as verified: the server runs an idempotent migration on start that sets `emailVerifiedAt`
+for every user created before this feature (also available as `npm run migrate`).
 
 ## Demo accounts
 
-Password for all: `Password123!`
+Password for all: `Password123!`. Every password sign-in also asks for the emailed code (or `000000` with
+`AUTH_DEV_FIXED_CODE=000000`).
 
 | Email                   | Who                                                                                                    |
 | ----------------------- | ------------------------------------------------------------------------------------------------------ |
@@ -63,6 +75,7 @@ fresh-looking demo: `npm run seed:reset`.
 | `npm test`                            | Integration tests (Vitest + supertest) on the `fitbook_test` database                        |
 | `npm run validate`                    | typecheck + lint + format check + tests                                                      |
 | `npm run seed` / `npm run seed:reset` | Seed an empty database / drop and recreate the demo data                                     |
+| `npm run migrate`                     | Run data migrations (also run automatically on server start)                                 |
 | `npm run smoke`                       | End-to-end checks against the seeded database (creates a few records - reseed afterwards)    |
 | `npm run openapi`                     | Write `docs/openapi.json`                                                                    |
 | `npm run contract`                    | Rebuild `docs/API_CONTRACT.md` (run `npm run smoke -- --examples` first to refresh examples) |
@@ -109,6 +122,10 @@ the OpenAPI document, so the docs cannot drift from the code.
 - **Time zones**: availability is local to the coach (`homeArea.timezone`); slots are computed with Luxon and tested
   across the DST change in Chicago. All API dates are UTC.
 - **Refresh tokens rotate**; reusing an old one revokes the whole session family.
+- **Email codes**: 6 digits from a CSPRNG, stored as HMAC-SHA256 bound to the verification id, constant-time compare,
+  single use (atomic), 5 attempts per code, 5 resends, 60 s resend cooldown, 10 min per code, 30 min per
+  verification. Attempt counting is atomic, so parallel guesses cannot exceed the limit. An unverified password
+  account is not "taken" and is discarded when the real owner signs in with Google / Apple.
 - Deviations from SPEC.md: Vitest instead of Jest (same API, native ESM/TypeScript); `bcryptjs` (pure JS, no
   native build); MongoDB URL uses `127.0.0.1` instead of `localhost` (on macOS `localhost` may resolve to IPv6,
   which MongoDB does not listen on by default); unpaid (`pending_payment`) bookings can be cancelled any time before

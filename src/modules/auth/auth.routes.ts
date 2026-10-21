@@ -1,5 +1,10 @@
 import {route} from '../../lib/route.js';
-import {authRateLimit} from '../../middleware/rateLimit.js';
+import {
+  authRateLimit,
+  emailSendRateLimit,
+  verificationIpRateLimit,
+  verificationRateLimit,
+} from '../../middleware/rateLimit.js';
 import {
   AppleBody,
   AuthResultSchema,
@@ -8,9 +13,12 @@ import {
   LoginBody,
   RefreshBody,
   RegisterBody,
+  ResendBody,
   ResetBody,
   ResetTokenSchema,
   TokensSchema,
+  VerificationResultSchema,
+  VerifyBody,
   VerifyCodeBody,
 } from './auth.schemas.js';
 import * as auth from './auth.service.js';
@@ -21,34 +29,84 @@ route({
   method: 'post',
   path: '/auth/register',
   tags,
-  summary: 'Register with email and password (role and home area required)',
+  summary:
+    'Register with email and password (role and home area required). Emails a 6-digit code; ' +
+    'tokens come from POST /auth/verify.',
+  description:
+    'An email of an unverified account is not taken: that account is overwritten with the new data and ' +
+    'its previous codes stop working.',
   auth: 'public',
-  middleware: [authRateLimit],
+  middleware: [authRateLimit, emailSendRateLimit],
   body: RegisterBody,
-  response: AuthResultSchema,
+  response: VerificationResultSchema,
   errors: ['EMAIL_TAKEN', 'RATE_LIMITED'],
-  handler: ({body, req}) => auth.register(body, req.get('user-agent')),
+  handler: ({body}) => auth.register(body),
 });
 
 route({
   method: 'post',
   path: '/auth/login',
   tags,
-  summary: 'Sign in with email and password',
+  summary:
+    'Check email and password and email a 6-digit code (purpose "login", or "signup" for an ' +
+    'unverified email). Tokens come from POST /auth/verify.',
   auth: 'public',
   status: 200,
-  middleware: [authRateLimit],
+  middleware: [authRateLimit, emailSendRateLimit],
   body: LoginBody,
-  response: AuthResultSchema,
+  response: VerificationResultSchema,
   errors: ['INVALID_CREDENTIALS', 'RATE_LIMITED'],
-  handler: ({body, req}) => auth.login(body, req.get('user-agent')),
+  handler: ({body}) => auth.login(body),
+});
+
+route({
+  method: 'post',
+  path: '/auth/verify',
+  tags,
+  summary: 'Check the emailed code and start a session',
+  description:
+    'Errors in order: NOT_FOUND (unknown id), VERIFICATION_CODE_EXPIRED (used, code older than 10 minutes ' +
+    'or verification older than 30 minutes), TOO_MANY_ATTEMPTS (5 wrong codes; a resend resets it), ' +
+    'VERIFICATION_CODE_INVALID (details.attemptsLeft). A signup verification also confirms the email.',
+  auth: 'public',
+  status: 200,
+  middleware: [verificationIpRateLimit, verificationRateLimit],
+  body: VerifyBody,
+  response: AuthResultSchema,
+  errors: [
+    'VERIFICATION_CODE_INVALID',
+    'VERIFICATION_CODE_EXPIRED',
+    'NOT_FOUND',
+    'TOO_MANY_ATTEMPTS',
+    'RATE_LIMITED',
+  ],
+  handler: ({body, req}) => auth.verify(body, req.get('user-agent')),
+});
+
+route({
+  method: 'post',
+  path: '/auth/verify/resend',
+  tags,
+  summary: 'Email a new code for the same verification (old code stops working, attempts reset)',
+  description:
+    'Allowed from resendAvailableAt (60 seconds after each send), at most 5 times. Too early -> ' +
+    'RATE_LIMITED with details.retryAfterSeconds. Used, expired or resend limit reached -> ' +
+    'VERIFICATION_CODE_EXPIRED (sign in / sign up again).',
+  auth: 'public',
+  status: 200,
+  middleware: [verificationIpRateLimit, verificationRateLimit],
+  body: ResendBody,
+  response: VerificationResultSchema,
+  errors: ['VERIFICATION_CODE_EXPIRED', 'NOT_FOUND', 'RATE_LIMITED'],
+  handler: ({body}) => auth.resendVerification(body.verificationId),
 });
 
 route({
   method: 'post',
   path: '/auth/google',
   tags,
-  summary: 'Sign in with a Google ID token. New accounts must complete POST /me/onboarding.',
+  summary:
+    'Sign in with a Google ID token (no email code). New accounts must complete POST /me/onboarding.',
   auth: 'public',
   status: 200,
   body: GoogleBody,
@@ -61,7 +119,8 @@ route({
   method: 'post',
   path: '/auth/apple',
   tags,
-  summary: 'Sign in with an Apple identity token. New accounts must complete POST /me/onboarding.',
+  summary:
+    'Sign in with an Apple identity token (no email code). New accounts must complete POST /me/onboarding.',
   auth: 'public',
   status: 200,
   body: AppleBody,
@@ -130,12 +189,15 @@ route({
   method: 'post',
   path: '/auth/password/reset',
   tags,
-  summary: 'Set a new password with the reset token (signs out all sessions)',
+  summary:
+    'Set a new password with the reset token: signs out all sessions, confirms the email and starts a new ' +
+    'session (no extra code)',
   auth: 'public',
-  status: 204,
+  status: 200,
+  middleware: [authRateLimit],
   body: ResetBody,
-  errors: ['RESET_CODE_EXPIRED'],
-  handler: async ({body}) => {
-    await auth.resetPassword(body.resetToken, body.newPassword);
-  },
+  response: AuthResultSchema,
+  errors: ['RESET_CODE_EXPIRED', 'RATE_LIMITED'],
+  handler: ({body, req}) =>
+    auth.resetPassword(body.resetToken, body.newPassword, req.get('user-agent')),
 });

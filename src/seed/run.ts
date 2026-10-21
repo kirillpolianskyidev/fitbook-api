@@ -100,6 +100,7 @@ async function createUser(
     avatarUrl: avatarUrl(data.avatar),
     homeArea: data.homeArea,
     authProviders: [{provider: 'password'}],
+    emailVerifiedAt: now,
     onboardingCompleted: true,
     settings: {theme: 'system'},
   });

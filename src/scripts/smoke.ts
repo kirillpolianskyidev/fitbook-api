@@ -5,6 +5,8 @@
  *   npm run smoke                 # run the checks
  *   npm run smoke -- --examples   # also write docs/examples.json (used to build API_CONTRACT.md)
  */
+import './smokeEnv.js';
+
 import {writeFile} from 'node:fs/promises';
 
 import {DateTime} from 'luxon';
@@ -57,18 +59,61 @@ async function main() {
 
   await step('health', () => api().get(`${v1}/health`), 200, 'health');
 
-  const login = await step(
-    'client login',
+  const clientLogin = await step(
+    'client login (step 1: password -> emailed code)',
     () =>
       api().post(`${v1}/auth/login`).send({email: 'client@fitbook.dev', password: DEMO_PASSWORD}),
     200,
+    'verification',
+  );
+  const clientVerificationId = (clientLogin.body.verification as {id: string}).id;
+  await step(
+    'resend too early',
+    () => api().post(`${v1}/auth/verify/resend`).send({verificationId: clientVerificationId}),
+    429,
+    'errorResendTooEarly',
+  );
+  await step(
+    'wrong code',
+    () =>
+      api().post(`${v1}/auth/verify`).send({verificationId: clientVerificationId, code: '999999'}),
+    400,
+    'errorCodeInvalid',
+  );
+  const login = await step(
+    'client login (step 2: code -> session)',
+    () =>
+      api()
+        .post(`${v1}/auth/verify`)
+        .send({verificationId: clientVerificationId, code: process.env.AUTH_DEV_FIXED_CODE}),
+    200,
     'authResult',
   );
+  await step(
+    'code is single use',
+    () =>
+      api()
+        .post(`${v1}/auth/verify`)
+        .send({verificationId: clientVerificationId, code: process.env.AUTH_DEV_FIXED_CODE}),
+    400,
+    'errorCodeExpired',
+  );
   const client = bearer((login.body.tokens as {accessToken: string}).accessToken);
-  const coachLogin = await step(
+  const coachVerification = await step(
     'coach login',
     () =>
       api().post(`${v1}/auth/login`).send({email: 'coach@fitbook.dev', password: DEMO_PASSWORD}),
+    200,
+  );
+  const coachLogin = await step(
+    'coach verify',
+    () =>
+      api()
+        .post(`${v1}/auth/verify`)
+        .send({
+          verificationId: (coachVerification.body.verification as {id: string}).id,
+          code: process.env.AUTH_DEV_FIXED_CODE,
+        }),
     200,
   );
   const coach = bearer((coachLogin.body.tokens as {accessToken: string}).accessToken);
