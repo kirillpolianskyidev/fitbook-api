@@ -50,6 +50,9 @@
                   "REVIEW_EDIT_WINDOW_PASSED",
                   "RESCHEDULE_WINDOW_PASSED",
                   "BOOKING_NOT_PAYABLE",
+                  "NO_CREDITS",
+                  "INSUFFICIENT_CREDITS",
+                  "PACKAGE_INACTIVE",
                   "TRIAL_NOT_ALLOWED",
                   "PROFILE_INCOMPLETE",
                   "SESSION_TYPE_INACTIVE",
@@ -700,6 +703,13 @@
             "items": {
               "$ref": "#/components/schemas/SessionType"
             }
+          },
+          "packages": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Package"
+            },
+            "description": "Active packages of the coach"
           }
         },
         "required": [
@@ -720,7 +730,8 @@
           "languages",
           "defaultLocation",
           "cancellationPolicy",
-          "sessionTypes"
+          "sessionTypes",
+          "packages"
         ]
       },
       "Certification": {
@@ -923,6 +934,59 @@
           "location",
           "description",
           "isActive"
+        ]
+      },
+      "Package": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "credits": {
+            "type": "integer"
+          },
+          "price": {
+            "$ref": "#/components/schemas/Money"
+          },
+          "validityDays": {
+            "type": "integer"
+          },
+          "isActive": {
+            "type": "boolean"
+          },
+          "pricePerCredit": {
+            "type": "object",
+            "properties": {
+              "amountCents": {
+                "type": "integer",
+                "minimum": 0,
+                "example": 4500
+              },
+              "currency": {
+                "type": "string",
+                "enum": [
+                  "USD"
+                ]
+              }
+            },
+            "required": [
+              "amountCents",
+              "currency"
+            ],
+            "description": "price / credits, rounded to the cent"
+          }
+        },
+        "required": [
+          "id",
+          "title",
+          "credits",
+          "price",
+          "validityDays",
+          "isActive",
+          "pricePerCredit"
         ]
       },
       "Slot": {
@@ -1557,14 +1621,23 @@
           "method": {
             "type": "string",
             "enum": [
-              "mock"
-            ]
+              "mock",
+              "credits"
+            ],
+            "description": "mock: (mock) card payment; credits: paid with 1 credit of a package"
           },
           "paidAt": {
             "type": [
               "string",
               "null"
             ]
+          },
+          "clientPackageId": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Purchase the credit came from (method = credits), otherwise null"
           },
           "refundedAt": {
             "type": [
@@ -1578,6 +1651,7 @@
           "status",
           "method",
           "paidAt",
+          "clientPackageId",
           "refundedAt"
         ]
       },
@@ -1623,6 +1697,11 @@
           "isTrial": {
             "type": "boolean",
             "default": false
+          },
+          "useCredits": {
+            "type": "boolean",
+            "default": false,
+            "description": "Pay with 1 credit of a package of this coach: the booking is confirmed immediately"
           },
           "location": {
             "type": "object",
@@ -1753,6 +1832,11 @@
           "isTrial": {
             "type": "boolean",
             "description": "Not allowed for group sessions"
+          },
+          "useCredits": {
+            "type": "boolean",
+            "default": false,
+            "description": "Pay with 1 credit of a package of this coach: the booking is confirmed immediately"
           }
         },
         "required": [
@@ -1902,6 +1986,180 @@
           "notes"
         ],
         "description": "Data for adding the training to the device calendar"
+      },
+      "CreatePackageRequest": {
+        "type": "object",
+        "properties": {
+          "title": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 60
+          },
+          "credits": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 100
+          },
+          "price": {
+            "type": "object",
+            "properties": {
+              "amountCents": {
+                "type": "integer",
+                "minimum": 0,
+                "example": 4500
+              },
+              "currency": {
+                "type": "string",
+                "enum": [
+                  "USD"
+                ]
+              }
+            },
+            "required": [
+              "amountCents",
+              "currency"
+            ]
+          },
+          "validityDays": {
+            "type": "integer",
+            "minimum": 7,
+            "maximum": 365,
+            "default": 90
+          }
+        },
+        "required": [
+          "title",
+          "credits",
+          "price"
+        ]
+      },
+      "UpdatePackageRequest": {
+        "type": "object",
+        "properties": {
+          "title": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 60
+          },
+          "credits": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 100
+          },
+          "price": {
+            "type": "object",
+            "properties": {
+              "amountCents": {
+                "type": "integer",
+                "minimum": 0,
+                "example": 4500
+              },
+              "currency": {
+                "type": "string",
+                "enum": [
+                  "USD"
+                ]
+              }
+            },
+            "required": [
+              "amountCents",
+              "currency"
+            ]
+          },
+          "validityDays": {
+            "type": "integer",
+            "minimum": 7,
+            "maximum": 365
+          },
+          "isActive": {
+            "type": "boolean"
+          }
+        }
+      },
+      "ClientPackage": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "packageId": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "coach": {
+            "$ref": "#/components/schemas/UserSummary"
+          },
+          "creditsTotal": {
+            "type": "integer"
+          },
+          "creditsLeft": {
+            "type": "integer"
+          },
+          "price": {
+            "type": "object",
+            "properties": {
+              "amountCents": {
+                "type": "integer",
+                "minimum": 0,
+                "example": 4500
+              },
+              "currency": {
+                "type": "string",
+                "enum": [
+                  "USD"
+                ]
+              }
+            },
+            "required": [
+              "amountCents",
+              "currency"
+            ],
+            "description": "What was paid"
+          },
+          "purchasedAt": {
+            "type": "string"
+          },
+          "expiresAt": {
+            "type": "string"
+          },
+          "expired": {
+            "type": "boolean",
+            "description": "expiresAt has passed: the credits left cannot be used"
+          }
+        },
+        "required": [
+          "id",
+          "packageId",
+          "title",
+          "coach",
+          "creditsTotal",
+          "creditsLeft",
+          "price",
+          "purchasedAt",
+          "expiresAt",
+          "expired"
+        ]
+      },
+      "MyPackages": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ClientPackage"
+            }
+          },
+          "creditsAvailable": {
+            "type": "integer",
+            "description": "Sum of creditsLeft of purchases that are not expired (for coachId if given)"
+          }
+        },
+        "required": [
+          "items",
+          "creditsAvailable"
+        ]
       },
       "ScheduleItem": {
         "type": "object",
@@ -5035,7 +5293,7 @@
           "Bookings"
         ],
         "summary": "Book an individual training (optionally the free trial) or join a group session",
-        "description": "Individual: `{sessionTypeId, startAt, isTrial?, location?}`. Group: `{sessionId}`. Paid bookings start as `pending_payment` and are released if not paid in time; the free trial is confirmed immediately.",
+        "description": "Individual: `{sessionTypeId, startAt, isTrial?, useCredits?, location?}`. Group: `{sessionId, useCredits?}`. Paid bookings start as `pending_payment` and are released if not paid in time; the free trial and bookings paid with a credit (`useCredits: true`, NO_CREDITS if none) are confirmed immediately.",
         "security": [
           {
             "bearerAuth": []
@@ -5110,7 +5368,7 @@
             }
           },
           "409": {
-            "description": "SLOT_UNAVAILABLE, SESSION_FULL, ALREADY_BOOKED, TRIAL_ALREADY_USED",
+            "description": "SLOT_UNAVAILABLE, SESSION_FULL, ALREADY_BOOKED, TRIAL_ALREADY_USED, NO_CREDITS",
             "content": {
               "application/json": {
                 "schema": {
@@ -5470,6 +5728,11 @@
                     "minItems": 1,
                     "maxItems": 84,
                     "description": "Dates chosen from the preview"
+                  },
+                  "useCredits": {
+                    "type": "boolean",
+                    "default": false,
+                    "description": "1 credit per booked date; all bookings confirmed. Not enough credits -> INSUFFICIENT_CREDITS, nothing booked"
                   }
                 },
                 "required": [
@@ -5527,6 +5790,16 @@
           },
           "404": {
             "description": "NOT_FOUND",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "INSUFFICIENT_CREDITS",
             "content": {
               "application/json": {
                 "schema": {
@@ -6179,6 +6452,452 @@
           },
           "409": {
             "description": "CANCELLATION_WINDOW_PASSED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/coach/packages": {
+      "get": {
+        "tags": [
+          "Coach: packages"
+        ],
+        "summary": "My packages (active and inactive)",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "x-auth": "coach",
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "items": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/Package"
+                      }
+                    }
+                  },
+                  "required": [
+                    "items"
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "VALIDATION_ERROR",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED, TOKEN_EXPIRED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Coach: packages"
+        ],
+        "summary": "Create a package (N credits for a price, valid validityDays after purchase)",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "x-auth": "coach",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreatePackageRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Package"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "VALIDATION_ERROR",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED, TOKEN_EXPIRED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/coach/packages/{id}": {
+      "patch": {
+        "tags": [
+          "Coach: packages"
+        ],
+        "summary": "Update a package (applies to new purchases only)",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "x-auth": "coach",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "description": "Object id",
+              "example": "6650f0c2a1b2c3d4e5f60718"
+            },
+            "required": true,
+            "description": "Object id",
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdatePackageRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Package"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "VALIDATION_ERROR",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED, TOKEN_EXPIRED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "NOT_FOUND",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Coach: packages"
+        ],
+        "summary": "Delete a package (deactivated instead if it was already bought)",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "x-auth": "coach",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "description": "Object id",
+              "example": "6650f0c2a1b2c3d4e5f60718"
+            },
+            "required": true,
+            "description": "Object id",
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "No content"
+          },
+          "400": {
+            "description": "VALIDATION_ERROR",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED, TOKEN_EXPIRED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "NOT_FOUND",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/packages/{id}/purchase": {
+      "post": {
+        "tags": [
+          "Packages"
+        ],
+        "summary": "Buy a package (mock payment, paid immediately)",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "x-auth": "client",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "description": "Object id",
+              "example": "6650f0c2a1b2c3d4e5f60718"
+            },
+            "required": true,
+            "description": "Object id",
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ClientPackage"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "VALIDATION_ERROR",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED, TOKEN_EXPIRED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "NOT_FOUND",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "PACKAGE_INACTIVE",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/me/packages": {
+      "get": {
+        "tags": [
+          "Packages"
+        ],
+        "summary": "My purchased packages and available credits (optionally for one coach)",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "x-auth": "client",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "description": "Object id",
+              "example": "6650f0c2a1b2c3d4e5f60718"
+            },
+            "required": false,
+            "description": "Object id",
+            "name": "coachId",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MyPackages"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "VALIDATION_ERROR",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED, TOKEN_EXPIRED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN",
             "content": {
               "application/json": {
                 "schema": {

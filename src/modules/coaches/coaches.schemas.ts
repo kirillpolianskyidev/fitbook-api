@@ -7,6 +7,7 @@ import {
   SessionKindSchema,
   SpecializationSchema,
 } from '../../lib/schemas.js';
+import {PackageSchema} from '../packages/packages.schemas.js';
 import {SessionTypeSchema} from '../sessionTypes/sessionTypes.schemas.js';
 
 export const CertificationSchema = z
@@ -82,6 +83,7 @@ export const CoachDetailsSchema = CoachCardSchema.extend({
   defaultLocation: LocationSchema.nullable(),
   cancellationPolicy: CancellationPolicySchema,
   sessionTypes: z.array(SessionTypeSchema),
+  packages: z.array(PackageSchema).meta({description: 'Active packages of the coach'}),
 }).meta({id: 'CoachDetails'});
 
 export const CoachListQuery = z.object({

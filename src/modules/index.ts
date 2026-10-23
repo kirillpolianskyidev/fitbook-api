@@ -7,6 +7,7 @@ import './reviews/reviews.routes.js';
 import './sessionTypes/sessionTypes.routes.js';
 import './availability/availability.routes.js';
 import './bookings/bookings.routes.js';
+import './packages/packages.routes.js';
 import './sessions/coachSessions.routes.js';
 import './notes/notes.routes.js';
 import './chat/chat.routes.js';

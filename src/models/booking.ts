@@ -23,7 +23,9 @@ const bookingSchema = new Schema(
             enum: ['unpaid', 'paid', 'refunded', 'not_required'],
             required: true,
           },
-          method: {type: String, enum: ['mock'], default: 'mock'},
+          method: {type: String, enum: ['mock', 'credits'], default: 'mock'},
+          // Purchase the credit was taken from (method = credits).
+          clientPackageId: {type: Schema.Types.ObjectId, ref: 'ClientPackage', default: null},
           paidAt: Date,
           // Set when a paid booking is cancelled: the full price goes back to the client (mock, instant).
           refundedAt: Date,

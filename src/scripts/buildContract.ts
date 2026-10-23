@@ -69,6 +69,10 @@ const UI_HINTS: Partial<Record<ErrorCode, string>> = {
   SESSION_FULL: 'Refresh the group list; offer other sessions.',
   TRIAL_ALREADY_USED: 'Hide the free-trial option; continue with a paid booking.',
   CANCELLATION_WINDOW_PASSED: 'Explain the coach policy using `details.freeCancelHours`.',
+  NO_CREDITS: 'Offer to buy a package or pay normally.',
+  INSUFFICIENT_CREDITS:
+    'Show `details.creditsAvailable`; let the user pick fewer dates or pay normally.',
+  PACKAGE_INACTIVE: 'Reload the coach profile (the package was withdrawn).',
   REVIEW_NOT_ALLOWED: 'Hide "Write a review" (`canCreate` is false until a training is completed).',
   REVIEW_EDIT_WINDOW_PASSED: 'Show the review as read-only.',
   RESCHEDULE_WINDOW_PASSED: 'Hide "Reschedule"; reload the booking (`reschedulable` is false now).',
@@ -198,7 +202,26 @@ or \`system\`).
 ${example('bookingPending', 'Example: new booking (pending payment)')}
 ${example('seriesPreview', 'Example: series preview')}
 
-## 4a. Reviews
+## 4a. Packages (credits)
+
+- A coach sells packages (\`GET /coaches/:id\` -> \`packages\`, active only): e.g. 10 credits for $700, valid
+  \`validityDays\` after purchase. 1 credit = 1 training with this coach of any type (individual or a group place).
+- \`POST /packages/:id/purchase\` (mock payment, instant) -> \`ClientPackage\`; inactive -> \`PACKAGE_INACTIVE\`.
+  \`GET /me/packages?coachId=\` -> \`{ items, creditsAvailable }\` (usable purchases first, soonest to expire first).
+- Book with a credit: \`useCredits: true\` in \`POST /bookings\` (individual or group) or \`POST /bookings/series\`
+  (1 credit per booked date, \`INSUFFICIENT_CREDITS\` with \`details.creditsAvailable\` and nothing booked). The
+  booking is \`confirmed\` immediately: \`payment = { status: "paid", method: "credits", clientPackageId }\`; the
+  credit comes from the purchase that expires first. No usable credit -> \`NO_CREDITS\`. Not with \`isTrial\`.
+- When a paid booking would be refunded (client before the deadline, coach, system), a credit booking gets its credit
+  back into the same purchase instead (\`payment.status = "refunded"\`); if that purchase expired meanwhile the
+  credit is lost. Rescheduling keeps the credit.
+- Coach: \`GET/POST /coach/packages\`, \`PATCH/DELETE /coach/packages/:id\` (changes apply to new purchases; a bought
+  package is deactivated instead of deleted).
+
+${example('clientPackage', 'Example: POST /packages/:id/purchase')}
+${example('bookingWithCredits', 'Example: POST /bookings with useCredits')}
+
+## 4b. Reviews
 
 - One review per client per coach (\`rating\` 1-5, optional \`text\` up to 1000 characters; empty -> \`null\`).
   \`GET /coaches/:id/my-review\` -> \`{ review, canCreate, editableUntil }\`: show "Write a review" when
@@ -254,7 +277,7 @@ ${example('errorValidation', 'Example: validation error')}
 ## 8. Enums
 
 - Role: \`coach | client\`; Theme: \`light | dark | system\`; Training kind: \`individual | group\`
-- Booking status: \`pending_payment | confirmed | cancelled | completed\`; Payment status: \`unpaid | paid | refunded | not_required\`
+- Booking status: \`pending_payment | confirmed | cancelled | completed\`; Payment status: \`unpaid | paid | refunded | not_required\`; Payment method: \`mock | credits\`
 - Session status: \`scheduled | cancelled | completed\`; Note phase: \`before | after\`
 - Specializations: ${SPECIALIZATIONS.map(s => `\`${s}\``).join(', ')}
 - States: 2-letter US state codes (\`IL\`, \`NY\`, ...); country is always \`US\`.
@@ -269,6 +292,8 @@ ${example('me', 'GET /me')}
 ${example('coachList', 'GET /coaches')}
 ${example('coachDetails', 'GET /coaches/:id')}
 ${example('myReview', 'GET /coaches/:id/my-review')}
+${example('myPackages', 'GET /me/packages')}
+${example('coachPackages', 'GET /coach/packages')}
 ${example('slots', 'GET /coaches/:id/slots')}
 ${example('groupSessions', 'GET /coaches/:id/group-sessions')}
 ${example('bookingConfirmed', 'POST /bookings/:id/pay')}

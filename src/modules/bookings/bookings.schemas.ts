@@ -22,8 +22,14 @@ export const PaymentSchema = z
         'refunded: a paid booking was cancelled (by the client before the deadline, by the coach or by the ' +
         'system) and the full price was returned.',
     }),
-    method: z.literal('mock'),
+    method: z.enum(['mock', 'credits']).meta({
+      description: 'mock: (mock) card payment; credits: paid with 1 credit of a package',
+    }),
     paidAt: z.string().nullable(),
+    clientPackageId: z
+      .string()
+      .nullable()
+      .meta({description: 'Purchase the credit came from (method = credits), otherwise null'}),
     refundedAt: z.string().nullable().meta({description: 'When the full price was returned'}),
   })
   .meta({id: 'Payment'});
@@ -71,22 +77,34 @@ export const BookingSchema = z
   })
   .meta({id: 'Booking'});
 
+const useCredits = z.boolean().default(false).meta({
+  description: 'Pay with 1 credit of a package of this coach: the booking is confirmed immediately',
+});
+const notTrialWithCredits = {
+  message: 'useCredits cannot be combined with isTrial',
+  path: ['useCredits'],
+};
+
 const IndividualBookingBody = z
   .object({
     sessionTypeId: objectId,
     startAt: isoDateTime,
     isTrial: z.boolean().default(false),
+    useCredits,
     location: LocationSchema.optional().meta({
       description: 'Overrides the training location (optional)',
     }),
   })
+  .refine(body => !(body.isTrial && body.useCredits), notTrialWithCredits)
   .meta({id: 'IndividualBookingRequest'});
 
 const GroupBookingBody = z
   .object({
     sessionId: objectId,
     isTrial: z.boolean().optional().meta({description: 'Not allowed for group sessions'}),
+    useCredits,
   })
+  .refine(body => !(body.isTrial && body.useCredits), notTrialWithCredits)
   .meta({id: 'GroupBookingRequest'});
 
 export const CreateBookingBody = z.union([IndividualBookingBody, GroupBookingBody]);
@@ -106,6 +124,10 @@ export const SeriesPreviewBody = z.object({
 
 export const SeriesBody = SeriesPreviewBody.extend({
   dates: z.array(dateYMD).min(1).max(84).meta({description: 'Dates chosen from the preview'}),
+  useCredits: z.boolean().default(false).meta({
+    description:
+      '1 credit per booked date; all bookings confirmed. Not enough credits -> INSUFFICIENT_CREDITS, nothing booked',
+  }),
 });
 
 export const SeriesPreviewItemSchema = z

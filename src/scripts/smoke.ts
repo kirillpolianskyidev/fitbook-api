@@ -267,6 +267,30 @@ async function main() {
     200,
     'bookingRescheduled',
   );
+  await step('my packages', () => api().get(`${v1}/me/packages`).set(client), 200, 'myPackages');
+  await step(
+    'coach packages',
+    () => api().get(`${v1}/coach/packages`).set(coach),
+    200,
+    'coachPackages',
+  );
+  const packageId = (details.body.packages as {id: string}[])[0]!.id;
+  await step(
+    'buy a package',
+    () => api().post(`${v1}/packages/${packageId}/purchase`).set(client),
+    201,
+    'clientPackage',
+  );
+  await step(
+    'book with a credit',
+    () =>
+      api()
+        .post(`${v1}/bookings`)
+        .set(client)
+        .send({sessionTypeId: individualType.id, startAt: freeSlots[1]!.startAt, useCredits: true}),
+    201,
+    'bookingWithCredits',
+  );
   await step(
     'calendar event',
     () => api().get(`${v1}/bookings/${bookingId}/calendar-event`).set(client),

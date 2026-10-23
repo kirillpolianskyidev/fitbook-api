@@ -214,17 +214,17 @@ time is taken -> `SLOT_UNAVAILABLE`. Locks are deleted when a session is cancell
 
 ### bookings
 
-| Field                                                                | Type                                                                                                               | Notes                                                   |
-| -------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------- |
-| sessionId, coachId, clientId                                         | ObjectId                                                                                                           |                                                         |
-| seriesId                                                             | ObjectId?                                                                                                          |                                                         |
-| status                                                               | `'pending_payment' \| 'confirmed' \| 'cancelled' \| 'completed'`                                                   |                                                         |
-| isTrial                                                              | boolean                                                                                                            |                                                         |
-| price                                                                | Money                                                                                                              | 0 for trial                                             |
-| payment                                                              | `{ status: 'unpaid' \| 'paid' \| 'refunded' \| 'not_required'; method: 'mock'; paidAt?: Date; refundedAt?: Date }` |                                                         |
-| expiresAt                                                            | Date?                                                                                                              | for pending_payment                                     |
-| cancelledAt, cancelledBy (`coach \| client \| system`), cancelReason |                                                                                                                    |                                                         |
-| startAt, endAt                                                       | Date                                                                                                               | denormalized from the session for fast calendar queries |
+| Field                                                                | Type                                                                                                                                                        | Notes                                                   |
+| -------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------- |
+| sessionId, coachId, clientId                                         | ObjectId                                                                                                                                                    |                                                         |
+| seriesId                                                             | ObjectId?                                                                                                                                                   |                                                         |
+| status                                                               | `'pending_payment' \| 'confirmed' \| 'cancelled' \| 'completed'`                                                                                            |                                                         |
+| isTrial                                                              | boolean                                                                                                                                                     |                                                         |
+| price                                                                | Money                                                                                                                                                       | 0 for trial                                             |
+| payment                                                              | `{ status: 'unpaid' \| 'paid' \| 'refunded' \| 'not_required'; method: 'mock' \| 'credits'; paidAt?: Date; refundedAt?: Date; clientPackageId?: ObjectId }` |                                                         |
+| expiresAt                                                            | Date?                                                                                                                                                       | for pending_payment                                     |
+| cancelledAt, cancelledBy (`coach \| client \| system`), cancelReason |                                                                                                                                                             |                                                         |
+| startAt, endAt                                                       | Date                                                                                                                                                        | denormalized from the session for fast calendar queries |
 
 Indexes: `clientId + startAt`, `coachId + startAt`, `sessionId + clientId` unique (a client can join a session once),
 `status + expiresAt`.
@@ -367,6 +367,17 @@ and before the deadline (`startAt - freeCancelHours` for confirmed, `startAt` fo
 block it; the session keeps its id and its slot locks move). Group: `{ sessionId }`, an upcoming group session of the
 same coach and type with a free seat (`SESSION_FULL`, unknown -> `NOT_FOUND`). Payment, trial, price, notes, location
 and series stay; `rescheduledAt` is set. Booking DTO: `reschedulable`, `rescheduledAt`, `session.sessionTypeId`.
+
+### Packages (credits)
+
+`packages { coachId, title 1..60, credits 1..100, price > 0, validityDays 7..365 (90), isActive }` and
+`clientPackages { clientId, coachId, packageId, title, creditsTotal, creditsLeft, price, purchasedAt, expiresAt }`
+(snapshot at purchase). 1 credit = 1 training with the coach (individual or one group place). `useCredits: true` on
+`POST /bookings` / `POST /bookings/series` takes 1 credit (per date) atomically from the non-expired purchase that
+expires first (`NO_CREDITS`; series pre-check `INSUFFICIENT_CREDITS`, nothing booked); the booking is `confirmed` with
+`payment { status: paid, method: credits, clientPackageId }`. Cancellations that refund paid bookings return the
+credit to the same purchase (lost if it expired). Rescheduling keeps it. Purchase is a mock payment
+(`PACKAGE_INACTIVE` for inactive packages); a bought package is deactivated instead of deleted.
 
 ### Reviews
 
@@ -552,6 +563,9 @@ Validation errors list fields: `details: { fields: { email: "Invalid email" } }`
 | 409  | SESSION_FULL                            | group capacity reached                                                                                              |
 | 409  | ALREADY_BOOKED                          | client already in this session                                                                                      |
 | 409  | TRIAL_ALREADY_USED                      | second trial (account or email)                                                                                     |
+| 409  | NO_CREDITS                              | `useCredits` without a usable credit with the coach                                                                 |
+| 409  | INSUFFICIENT_CREDITS                    | series needs more credits than available (`details.creditsAvailable`)                                               |
+| 409  | PACKAGE_INACTIVE                        | buying an inactive package                                                                                          |
 | 403  | REVIEW_NOT_ALLOWED                      | review without a completed training with the coach                                                                  |
 | 409  | REVIEW_EDIT_WINDOW_PASSED               | review changed more than 24 hours after creation                                                                    |
 | 409  | RESCHEDULE_WINDOW_PASSED                | too late to reschedule, or the booking is not active                                                                |

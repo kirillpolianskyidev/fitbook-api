@@ -6,6 +6,7 @@ export * from './emailVerification.js';
 export * from './conversation.js';
 export * from './message.js';
 export * from './note.js';
+export * from './package.js';
 export * from './passwordReset.js';
 export * from './refreshToken.js';
 export * from './review.js';

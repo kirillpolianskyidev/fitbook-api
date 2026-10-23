@@ -25,8 +25,9 @@ route({
   tags,
   summary: 'Book an individual training (optionally the free trial) or join a group session',
   description:
-    'Individual: `{sessionTypeId, startAt, isTrial?, location?}`. Group: `{sessionId}`. Paid bookings start as ' +
-    '`pending_payment` and are released if not paid in time; the free trial is confirmed immediately.',
+    'Individual: `{sessionTypeId, startAt, isTrial?, useCredits?, location?}`. Group: `{sessionId, useCredits?}`. ' +
+    'Paid bookings start as `pending_payment` and are released if not paid in time; the free trial and bookings ' +
+    'paid with a credit (`useCredits: true`, NO_CREDITS if none) are confirmed immediately.',
   auth: 'client',
   body: CreateBookingBody,
   response: BookingSchema,
@@ -38,11 +39,12 @@ route({
     'TRIAL_ALREADY_USED',
     'TRIAL_NOT_ALLOWED',
     'SESSION_TYPE_INACTIVE',
+    'NO_CREDITS',
   ],
   handler: async ({user, body}) => {
     const booking =
       'sessionId' in body
-        ? await service.joinGroupSession(user, body.sessionId, body.isTrial)
+        ? await service.joinGroupSession(user, body.sessionId, body.isTrial, body.useCredits)
         : await service.createIndividualBooking(user, body);
     return service.toBookingDto(booking);
   },
@@ -69,7 +71,7 @@ route({
   auth: 'client',
   body: SeriesBody,
   response: SeriesResultSchema,
-  errors: ['NOT_FOUND', 'SESSION_TYPE_INACTIVE'],
+  errors: ['NOT_FOUND', 'SESSION_TYPE_INACTIVE', 'INSUFFICIENT_CREDITS'],
   handler: ({user, body}) => service.createSeries(user, body),
 });
 

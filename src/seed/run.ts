@@ -24,6 +24,8 @@ import {
   type TrainingSessionDoc,
   type UserDoc,
   ReviewModel,
+  ClientPackageModel,
+  PackageModel,
 } from '../models/index.js';
 import {refreshCoachRating} from '../modules/reviews/reviews.service.js';
 import {createLockedSession} from '../modules/sessions/sessions.service.js';
@@ -563,6 +565,65 @@ async function main() {
     if (chance(0.15)) await addNote(booking, 'before', 'coach', pick(NOTE_TEXTS.coachBefore));
     if (chance(0.55)) await addNote(booking, 'after', 'coach', pick(NOTE_TEXTS.coachAfter));
     if (chance(0.25)) await addNote(booking, 'after', 'client', pick(NOTE_TEXTS.clientAfter));
+  }
+
+  // --- Packages: 1-2 per coach; Jamie bought Alex's 10-pack and used 3 credits ---------------------
+  const roundTo5Dollars = (cents: number) => Math.round(cents / 500) * 500;
+  const packagesByCoach = new Map<string, {id: Types.ObjectId; title: string; credits: number}[]>();
+  for (const coach of coaches) {
+    const individual = coach.seed.types.filter(t => t.kind === 'individual');
+    if (!individual.length) continue;
+    const base = Math.min(...individual.map(t => t.priceCents));
+    const offers = [
+      {title: '10 sessions', credits: 10, discount: 0.9, validityDays: 90},
+      ...(coach === alex || chance(0.6)
+        ? [{title: '5 sessions', credits: 5, discount: 0.95, validityDays: 60}]
+        : []),
+    ];
+    const created = [];
+    for (const offer of offers) {
+      const pkg = await PackageModel.create({
+        coachId: coach.user._id,
+        title: offer.title,
+        credits: offer.credits,
+        price: {
+          amountCents: roundTo5Dollars(base * offer.credits * offer.discount),
+          currency: 'USD',
+        },
+        validityDays: offer.validityDays,
+        isActive: true,
+      });
+      created.push({id: pkg._id, title: pkg.title, credits: pkg.credits});
+    }
+    packagesByCoach.set(coach.user._id.toString(), created);
+  }
+  const alexTen = await PackageModel.findOne({coachId: alex.user._id, credits: 10});
+  if (alexTen) {
+    const purchasedAt = addMinutes(now, -20 * 1440);
+    const purchase = await ClientPackageModel.create({
+      clientId: jamie._id,
+      coachId: alex.user._id,
+      packageId: alexTen._id,
+      title: alexTen.title,
+      creditsTotal: 10,
+      creditsLeft: 7,
+      price: alexTen.price,
+      purchasedAt,
+      expiresAt: addMinutes(purchasedAt, alexTen.validityDays * 1440),
+    });
+    // The three most recent past trainings of Jamie's series were paid with credits of this purchase.
+    const paidWithCredits = pastSeries.filter(b => b.startAt > purchasedAt).slice(-3);
+    for (const booking of paidWithCredits) {
+      booking.payment = {
+        status: 'paid',
+        method: 'credits',
+        paidAt: purchasedAt,
+        clientPackageId: purchase._id,
+      };
+      await booking.save();
+    }
+    purchase.creditsLeft = 10 - paidWithCredits.length;
+    await purchase.save();
   }
 
   // --- Reviews: one per client who completed a training with the coach (most of them) ------------

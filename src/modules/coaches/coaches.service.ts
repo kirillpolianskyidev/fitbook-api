@@ -9,6 +9,7 @@ import {CoachProfileModel, type CoachProfileDoc} from '../../models/coachProfile
 import {SessionTypeModel} from '../../models/sessionType.js';
 import {TrainingSessionModel} from '../../models/trainingSession.js';
 import {UserModel, type UserDoc} from '../../models/user.js';
+import {listActivePackages, toPackageDto} from '../packages/packages.service.js';
 import {findSlots, toSessionDto} from '../sessions/sessions.service.js';
 import {toSessionTypeDto} from '../sessionTypes/sessionTypes.service.js';
 import type {CoachCardSchema, CoachListQuery, UpdateCoachProfileBody} from './coaches.schemas.js';
@@ -214,10 +215,10 @@ async function getPublishedCoach(coachId: string) {
 
 export async function getCoachDetails(coachId: string) {
   const {profile, user} = await getPublishedCoach(coachId);
-  const types = await SessionTypeModel.find({coachId, isActive: true}).sort({
-    kind: 1,
-    'price.amountCents': 1,
-  });
+  const [types, packages] = await Promise.all([
+    SessionTypeModel.find({coachId, isActive: true}).sort({kind: 1, 'price.amountCents': 1}),
+    listActivePackages(coachId),
+  ]);
   return {
     ...toCoachCard(profile, user),
     bio: profile.bio ?? '',
@@ -227,6 +228,7 @@ export async function getCoachDetails(coachId: string) {
     defaultLocation: toLocationDto(profile.defaultLocation),
     cancellationPolicy: {freeCancelHours: profile.cancellationPolicy?.freeCancelHours ?? 24},
     sessionTypes: types.map(toSessionTypeDto),
+    packages: packages.map(toPackageDto),
   };
 }
 
