@@ -161,6 +161,28 @@ async function main() {
     200,
     'coachDetails',
   );
+  await step(
+    'coach reviews',
+    () => api().get(`${v1}/coaches/${coachId}/reviews?pageSize=3`).set(client),
+    200,
+    'reviews',
+  );
+  await step(
+    'my review (none yet, can create)',
+    () => api().get(`${v1}/coaches/${coachId}/my-review`).set(client),
+    200,
+    'myReview',
+  );
+  await step(
+    'write a review',
+    () =>
+      api()
+        .put(`${v1}/coaches/${coachId}/my-review`)
+        .set(client)
+        .send({rating: 5, text: 'Great technique cues, I finally deadlift without back pain.'}),
+    201,
+    'myReviewCreated',
+  );
   const individualType = (
     details.body.sessionTypes as {id: string; kind: string; durationMin: number}[]
   ).find(t => t.kind === 'individual' && t.durationMin === 60)!;

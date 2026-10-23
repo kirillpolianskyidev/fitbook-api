@@ -8,6 +8,7 @@ export * from './message.js';
 export * from './note.js';
 export * from './passwordReset.js';
 export * from './refreshToken.js';
+export * from './review.js';
 export * from './sessionType.js';
 export * from './slotLock.js';
 export * from './trainingSession.js';

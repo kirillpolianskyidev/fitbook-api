@@ -23,7 +23,9 @@ import {
   type SessionTypeDoc,
   type TrainingSessionDoc,
   type UserDoc,
+  ReviewModel,
 } from '../models/index.js';
+import {refreshCoachRating} from '../modules/reviews/reviews.service.js';
 import {createLockedSession} from '../modules/sessions/sessions.service.js';
 import {refreshCoachCatalogFields} from '../modules/sessionTypes/sessionTypes.service.js';
 import {ensureCoachSetup} from '../modules/users/users.service.js';
@@ -36,6 +38,7 @@ import {
   INCOMPLETE_COACH,
   NEW_CLIENT,
   NOTE_TEXTS,
+  REVIEW_TEXTS,
   type SeedClient,
   type SeedCoach,
 } from './data.js';
@@ -561,6 +564,52 @@ async function main() {
     if (chance(0.55)) await addNote(booking, 'after', 'coach', pick(NOTE_TEXTS.coachAfter));
     if (chance(0.25)) await addNote(booking, 'after', 'client', pick(NOTE_TEXTS.clientAfter));
   }
+
+  // --- Reviews: one per client who completed a training with the coach (most of them) ------------
+  const completed = await BookingModel.find({status: 'completed'})
+    .select('coachId clientId endAt')
+    .lean();
+  const firstCompleted = new Map<string, Date>();
+  for (const b of completed) {
+    const key = `${b.coachId}:${b.clientId}`;
+    const prev = firstCompleted.get(key);
+    if (!prev || b.endAt < prev) firstCompleted.set(key, b.endAt);
+  }
+  const reviewersOf = (coachId: string) =>
+    [...firstCompleted.keys()].filter(key => key.startsWith(`${coachId}:`)).length;
+  const ratingFor = (average: number, reviewers: number): 3 | 4 | 5 => {
+    const r = random();
+    // An occasional 3 only for coaches with many reviews (a lone 3-star review would sink a small coach).
+    if (r < 0.04 && reviewers >= 6) return 3;
+    return r < 0.04 + (5 - average) * 1.2 ? 4 : 5;
+  };
+  for (const [key, firstEnd] of firstCompleted) {
+    const [coachId, clientId] = key.split(':') as [string, string];
+    const coach = coaches.find(c => c.user._id.toString() === coachId);
+    if (!coach) continue;
+    const isJamie = clientId === jamie._id.toString();
+    // Jamie reviewed Maya a few hours ago (still editable) and has not reviewed Alex yet ("Write a review").
+    if (isJamie && coach !== maya) continue;
+    if (!isJamie && !chance(0.8)) continue;
+    const rating = isJamie ? 5 : ratingFor(coach.seed.rating.average, reviewersOf(coachId));
+    const createdAt = isJamie
+      ? addMinutes(now, -180)
+      : new Date(
+          firstEnd.getTime() +
+            random() * Math.max(0, now.getTime() - firstEnd.getTime() - 2 * 86_400_000),
+        );
+    await new ReviewModel({
+      coachId: coach.user._id,
+      clientId,
+      rating,
+      text: isJamie
+        ? 'Lovely, calm first class - my hamstrings thank you!'
+        : pick(REVIEW_TEXTS[rating]),
+      createdAt,
+      updatedAt: createdAt,
+    }).save({timestamps: false});
+  }
+  for (const coach of coaches) await refreshCoachRating(coach.user._id);
 
   // --- Chats --------------------------------------------------------------------------------------
   await conversation(

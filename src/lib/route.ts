@@ -22,6 +22,8 @@ export type RouteContext<TBody, TQuery, TParams> = {
   /** The authenticated user. Throws UNAUTHORIZED when accessed on a public route without a token. */
   readonly user: UserDoc;
   req: Request;
+  /** Overrides the success status for this response (must be listed in `alsoStatus`). */
+  setStatus: (status: 200 | 201) => void;
 };
 
 type Empty = z.ZodType<undefined>;
@@ -45,6 +47,8 @@ type RouteConfig<
   params?: TParams;
   /** 204 routes have no response schema. */
   status?: 200 | 201 | 204;
+  /** Another success status the handler may choose with ctx.setStatus (e.g. 201 created vs 200 updated). */
+  alsoStatus?: 200 | 201;
   response?: TRes;
   errors?: ErrorCode[];
   middleware?: RequestHandler[];
@@ -142,6 +146,13 @@ export function route<
         status === 204 || !config.response
           ? {description: 'No content'}
           : {description: 'Success', content: {'application/json': {schema: config.response}}},
+      ...(config.alsoStatus &&
+        config.response && {
+          [String(config.alsoStatus)]: {
+            description: config.alsoStatus === 201 ? 'Created' : 'Success',
+            content: {'application/json': {schema: config.response}},
+          },
+        }),
       ...errorResponses(config.errors ?? [], config.auth),
     },
   });
@@ -160,7 +171,14 @@ export function route<
       }
     }
 
+    let responseStatus: number = status;
     const ctx = {
+      setStatus: (next: 200 | 201) => {
+        if (next !== status && next !== config.alsoStatus) {
+          throw new Error(`Status ${next} is not declared for ${config.method} ${config.path}`);
+        }
+        responseStatus = next;
+      },
       body: parseOrThrow(config.body, req.body),
       query: parseOrThrow(config.query, req.query),
       params: parseOrThrow(config.params, req.params),
@@ -185,7 +203,7 @@ export function route<
         `Response does not match schema for ${config.method.toUpperCase()} ${config.path}: ${parsed.error.message}`,
       );
     }
-    res.status(status).json(parsed.data);
+    res.status(responseStatus).json(parsed.data);
   };
 
   apiRouter[config.method](config.path, ...(config.middleware ?? []), handler);

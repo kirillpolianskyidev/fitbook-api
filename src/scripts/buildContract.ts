@@ -69,6 +69,8 @@ const UI_HINTS: Partial<Record<ErrorCode, string>> = {
   SESSION_FULL: 'Refresh the group list; offer other sessions.',
   TRIAL_ALREADY_USED: 'Hide the free-trial option; continue with a paid booking.',
   CANCELLATION_WINDOW_PASSED: 'Explain the coach policy using `details.freeCancelHours`.',
+  REVIEW_NOT_ALLOWED: 'Hide "Write a review" (`canCreate` is false until a training is completed).',
+  REVIEW_EDIT_WINDOW_PASSED: 'Show the review as read-only.',
   RESCHEDULE_WINDOW_PASSED: 'Hide "Reschedule"; reload the booking (`reschedulable` is false now).',
   BOOKING_NOT_PAYABLE: 'Reload the booking; it was paid or released.',
   RATE_LIMITED: 'Ask to try again later (`details.retryAfterSeconds` when present).',
@@ -196,6 +198,20 @@ or \`system\`).
 ${example('bookingPending', 'Example: new booking (pending payment)')}
 ${example('seriesPreview', 'Example: series preview')}
 
+## 4a. Reviews
+
+- One review per client per coach (\`rating\` 1-5, optional \`text\` up to 1000 characters; empty -> \`null\`).
+  \`GET /coaches/:id/my-review\` -> \`{ review, canCreate, editableUntil }\`: show "Write a review" when
+  \`canCreate\` (needs a completed training with the coach), "Edit" while \`now < editableUntil\` (24 hours after
+  creation), otherwise the review is read-only. Reviews cannot be deleted; coaches do not reply in v1.
+- \`PUT /coaches/:id/my-review { rating, text? }\` -> \`201\` created / \`200\` updated, same body as GET.
+- \`GET /coaches/:id/reviews?page&pageSize\` -> newest first + \`summary { average, count, distribution }\`.
+  Authors are shown as "First L." with \`avatarUrl\`. \`coach.rating\` in the catalog and profile is calculated from the
+  reviews (average rounded to 2 decimals).
+
+${example('reviews', 'Example: GET /coaches/:id/reviews')}
+${example('myReviewCreated', 'Example: PUT /coaches/:id/my-review (created)')}
+
 ## 5. Coach flows
 
 Profile (\`/coach/profile\`, publish when \`completeness.complete\`), training types and prices
@@ -252,6 +268,7 @@ ${endpointTables()}
 ${example('me', 'GET /me')}
 ${example('coachList', 'GET /coaches')}
 ${example('coachDetails', 'GET /coaches/:id')}
+${example('myReview', 'GET /coaches/:id/my-review')}
 ${example('slots', 'GET /coaches/:id/slots')}
 ${example('groupSessions', 'GET /coaches/:id/group-sessions')}
 ${example('bookingConfirmed', 'POST /bookings/:id/pay')}

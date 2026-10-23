@@ -368,6 +368,14 @@ block it; the session keeps its id and its slot locks move). Group: `{ sessionId
 same coach and type with a free seat (`SESSION_FULL`, unknown -> `NOT_FOUND`). Payment, trial, price, notes, location
 and series stay; `rescheduledAt` is set. Booking DTO: `reschedulable`, `rescheduledAt`, `session.sessionTypeId`.
 
+### Reviews
+
+`reviews { coachId, clientId, rating 1..5, text|null, createdAt, updatedAt }`, unique `(coachId, clientId)`. Creating
+needs a `completed` booking with the coach (`REVIEW_NOT_ALLOWED`, 403); `PUT` again updates it while
+`now < createdAt + 24h` (`REVIEW_EDIT_WINDOW_PASSED`, 409); no deletion, no coach replies. `coachProfile.rating
+{ average (2 decimals), count }` is recalculated from reviews after each change (and on server start).
+Endpoints: `GET /coaches/:id/reviews`, `GET|PUT /coaches/:id/my-review`.
+
 ### Completion
 
 Job every 10 minutes: sessions whose `endAt < now` -> `completed`; their `confirmed` bookings -> `completed`.
@@ -544,6 +552,8 @@ Validation errors list fields: `details: { fields: { email: "Invalid email" } }`
 | 409  | SESSION_FULL                            | group capacity reached                                                                                              |
 | 409  | ALREADY_BOOKED                          | client already in this session                                                                                      |
 | 409  | TRIAL_ALREADY_USED                      | second trial (account or email)                                                                                     |
+| 403  | REVIEW_NOT_ALLOWED                      | review without a completed training with the coach                                                                  |
+| 409  | REVIEW_EDIT_WINDOW_PASSED               | review changed more than 24 hours after creation                                                                    |
 | 409  | RESCHEDULE_WINDOW_PASSED                | too late to reschedule, or the booking is not active                                                                |
 | 409  | CANCELLATION_WINDOW_PASSED              | too late to cancel (`details.freeCancelHours`, `details.deadline`)                                                  |
 | 409  | BOOKING_NOT_PAYABLE                     | not pending or expired                                                                                              |
