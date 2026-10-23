@@ -129,7 +129,8 @@ export function route<
     tags: config.tags,
     summary: config.summary,
     description: config.description,
-    ...(config.auth !== 'public' && {security: [{bearerAuth: []}]}),
+    // Public routes declare an empty security list explicitly (valid OpenAPI, no auth needed).
+    security: config.auth === 'public' ? [] : [{bearerAuth: []}],
     'x-auth': config.auth,
     request: {
       ...(config.params && {params: config.params as unknown as z.ZodObject}),

@@ -234,6 +234,17 @@ async function main() {
     200,
     'bookingConfirmed',
   );
+  const lastFree = freeSlots.at(-1)!;
+  await step(
+    'reschedule to another free slot',
+    () =>
+      api()
+        .post(`${v1}/bookings/${bookingId}/reschedule`)
+        .set(client)
+        .send({startAt: lastFree.startAt}),
+    200,
+    'bookingRescheduled',
+  );
   await step(
     'calendar event',
     () => api().get(`${v1}/bookings/${bookingId}/calendar-event`).set(client),

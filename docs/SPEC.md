@@ -359,6 +359,15 @@ Job every minute: pending bookings past `expiresAt` -> `cancelled` (`cancelledBy
   paid booking only before the deadline, so their refunds are always full; cancellations by the coach (booking or
   whole group session) and by the system are refunded at any time. `unpaid` and `not_required` stay as they are.
 
+### Reschedule (client)
+
+`POST /bookings/:id/reschedule` - only the client of the booking; status `pending_payment` or `confirmed`, not started
+and before the deadline (`startAt - freeCancelHours` for confirmed, `startAt` for unpaid), else
+`RESCHEDULE_WINDOW_PASSED`. Individual: `{ startAt }`, a free slot of the same type (the booking's own blocks do not
+block it; the session keeps its id and its slot locks move). Group: `{ sessionId }`, an upcoming group session of the
+same coach and type with a free seat (`SESSION_FULL`, unknown -> `NOT_FOUND`). Payment, trial, price, notes, location
+and series stay; `rescheduledAt` is set. Booking DTO: `reschedulable`, `rescheduledAt`, `session.sessionTypeId`.
+
 ### Completion
 
 Job every 10 minutes: sessions whose `endAt < now` -> `completed`; their `confirmed` bookings -> `completed`.
@@ -535,6 +544,7 @@ Validation errors list fields: `details: { fields: { email: "Invalid email" } }`
 | 409  | SESSION_FULL                            | group capacity reached                                                                                              |
 | 409  | ALREADY_BOOKED                          | client already in this session                                                                                      |
 | 409  | TRIAL_ALREADY_USED                      | second trial (account or email)                                                                                     |
+| 409  | RESCHEDULE_WINDOW_PASSED                | too late to reschedule, or the booking is not active                                                                |
 | 409  | CANCELLATION_WINDOW_PASSED              | too late to cancel (`details.freeCancelHours`, `details.deadline`)                                                  |
 | 409  | BOOKING_NOT_PAYABLE                     | not pending or expired                                                                                              |
 | 422  | TRIAL_NOT_ALLOWED                       | trial requested for a group session                                                                                 |

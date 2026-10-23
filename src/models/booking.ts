@@ -38,6 +38,8 @@ const bookingSchema = new Schema(
     cancelledAt: Date,
     cancelledBy: {type: String, enum: ['coach', 'client', 'system']},
     cancelReason: String,
+    // Last time the client moved the booking to another time / group session.
+    rescheduledAt: {type: Date, default: null},
     // `${sessionId}:${clientId}` while the booking is active; removed ($unset) when cancelled,
     // so a client can re-join a session later. Must stay absent (not null) for the sparse index.
     activeKey: {type: String},

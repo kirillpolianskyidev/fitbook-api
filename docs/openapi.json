@@ -46,6 +46,7 @@
                   "ALREADY_BOOKED",
                   "TRIAL_ALREADY_USED",
                   "CANCELLATION_WINDOW_PASSED",
+                  "RESCHEDULE_WINDOW_PASSED",
                   "BOOKING_NOT_PAYABLE",
                   "TRIAL_NOT_ALLOWED",
                   "PROFILE_INCOMPLETE",
@@ -1230,6 +1231,17 @@
             "type": "boolean",
             "description": "Whether the client can still cancel right now"
           },
+          "reschedulable": {
+            "type": "boolean",
+            "description": "Whether the current user (the client of the booking) can move it to another time right now"
+          },
+          "rescheduledAt": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "When the booking was last rescheduled"
+          },
           "cancelDeadline": {
             "type": [
               "string",
@@ -1266,6 +1278,10 @@
               "id": {
                 "type": "string"
               },
+              "sessionTypeId": {
+                "type": "string",
+                "description": "Training type of the session (\"Book again\")"
+              },
               "title": {
                 "type": "string"
               },
@@ -1284,6 +1300,7 @@
             },
             "required": [
               "id",
+              "sessionTypeId",
               "title",
               "kind",
               "location",
@@ -1315,6 +1332,8 @@
           "endAt",
           "seriesId",
           "cancellable",
+          "reschedulable",
+          "rescheduledAt",
           "cancelDeadline",
           "cancelledAt",
           "cancelledBy",
@@ -1625,6 +1644,22 @@
           "bookings",
           "skipped"
         ]
+      },
+      "RescheduleRequest": {
+        "type": "object",
+        "properties": {
+          "startAt": {
+            "type": "string",
+            "format": "date-time",
+            "example": "2026-11-03T15:00:00.000Z",
+            "description": "Individual bookings: the new start (a free slot of the same type)"
+          },
+          "sessionId": {
+            "type": "string",
+            "description": "Group bookings: another upcoming group session of the same type",
+            "example": "6650f0c2a1b2c3d4e5f60718"
+          }
+        }
       },
       "CalendarEvent": {
         "type": "object",
@@ -1973,6 +2008,7 @@
           "Service"
         ],
         "summary": "Health check",
+        "security": [],
         "x-auth": "public",
         "responses": {
           "200": {
@@ -2028,6 +2064,7 @@
         ],
         "summary": "Register with email and password (role and home area required). Emails a 6-digit code; tokens come from POST /auth/verify.",
         "description": "An email of an unverified account is not taken: that account is overwritten with the new data and its previous codes stop working.",
+        "security": [],
         "x-auth": "public",
         "requestBody": {
           "content": {
@@ -2135,6 +2172,7 @@
           "Auth"
         ],
         "summary": "Check email and password and email a 6-digit code (purpose \"login\", or \"signup\" for an unverified email). Tokens come from POST /auth/verify.",
+        "security": [],
         "x-auth": "public",
         "requestBody": {
           "content": {
@@ -2220,6 +2258,7 @@
         ],
         "summary": "Check the emailed code and start a session",
         "description": "Errors in order: NOT_FOUND (unknown id), VERIFICATION_CODE_EXPIRED (used, code older than 10 minutes or verification older than 30 minutes), TOO_MANY_ATTEMPTS (5 wrong codes; a resend resets it), VERIFICATION_CODE_INVALID (details.attemptsLeft). A signup verification also confirms the email.",
+        "security": [],
         "x-auth": "public",
         "requestBody": {
           "content": {
@@ -2296,6 +2335,7 @@
         ],
         "summary": "Email a new code for the same verification (old code stops working, attempts reset)",
         "description": "Allowed from resendAvailableAt (60 seconds after each send), at most 5 times. Too early -> RATE_LIMITED with details.retryAfterSeconds. Used, expired or resend limit reached -> VERIFICATION_CODE_EXPIRED (sign in / sign up again).",
+        "security": [],
         "x-auth": "public",
         "requestBody": {
           "content": {
@@ -2376,6 +2416,7 @@
           "Auth"
         ],
         "summary": "Sign in with a Google ID token (no email code). New accounts must complete POST /me/onboarding.",
+        "security": [],
         "x-auth": "public",
         "requestBody": {
           "content": {
@@ -2435,6 +2476,7 @@
           "Auth"
         ],
         "summary": "Sign in with an Apple identity token (no email code). New accounts must complete POST /me/onboarding.",
+        "security": [],
         "x-auth": "public",
         "requestBody": {
           "content": {
@@ -2502,6 +2544,7 @@
           "Auth"
         ],
         "summary": "Exchange a refresh token for new tokens (rotation; reuse revokes the session family)",
+        "security": [],
         "x-auth": "public",
         "requestBody": {
           "content": {
@@ -2618,6 +2661,7 @@
           "Auth"
         ],
         "summary": "Email a 6-digit reset code (always 204, no user enumeration)",
+        "security": [],
         "x-auth": "public",
         "requestBody": {
           "content": {
@@ -2670,6 +2714,7 @@
           "Auth"
         ],
         "summary": "Verify the reset code and get a short-lived reset token",
+        "security": [],
         "x-auth": "public",
         "requestBody": {
           "content": {
@@ -2734,6 +2779,7 @@
           "Auth"
         ],
         "summary": "Set a new password with the reset token: signs out all sessions, confirms the email and starts a new session (no extra code)",
+        "security": [],
         "x-auth": "public",
         "requestBody": {
           "content": {
@@ -5394,6 +5440,105 @@
           },
           "409": {
             "description": "CANCELLATION_WINDOW_PASSED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/bookings/{id}/reschedule": {
+      "post": {
+        "tags": [
+          "Bookings"
+        ],
+        "summary": "Move my booking to another time (individual) or another group session (group)",
+        "description": "Individual: `{startAt}` - a free slot of the same training type (as returned by /coaches/:id/slots; the booking's own slot does not block it). Group: `{sessionId}` - another upcoming group session of the same type with free places. Allowed while `reschedulable` (same window as cancelling). Payment, trial, price, notes, location and series stay; the old slot / place is released.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "x-auth": "client",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "description": "Object id",
+              "example": "6650f0c2a1b2c3d4e5f60718"
+            },
+            "required": true,
+            "description": "Object id",
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RescheduleRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Booking"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "VALIDATION_ERROR",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED, TOKEN_EXPIRED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "NOT_FOUND",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "RESCHEDULE_WINDOW_PASSED, SLOT_UNAVAILABLE, SESSION_FULL, ALREADY_BOOKED",
             "content": {
               "application/json": {
                 "schema": {

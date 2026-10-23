@@ -9,6 +9,7 @@ import {
   CancelBody,
   CoachCancelBody,
   CreateBookingBody,
+  RescheduleBody,
   SeriesBody,
   SeriesPreviewBody,
   SeriesPreviewItemSchema,
@@ -106,7 +107,7 @@ route({
   response: BookingSchema,
   errors: ['NOT_FOUND'],
   handler: async ({user, params}) =>
-    service.toBookingDto(await service.getBookingForParticipant(user, params.id)),
+    service.toBookingDto(await service.getBookingForParticipant(user, params.id), user._id),
 });
 
 route({
@@ -140,6 +141,33 @@ route({
 });
 
 route({
+  method: 'post',
+  path: '/bookings/:id/reschedule',
+  tags,
+  summary: 'Move my booking to another time (individual) or another group session (group)',
+  description:
+    'Individual: `{startAt}` - a free slot of the same training type (as returned by /coaches/:id/slots; the ' +
+    "booking's own slot does not block it). Group: `{sessionId}` - another upcoming group session of the same " +
+    'type with free places. Allowed while `reschedulable` (same window as cancelling). Payment, trial, price, ' +
+    'notes, location and series stay; the old slot / place is released.',
+  auth: 'client',
+  status: 200,
+  params: IdParams,
+  body: RescheduleBody,
+  response: BookingSchema,
+  errors: [
+    'FORBIDDEN',
+    'NOT_FOUND',
+    'RESCHEDULE_WINDOW_PASSED',
+    'SLOT_UNAVAILABLE',
+    'SESSION_FULL',
+    'ALREADY_BOOKED',
+  ],
+  handler: async ({user, params, body}) =>
+    service.toBookingDto(await service.rescheduleBooking(user, params.id, body), user._id),
+});
+
+route({
   method: 'get',
   path: '/bookings/:id/calendar-event',
   tags,
@@ -163,5 +191,5 @@ route({
   response: BookingSchema,
   errors: ['NOT_FOUND', 'CANCELLATION_WINDOW_PASSED'],
   handler: async ({user, params, body}) =>
-    service.toBookingDto(await service.cancelByCoach(user, params.id, body.reason)),
+    service.toBookingDto(await service.cancelByCoach(user, params.id, body.reason), user._id),
 });

@@ -69,6 +69,7 @@ const UI_HINTS: Partial<Record<ErrorCode, string>> = {
   SESSION_FULL: 'Refresh the group list; offer other sessions.',
   TRIAL_ALREADY_USED: 'Hide the free-trial option; continue with a paid booking.',
   CANCELLATION_WINDOW_PASSED: 'Explain the coach policy using `details.freeCancelHours`.',
+  RESCHEDULE_WINDOW_PASSED: 'Hide "Reschedule"; reload the booking (`reschedulable` is false now).',
   BOOKING_NOT_PAYABLE: 'Reload the booking; it was paid or released.',
   RATE_LIMITED: 'Ask to try again later (`details.retryAfterSeconds` when present).',
   VERIFICATION_CODE_INVALID: 'Show under the code cells, clear them; `details.attemptsLeft`.',
@@ -170,6 +171,13 @@ ${example('errorResendTooEarly', 'Example: resend before resendAvailableAt')}
   \`comment\` (meeting point). Otherwise the training type or coach default location is used.
 - **Cancellation:** use \`booking.cancellable\` and \`booking.cancelDeadline\` to show the button and the deadline.
   Confirmed bookings can be cancelled only before the coach's \`freeCancelHours\`; unpaid ones any time before start.
+- **Reschedule:** while \`booking.reschedulable\` (same window as cancelling: before \`cancelDeadline\`, or before the
+  start for unpaid bookings) the client can move the booking: \`POST /bookings/:id/reschedule\` with
+  \`{ startAt }\` (individual: a free slot of the same type from \`/coaches/:id/slots\`; the booking's own slot does
+  not block it) or \`{ sessionId }\` (group: another upcoming group session of the same type with free places;
+  \`session.sessionTypeId\` tells which). Same \`id\`, payment, trial, price, notes, location and series; the old
+  slot / place is released; \`rescheduledAt\` is set. Errors: \`RESCHEDULE_WINDOW_PASSED\`, \`SLOT_UNAVAILABLE\`,
+  \`SESSION_FULL\`, \`NOT_FOUND\` (target group session), \`VALIDATION_ERROR\` (none / both fields, same time).
 - **Refunds (mock, instant):** cancelling a **paid** booking always returns the full price:
   \`payment.status\` becomes \`refunded\` and \`payment.refundedAt\` is set. The client can cancel only before
   \`cancelDeadline\` (after it -> \`409 CANCELLATION_WINDOW_PASSED\`, nothing changes); cancellations by the coach
@@ -248,6 +256,7 @@ ${example('slots', 'GET /coaches/:id/slots')}
 ${example('groupSessions', 'GET /coaches/:id/group-sessions')}
 ${example('bookingConfirmed', 'POST /bookings/:id/pay')}
 ${example('bookingCancelled', 'POST /bookings/:id/cancel')}
+${example('bookingRescheduled', 'POST /bookings/:id/reschedule')}
 ${example('seriesResult', 'POST /bookings/series')}
 ${example('calendarEvent', 'GET /bookings/:id/calendar-event')}
 ${example('notes', 'GET /bookings/:id/notes')}

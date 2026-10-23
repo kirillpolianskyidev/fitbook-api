@@ -23,6 +23,7 @@ import {
   createLockedSession,
   findSlots,
   isFreeSlot,
+  moveLockedSession,
   unlockSession,
 } from '../sessions/sessions.service.js';
 import {toUserSummary} from '../users/users.service.js';
@@ -45,7 +46,10 @@ const activeKey = (sessionId: Types.ObjectId, clientId: Types.ObjectId) =>
 // ---------------------------------------------------------------------------------------------
 
 /** Builds booking DTOs for a list, loading related sessions, users, policies and note counts in batches. */
-export async function toBookingDtos(bookings: BookingDoc[]): Promise<BookingDto[]> {
+export async function toBookingDtos(
+  bookings: BookingDoc[],
+  viewerId?: Types.ObjectId,
+): Promise<BookingDto[]> {
   if (bookings.length === 0) return [];
   const sessionIds = [...new Set(bookings.map(b => b.sessionId.toString()))];
   const userIds = [
@@ -85,6 +89,8 @@ export async function toBookingDtos(bookings: BookingDoc[]): Promise<BookingDto[
       isActive &&
       booking.startAt.getTime() > now &&
       (status === 'pending_payment' || now <= deadline.getTime());
+    // Same window as cancelling, and only for the client of the booking.
+    const reschedulable = cancellable && (!viewerId || booking.clientId.equals(viewerId));
     return {
       id: booking.id as string,
       status,
@@ -101,12 +107,15 @@ export async function toBookingDtos(bookings: BookingDoc[]): Promise<BookingDto[
       endAt: booking.endAt.toISOString(),
       seriesId: booking.seriesId?.toString() ?? null,
       cancellable,
+      reschedulable,
+      rescheduledAt: booking.rescheduledAt?.toISOString() ?? null,
       cancelDeadline: isActive ? deadline.toISOString() : null,
       cancelledAt: booking.cancelledAt?.toISOString() ?? null,
       cancelledBy: (booking.cancelledBy as CancelledBy | undefined) ?? null,
       cancelReason: booking.cancelReason ?? null,
       session: {
         id: booking.sessionId.toString(),
+        sessionTypeId: session?.sessionTypeId.toString() ?? '',
         title: session?.title ?? '',
         kind: (session?.kind as 'individual' | 'group') ?? 'individual',
         location: toLocationDto(session?.location),
@@ -125,8 +134,8 @@ export async function toBookingDtos(bookings: BookingDoc[]): Promise<BookingDto[
   });
 }
 
-export async function toBookingDto(booking: BookingDoc) {
-  const [dto] = await toBookingDtos([booking]);
+export async function toBookingDto(booking: BookingDoc, viewerId?: Types.ObjectId) {
+  const [dto] = await toBookingDtos([booking], viewerId);
   return dto!;
 }
 
@@ -600,6 +609,152 @@ export async function cancelByCoach(coach: UserDoc, bookingId: string, reason: s
     throw new AppError('CANCELLATION_WINDOW_PASSED', 'This booking is not active.');
   }
   return cancelled;
+}
+
+// ---------------------------------------------------------------------------------------------
+// Reschedule (client)
+// ---------------------------------------------------------------------------------------------
+
+/** Hook for the place a client leaves in a group session (waitlist offers). */
+export const seatFreedHooks: ((sessionId: Types.ObjectId) => Promise<void>)[] = [];
+export async function onSeatFreed(sessionId: Types.ObjectId) {
+  for (const hook of seatFreedHooks) await hook(sessionId);
+}
+
+/**
+ * Moves a booking to another time (individual) or another group session of the same type (group), before the
+ * free-cancellation deadline. Payment, trial flag, price, notes, location and series stay as they are.
+ */
+export async function rescheduleBooking(
+  client: UserDoc,
+  bookingId: string,
+  input: {startAt?: string; sessionId?: string},
+) {
+  const booking = await BookingModel.findById(bookingId);
+  if (!booking) {
+    throw new AppError('NOT_FOUND', 'Booking not found.');
+  }
+  if (!booking.clientId.equals(client._id)) {
+    throw new AppError('FORBIDDEN');
+  }
+  const now = new Date();
+  if (!ACTIVE.includes(booking.status as (typeof ACTIVE)[number]) || booking.startAt <= now) {
+    throw new AppError('RESCHEDULE_WINDOW_PASSED');
+  }
+  if (booking.status === 'confirmed') {
+    const profile = await CoachProfileModel.findOne({userId: booking.coachId}).lean();
+    const freeCancelHours = profile?.cancellationPolicy?.freeCancelHours ?? 24;
+    const deadline = addMinutes(booking.startAt, -freeCancelHours * 60);
+    if (now > deadline) {
+      throw new AppError('RESCHEDULE_WINDOW_PASSED', undefined, {
+        freeCancelHours,
+        deadline: deadline.toISOString(),
+      });
+    }
+  }
+  const session = await TrainingSessionModel.findById(booking.sessionId);
+  if (!session) {
+    throw new AppError('NOT_FOUND', 'Session not found.');
+  }
+  const moved =
+    session.kind === 'individual'
+      ? await rescheduleIndividual(booking, session, input)
+      : await rescheduleGroup(client, booking, session, input);
+  return moved;
+}
+
+async function rescheduleIndividual(
+  booking: BookingDoc,
+  session: TrainingSessionDoc,
+  input: {startAt?: string; sessionId?: string},
+) {
+  if (!input.startAt) {
+    throw new AppError('VALIDATION_ERROR', undefined, {
+      fields: {startAt: 'Individual bookings are moved with startAt'},
+    });
+  }
+  const startAt = new Date(input.startAt);
+  if (startAt.getTime() === session.startAt.getTime()) {
+    throw new AppError('VALIDATION_ERROR', undefined, {
+      fields: {startAt: 'Choose a different time'},
+    });
+  }
+  const durationMin = Math.round((session.endAt.getTime() - session.startAt.getTime()) / 60_000);
+  // The booking's own slot does not block the new time.
+  if (
+    !isOnSlotGrid(startAt) ||
+    !(await isFreeSlot(session.coachId, durationMin, startAt, session._id))
+  ) {
+    throw new AppError('SLOT_UNAVAILABLE');
+  }
+  const oldStart = booking.startAt;
+  const endAt = addMinutes(startAt, durationMin);
+  await moveLockedSession(session, startAt, endAt);
+  const updated = await BookingModel.findOneAndUpdate(
+    {_id: booking._id, startAt: oldStart, status: {$in: ACTIVE}},
+    {$set: {startAt, endAt, rescheduledAt: new Date()}},
+    {returnDocument: 'after'},
+  );
+  if (!updated) {
+    // Cancelled or moved in parallel: put the session back.
+    await moveLockedSession(session, oldStart, addMinutes(oldStart, durationMin));
+    throw new AppError('RESCHEDULE_WINDOW_PASSED');
+  }
+  return updated;
+}
+
+async function rescheduleGroup(
+  client: UserDoc,
+  booking: BookingDoc,
+  session: TrainingSessionDoc,
+  input: {startAt?: string; sessionId?: string},
+) {
+  if (!input.sessionId) {
+    throw new AppError('VALIDATION_ERROR', undefined, {
+      fields: {sessionId: 'Group bookings are moved with sessionId'},
+    });
+  }
+  if (input.sessionId === session.id) {
+    throw new AppError('VALIDATION_ERROR', undefined, {
+      fields: {sessionId: 'Choose a different session'},
+    });
+  }
+  const target = await TrainingSessionModel.findOne({
+    _id: input.sessionId,
+    kind: 'group',
+    status: 'scheduled',
+    startAt: {$gt: new Date()},
+    coachId: session.coachId,
+    sessionTypeId: session.sessionTypeId,
+  });
+  if (!target) {
+    throw new AppError('NOT_FOUND', 'Group session not found.');
+  }
+  if (await BookingModel.exists({activeKey: activeKey(target._id, client._id)})) {
+    throw new AppError('ALREADY_BOOKED');
+  }
+  const seat = await takeSeat(target._id, client._id, target.capacity);
+  const updated = await BookingModel.findOneAndUpdate(
+    {_id: booking._id, sessionId: session._id, status: {$in: ACTIVE}},
+    {
+      $set: {
+        sessionId: target._id,
+        startAt: target.startAt,
+        endAt: target.endAt,
+        activeKey: activeKey(target._id, client._id),
+        rescheduledAt: new Date(),
+      },
+    },
+    {returnDocument: 'after'},
+  );
+  if (!updated) {
+    await SeatLockModel.deleteOne({_id: seat._id});
+    throw new AppError('RESCHEDULE_WINDOW_PASSED');
+  }
+  await SeatLockModel.deleteOne({sessionId: session._id, clientId: client._id});
+  await Promise.all([syncParticipants(session._id), syncParticipants(target._id)]);
+  await onSeatFreed(session._id);
+  return updated;
 }
 
 // ---------------------------------------------------------------------------------------------

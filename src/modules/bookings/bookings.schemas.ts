@@ -43,12 +43,21 @@ export const BookingSchema = z
     endAt: z.string(),
     seriesId: z.string().nullable(),
     cancellable: z.boolean().meta({description: 'Whether the client can still cancel right now'}),
+    reschedulable: z.boolean().meta({
+      description:
+        'Whether the current user (the client of the booking) can move it to another time right now',
+    }),
+    rescheduledAt: z
+      .string()
+      .nullable()
+      .meta({description: 'When the booking was last rescheduled'}),
     cancelDeadline: z.string().nullable(),
     cancelledAt: z.string().nullable(),
     cancelledBy: z.enum(['coach', 'client', 'system']).nullable(),
     cancelReason: z.string().nullable(),
     session: z.object({
       id: z.string(),
+      sessionTypeId: z.string().meta({description: 'Training type of the session ("Book again")'}),
       title: z.string(),
       kind: SessionKindSchema,
       location: LocationSchema.nullable(),
@@ -127,6 +136,21 @@ export const BookingListQuery = z.object({
   page: z.coerce.number().int().min(1).default(1),
   pageSize: z.coerce.number().int().min(1).max(50).default(20),
 });
+
+export const RescheduleBody = z
+  .object({
+    startAt: isoDateTime
+      .optional()
+      .meta({description: 'Individual bookings: the new start (a free slot of the same type)'}),
+    sessionId: objectId
+      .optional()
+      .meta({description: 'Group bookings: another upcoming group session of the same type'}),
+  })
+  .refine(body => (body.startAt === undefined) !== (body.sessionId === undefined), {
+    message: 'Send exactly one of startAt (individual) or sessionId (group)',
+    path: ['startAt'],
+  })
+  .meta({id: 'RescheduleRequest'});
 
 export const CancelBody = z.object({reason: z.string().trim().max(300).optional()});
 export const CoachCancelBody = z.object({reason: z.string().trim().min(1).max(300)});
