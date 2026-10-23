@@ -267,6 +267,31 @@ async function main() {
     200,
     'bookingRescheduled',
   );
+  await step('my progress', () => api().get(`${v1}/me/progress`).set(client), 200, 'progress');
+  await step(
+    'my measurements',
+    () => api().get(`${v1}/me/measurements?limit=4`).set(client),
+    200,
+    'measurements',
+  );
+  await step(
+    'save today weight',
+    () => api().post(`${v1}/me/measurements`).set(client).send({type: 'weight', value: 181.6}),
+    201,
+    'measurement',
+  );
+  await step(
+    'set goal',
+    () => api().put(`${v1}/me/goal`).set(client).send({trainingsPerWeek: 3}),
+    200,
+  );
+  const clientId = (login.body.user as {id: string}).id;
+  await step(
+    'coach: client progress',
+    () => api().get(`${v1}/coach/clients/${clientId}/progress?weeks=8`).set(coach),
+    200,
+    'coachClientProgress',
+  );
   await step('my favorites', () => api().get(`${v1}/me/favorites`).set(client), 200, 'favorites');
   await step('add favorite', () => api().put(`${v1}/me/favorites/${coachId}`).set(client), 204);
   await step('my packages', () => api().get(`${v1}/me/packages`).set(client), 200, 'myPackages');

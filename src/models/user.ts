@@ -30,6 +30,8 @@ const userSchema = new Schema(
     providerKeys: {type: [String], default: []},
     onboardingCompleted: {type: Boolean, default: false},
     trialUsed: {type: Boolean, default: false},
+    // Client's weekly training goal (1..14), null = no goal.
+    weeklyGoal: {type: Number, default: null},
     settings: {
       type: new Schema(
         {theme: {type: String, enum: ['light', 'dark', 'system'], default: 'system'}},

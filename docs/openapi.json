@@ -1407,6 +1407,340 @@
           "rating"
         ]
       },
+      "Progress": {
+        "type": "object",
+        "properties": {
+          "totals": {
+            "type": "object",
+            "properties": {
+              "completed": {
+                "type": "integer"
+              },
+              "thisMonth": {
+                "type": "integer",
+                "description": "Completed this calendar month (client time zone)"
+              },
+              "coaches": {
+                "type": "integer",
+                "description": "Different coaches trained with"
+              }
+            },
+            "required": [
+              "completed",
+              "thisMonth",
+              "coaches"
+            ]
+          },
+          "goal": {
+            "type": "object",
+            "properties": {
+              "trainingsPerWeek": {
+                "type": [
+                  "integer",
+                  "null"
+                ]
+              }
+            },
+            "required": [
+              "trainingsPerWeek"
+            ]
+          },
+          "thisWeek": {
+            "type": "object",
+            "properties": {
+              "weekStart": {
+                "type": "string",
+                "description": "Monday of the current week (YYYY-MM-DD, client time zone)"
+              },
+              "completed": {
+                "type": "integer"
+              },
+              "planned": {
+                "type": "integer",
+                "description": "Confirmed bookings later this week"
+              }
+            },
+            "required": [
+              "weekStart",
+              "completed",
+              "planned"
+            ]
+          },
+          "streakWeeks": {
+            "type": "integer",
+            "description": "Consecutive weeks meeting the goal (>= 1 training without a goal), up to the last finished week or the current week if its goal is already met"
+          },
+          "weekly": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "weekStart": {
+                  "type": "string"
+                },
+                "completed": {
+                  "type": "integer"
+                }
+              },
+              "required": [
+                "weekStart",
+                "completed"
+              ]
+            },
+            "description": "`weeks` items, oldest first; the last one is the current week"
+          }
+        },
+        "required": [
+          "totals",
+          "goal",
+          "thisWeek",
+          "streakWeeks",
+          "weekly"
+        ]
+      },
+      "Goal": {
+        "type": "object",
+        "properties": {
+          "trainingsPerWeek": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "minimum": 1,
+            "maximum": 14
+          }
+        },
+        "required": [
+          "trainingsPerWeek"
+        ]
+      },
+      "Measurement": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "type": {
+            "$ref": "#/components/schemas/MeasurementType"
+          },
+          "value": {
+            "type": "number"
+          },
+          "unit": {
+            "type": "string",
+            "enum": [
+              "lb",
+              "%",
+              "in"
+            ]
+          },
+          "measuredAt": {
+            "type": "string",
+            "description": "Local date YYYY-MM-DD"
+          },
+          "note": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "createdAt": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "type",
+          "value",
+          "unit",
+          "measuredAt",
+          "note",
+          "createdAt"
+        ]
+      },
+      "MeasurementType": {
+        "type": "string",
+        "enum": [
+          "weight",
+          "body_fat",
+          "waist"
+        ],
+        "description": "weight: lb (50-700), body_fat: % (2-70), waist: in (15-80)"
+      },
+      "MeasurementRequest": {
+        "type": "object",
+        "properties": {
+          "type": {
+            "$ref": "#/components/schemas/MeasurementType"
+          },
+          "value": {
+            "type": "number"
+          },
+          "measuredAt": {
+            "type": "string",
+            "format": "date",
+            "example": "2026-11-03",
+            "description": "Local date, default today; not in the future"
+          },
+          "note": {
+            "type": "string",
+            "maxLength": 200
+          }
+        },
+        "required": [
+          "type",
+          "value"
+        ]
+      },
+      "CoachClientProgress": {
+        "type": "object",
+        "properties": {
+          "totals": {
+            "type": "object",
+            "properties": {
+              "completed": {
+                "type": "integer"
+              },
+              "thisMonth": {
+                "type": "integer",
+                "description": "Completed this calendar month (client time zone)"
+              },
+              "coaches": {
+                "type": "integer",
+                "description": "Different coaches trained with"
+              }
+            },
+            "required": [
+              "completed",
+              "thisMonth",
+              "coaches"
+            ]
+          },
+          "goal": {
+            "type": "object",
+            "properties": {
+              "trainingsPerWeek": {
+                "type": [
+                  "integer",
+                  "null"
+                ]
+              }
+            },
+            "required": [
+              "trainingsPerWeek"
+            ]
+          },
+          "thisWeek": {
+            "type": "object",
+            "properties": {
+              "weekStart": {
+                "type": "string",
+                "description": "Monday of the current week (YYYY-MM-DD, client time zone)"
+              },
+              "completed": {
+                "type": "integer"
+              },
+              "planned": {
+                "type": "integer",
+                "description": "Confirmed bookings later this week"
+              }
+            },
+            "required": [
+              "weekStart",
+              "completed",
+              "planned"
+            ]
+          },
+          "streakWeeks": {
+            "type": "integer",
+            "description": "Consecutive weeks meeting the goal (>= 1 training without a goal), up to the last finished week or the current week if its goal is already met"
+          },
+          "weekly": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "weekStart": {
+                  "type": "string"
+                },
+                "completed": {
+                  "type": "integer"
+                }
+              },
+              "required": [
+                "weekStart",
+                "completed"
+              ]
+            },
+            "description": "`weeks` items, oldest first; the last one is the current week"
+          },
+          "measurements": {
+            "type": "object",
+            "properties": {
+              "latest": {
+                "type": "object",
+                "properties": {
+                  "weight": {
+                    "allOf": [
+                      {
+                        "$ref": "#/components/schemas/Measurement"
+                      },
+                      {
+                        "type": [
+                          "object",
+                          "null"
+                        ]
+                      }
+                    ]
+                  },
+                  "body_fat": {
+                    "allOf": [
+                      {
+                        "$ref": "#/components/schemas/Measurement"
+                      },
+                      {
+                        "type": [
+                          "object",
+                          "null"
+                        ]
+                      }
+                    ]
+                  },
+                  "waist": {
+                    "allOf": [
+                      {
+                        "$ref": "#/components/schemas/Measurement"
+                      },
+                      {
+                        "type": [
+                          "object",
+                          "null"
+                        ]
+                      }
+                    ]
+                  }
+                },
+                "required": [
+                  "weight",
+                  "body_fat",
+                  "waist"
+                ]
+              }
+            },
+            "required": [
+              "latest"
+            ]
+          }
+        },
+        "required": [
+          "totals",
+          "goal",
+          "thisWeek",
+          "streakWeeks",
+          "weekly",
+          "measurements"
+        ]
+      },
       "Availability": {
         "type": "object",
         "properties": {
@@ -5066,6 +5400,570 @@
           },
           "403": {
             "description": "FORBIDDEN",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/me/progress": {
+      "get": {
+        "tags": [
+          "Progress"
+        ],
+        "summary": "My training stats: totals, this week, weekly chart, streak and goal (weeks start on Monday)",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "x-auth": "client",
+        "parameters": [
+          {
+            "schema": {
+              "type": "integer",
+              "minimum": 4,
+              "maximum": 52,
+              "default": 12
+            },
+            "required": false,
+            "name": "weeks",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Progress"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "VALIDATION_ERROR",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED, TOKEN_EXPIRED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/me/goal": {
+      "put": {
+        "tags": [
+          "Progress"
+        ],
+        "summary": "Set (1-14) or remove (null) my weekly training goal",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "x-auth": "client",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Goal"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Goal"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "VALIDATION_ERROR",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED, TOKEN_EXPIRED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/me/measurements": {
+      "get": {
+        "tags": [
+          "Progress"
+        ],
+        "summary": "My body measurements, newest first",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "x-auth": "client",
+        "parameters": [
+          {
+            "schema": {
+              "$ref": "#/components/schemas/MeasurementType"
+            },
+            "required": false,
+            "description": "weight: lb (50-700), body_fat: % (2-70), waist: in (15-80)",
+            "name": "type",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 200,
+              "default": 60
+            },
+            "required": false,
+            "name": "limit",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "items": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/Measurement"
+                      }
+                    }
+                  },
+                  "required": [
+                    "items"
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "VALIDATION_ERROR",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED, TOKEN_EXPIRED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Progress"
+        ],
+        "summary": "Save a measurement (201); the same type on the same day replaces the value (200)",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "x-auth": "client",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MeasurementRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Measurement"
+                }
+              }
+            }
+          },
+          "201": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Measurement"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "VALIDATION_ERROR",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED, TOKEN_EXPIRED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/me/measurements/{id}": {
+      "delete": {
+        "tags": [
+          "Progress"
+        ],
+        "summary": "Delete a measurement",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "x-auth": "client",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "description": "Object id",
+              "example": "6650f0c2a1b2c3d4e5f60718"
+            },
+            "required": true,
+            "description": "Object id",
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "No content"
+          },
+          "400": {
+            "description": "VALIDATION_ERROR",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED, TOKEN_EXPIRED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "NOT_FOUND",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/coach/clients/{clientId}/progress": {
+      "get": {
+        "tags": [
+          "Coach: clients"
+        ],
+        "summary": "A client's progress with me (totals and weekly: my trainings only) and latest measurements",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "x-auth": "coach",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "pattern": "^[0-9a-f]{24}$/i"
+            },
+            "required": true,
+            "name": "clientId",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "integer",
+              "minimum": 4,
+              "maximum": 52,
+              "default": 12
+            },
+            "required": false,
+            "name": "weeks",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CoachClientProgress"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "VALIDATION_ERROR",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED, TOKEN_EXPIRED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "NOT_FOUND",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/coach/clients/{clientId}/measurements": {
+      "get": {
+        "tags": [
+          "Coach: clients"
+        ],
+        "summary": "A client's body measurements (clients share them with their coaches)",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "x-auth": "coach",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "pattern": "^[0-9a-f]{24}$/i"
+            },
+            "required": true,
+            "name": "clientId",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "$ref": "#/components/schemas/MeasurementType"
+            },
+            "required": false,
+            "description": "weight: lb (50-700), body_fat: % (2-70), waist: in (15-80)",
+            "name": "type",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 200,
+              "default": 60
+            },
+            "required": false,
+            "name": "limit",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "items": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/Measurement"
+                      }
+                    }
+                  },
+                  "required": [
+                    "items"
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "VALIDATION_ERROR",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED, TOKEN_EXPIRED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "NOT_FOUND",
             "content": {
               "application/json": {
                 "schema": {

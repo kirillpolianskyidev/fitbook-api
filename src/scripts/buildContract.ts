@@ -250,7 +250,28 @@ ${example('bookingWithCredits', 'Example: POST /bookings with useCredits')}
 
 ${example('favorites', 'Example: GET /me/favorites')}
 
-## 4d. Reviews
+## 4d. Progress (client) and client progress (coach)
+
+- \`GET /me/progress?weeks=12\` (4-52) -> \`{ totals { completed, thisMonth, coaches }, goal { trainingsPerWeek },
+  thisWeek { weekStart, completed, planned }, streakWeeks, weekly [{ weekStart, completed }] }\`. A training counts
+  when its booking is \`completed\`; \`planned\` = \`confirmed\` bookings later this week. Weeks start on Monday in
+  the client's \`homeArea.timezone\` (\`weekStart\` = that Monday, YYYY-MM-DD). \`weekly\` has exactly \`weeks\`
+  items, oldest first, the last one is the current week. \`streakWeeks\` = consecutive weeks meeting the goal
+  (\`>= 1\` training without a goal), ending with the last finished week, or the current week if its goal is met.
+- \`PUT /me/goal { trainingsPerWeek: 1..14 | null }\` -> \`{ trainingsPerWeek }\`.
+- Measurements (fixed units): \`weight\` lb 50-700, \`body_fat\` % 2-70, \`waist\` in 15-80, at most 1 decimal.
+  \`POST /me/measurements { type, value, measuredAt?, note? }\` -> 201; the same type on the same local day replaces the
+  value -> 200 (same \`id\`). \`measuredAt\` defaults to today in the client's time zone, never in the future.
+  \`GET /me/measurements?type&limit\` (newest first, limit <= 200), \`DELETE /me/measurements/:id\`.
+- Coach: \`GET /coach/clients/:clientId/progress?weeks\` - same body, but \`totals\` and \`weekly\` count only
+  trainings with this coach (\`thisWeek\` and \`streakWeeks\` are the client's overall), plus
+  \`measurements.latest { weight, body_fat, waist }\`; \`GET /coach/clients/:clientId/measurements\`. Only for clients
+  who have (or had) a booking with the coach, otherwise \`NOT_FOUND\`.
+
+${example('progress', 'Example: GET /me/progress')}
+${example('measurement', 'Example: POST /me/measurements')}
+
+## 4e. Reviews
 
 - One review per client per coach (\`rating\` 1-5, optional \`text\` up to 1000 characters; empty -> \`null\`).
   \`GET /coaches/:id/my-review\` -> \`{ review, canCreate, editableUntil }\`: show "Write a review" when
@@ -337,6 +358,8 @@ ${example('coachProfile', 'GET /coach/profile')}
 ${example('sessionTypes', 'GET /coach/session-types')}
 ${example('availability', 'GET /coach/availability')}
 ${example('coachClients', 'GET /coach/clients')}
+${example('coachClientProgress', 'GET /coach/clients/:clientId/progress')}
+${example('measurements', 'GET /me/measurements')}
 ${example('errorSlotUnavailable', 'Error: SLOT_UNAVAILABLE')}
 ${example('errorTrialUsed', 'Error: TRIAL_ALREADY_USED')}
 ${example('errorForbidden', 'Error: FORBIDDEN')}

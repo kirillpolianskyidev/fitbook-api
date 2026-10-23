@@ -396,6 +396,16 @@ is updated on writes, lazily on reads and by a job every minute. Socket.IO `wait
 (idempotent, 204; PUT needs a published coach), `GET /me/favorites` (newest first). `isFavorite` on every coach card
 / profile for clients; `GET /coaches?favorites=true` filter. Bookings expose `session.sessionTypeId` for "Book again".
 
+### Progress and measurements
+
+`users.weeklyGoal` (1..14 | null). Progress counts `completed` bookings; weeks start on Monday in the client's
+`homeArea.timezone`; `weekly` has `weeks` (4..52) items ending with the current week; streak = consecutive weeks
+meeting the goal (or with >= 1 training without one), ending with the last finished week or the current week if met.
+`measurements { clientId, type: weight(lb 50-700)|body_fat(% 2-70)|waist(in 15-80), value (1 decimal), measuredAt
+YYYY-MM-DD (local, not future), note <= 200 }`, unique `(clientId, type, measuredAt)`: a second POST for the same day
+replaces the value (200). Coaches see progress (their trainings only in totals / weekly) and measurements of clients
+with at least one booking with them, otherwise 404.
+
 ### Reviews
 
 `reviews { coachId, clientId, rating 1..5, text|null, createdAt, updatedAt }`, unique `(coachId, clientId)`. Creating

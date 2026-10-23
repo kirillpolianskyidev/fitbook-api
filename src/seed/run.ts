@@ -27,6 +27,7 @@ import {
   ClientPackageModel,
   PackageModel,
   FavoriteModel,
+  MeasurementModel,
 } from '../models/index.js';
 import {refreshCoachRating} from '../modules/reviews/reviews.service.js';
 import {createLockedSession} from '../modules/sessions/sessions.service.js';
@@ -566,6 +567,63 @@ async function main() {
     if (chance(0.15)) await addNote(booking, 'before', 'coach', pick(NOTE_TEXTS.coachBefore));
     if (chance(0.55)) await addNote(booking, 'after', 'coach', pick(NOTE_TEXTS.coachAfter));
     if (chance(0.25)) await addNote(booking, 'after', 'client', pick(NOTE_TEXTS.clientAfter));
+  }
+
+  // --- Progress of Jamie: goal 3/week, completed trainings in the last 8 weeks, measurements ------
+  jamie.weeklyGoal = 3;
+  await jamie.save();
+  const jamieWeek = DateTime.now().setZone(chicago).startOf('week');
+  // Completed trainings per week, 8 weeks ago -> last week (a streak of 3+ weeks at the end).
+  const weeklyTargets = [1, 2, 2, 3, 2, 3, 3, 3];
+  const progressSlots: [number, number][] = [
+    [0, 6],
+    [2, 6],
+    [4, 6],
+    [5, 8],
+    [1, 18],
+    [3, 18],
+  ];
+  const progressCoaches = [maya, marcus];
+  for (const [index, target] of weeklyTargets.entries()) {
+    const weekStart = jamieWeek.minus({weeks: weeklyTargets.length - index});
+    let missing =
+      target -
+      (await BookingModel.countDocuments({
+        clientId: jamie._id,
+        status: 'completed',
+        startAt: {$gte: weekStart.toJSDate(), $lt: weekStart.plus({weeks: 1}).toJSDate()},
+      }));
+    for (const [slotIndex, [day, hour]] of progressSlots.entries()) {
+      if (missing <= 0) break;
+      const coach = progressCoaches[slotIndex % progressCoaches.length]!;
+      const type = [...coach.types.values()].find(t => t.kind === 'individual')!;
+      const startAt = weekStart.plus({days: day}).set({hour}).toUTC().toJSDate();
+      if (startAt >= now) continue;
+      const session = await createSession(coach, type, startAt);
+      if (!session) continue;
+      if (await addBooking(session, jamie)) missing -= 1;
+    }
+  }
+  for (let weeksAgo = 9; weeksAgo >= 0; weeksAgo -= 1) {
+    const measuredAt = jamieWeek.minus({weeks: weeksAgo}).plus({days: 1}).toISODate()!;
+    if (measuredAt > DateTime.now().setZone(chicago).toISODate()!) continue;
+    const progress = 9 - weeksAgo;
+    await MeasurementModel.create({
+      clientId: jamie._id,
+      type: 'weight',
+      value: Math.round((186.4 - progress * 0.5 + (progress % 3 === 1 ? 0.4 : 0)) * 10) / 10,
+      measuredAt,
+      note: progress === 0 ? 'Starting point' : null,
+    });
+    if (weeksAgo % 2 === 1 || weeksAgo === 0) {
+      await MeasurementModel.create({
+        clientId: jamie._id,
+        type: 'waist',
+        value: Math.round((35.6 - progress * 0.2) * 10) / 10,
+        measuredAt,
+        note: null,
+      });
+    }
   }
 
   // --- Packages: 1-2 per coach; Jamie bought Alex's 10-pack and used 3 credits ---------------------

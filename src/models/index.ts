@@ -5,6 +5,7 @@ export * from './coachProfile.js';
 export * from './emailVerification.js';
 export * from './conversation.js';
 export * from './favorite.js';
+export * from './measurement.js';
 export * from './message.js';
 export * from './note.js';
 export * from './package.js';
