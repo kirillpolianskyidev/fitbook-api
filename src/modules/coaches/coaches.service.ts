@@ -12,6 +12,7 @@ import {UserModel, type UserDoc} from '../../models/user.js';
 import {listActivePackages, toPackageDto} from '../packages/packages.service.js';
 import {findSlots, toSessionDto} from '../sessions/sessions.service.js';
 import {toSessionTypeDto} from '../sessionTypes/sessionTypes.service.js';
+import {refreshWaitlists, waitlistInfo} from '../waitlist/waitlist.service.js';
 import type {CoachCardSchema, CoachListQuery, UpdateCoachProfileBody} from './coaches.schemas.js';
 
 type Specialization = z.infer<typeof UpdateCoachProfileBody>['specializations'] & {};
@@ -256,15 +257,33 @@ export async function getCoachSlots(coachId: string, sessionTypeId: string, from
   };
 }
 
-export async function getCoachGroupSessions(coachId: string, from: Date, to: Date) {
+export async function getCoachGroupSessions(
+  coachId: string,
+  from: Date,
+  to: Date,
+  viewerId: Types.ObjectId,
+) {
   await getPublishedCoach(coachId);
-  const sessions = await TrainingSessionModel.find({
-    coachId,
-    kind: 'group',
-    status: 'scheduled',
-    startAt: {$gte: from > new Date() ? from : new Date(), $lt: to},
-  }).sort({startAt: 1});
-  return {items: sessions.map(toSessionDto)};
+  const query = () =>
+    TrainingSessionModel.find({
+      coachId,
+      kind: 'group',
+      status: 'scheduled',
+      startAt: {$gte: from > new Date() ? from : new Date(), $lt: to},
+    }).sort({startAt: 1});
+  // Waitlists (expired offers, free places) are brought up to date before reading the counts.
+  await refreshWaitlists((await query().select('_id')).map(s => s._id));
+  const sessions = await query();
+  const waitlists = await waitlistInfo(
+    sessions.map(s => s._id),
+    viewerId,
+  );
+  return {
+    items: sessions.map(session => ({
+      ...toSessionDto(session),
+      waitlist: waitlists.get(session.id as string)!,
+    })),
+  };
 }
 
 export type {Location};

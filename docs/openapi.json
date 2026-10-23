@@ -45,6 +45,8 @@
                   "SLOT_UNAVAILABLE",
                   "SESSION_FULL",
                   "ALREADY_BOOKED",
+                  "SESSION_NOT_FULL",
+                  "ALREADY_ON_WAITLIST",
                   "TRIAL_ALREADY_USED",
                   "CANCELLATION_WINDOW_PASSED",
                   "REVIEW_EDIT_WINDOW_PASSED",
@@ -1004,7 +1006,7 @@
           "endAt"
         ]
       },
-      "TrainingSession": {
+      "GroupSession": {
         "type": "object",
         "properties": {
           "id": {
@@ -1054,6 +1056,9 @@
               "string",
               "null"
             ]
+          },
+          "waitlist": {
+            "$ref": "#/components/schemas/SessionWaitlist"
           }
         },
         "required": [
@@ -1071,7 +1076,8 @@
           "price",
           "location",
           "status",
-          "cancelReason"
+          "cancelReason",
+          "waitlist"
         ]
       },
       "SessionStatus": {
@@ -1080,6 +1086,44 @@
           "scheduled",
           "cancelled",
           "completed"
+        ]
+      },
+      "SessionWaitlist": {
+        "type": "object",
+        "properties": {
+          "count": {
+            "type": "integer",
+            "description": "Waiting entries"
+          },
+          "myStatus": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "enum": [
+              "waiting",
+              "offered",
+              null
+            ]
+          },
+          "myPosition": {
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "offerExpiresAt": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        },
+        "required": [
+          "count",
+          "myStatus",
+          "myPosition",
+          "offerExpiresAt"
         ]
       },
       "CoachProfile": {
@@ -2159,6 +2203,153 @@
         "required": [
           "items",
           "creditsAvailable"
+        ]
+      },
+      "WaitlistEntry": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "status": {
+            "$ref": "#/components/schemas/WaitlistStatus"
+          },
+          "position": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "description": "Place among the waiting entries (1 = next). null unless waiting"
+          },
+          "offerExpiresAt": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Until when the held place can be booked (status offered only)"
+          },
+          "joinedAt": {
+            "type": "string"
+          },
+          "session": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string"
+              },
+              "title": {
+                "type": "string"
+              },
+              "startAt": {
+                "type": "string"
+              },
+              "endAt": {
+                "type": "string"
+              },
+              "price": {
+                "$ref": "#/components/schemas/Money"
+              },
+              "coach": {
+                "$ref": "#/components/schemas/UserSummary"
+              }
+            },
+            "required": [
+              "id",
+              "title",
+              "startAt",
+              "endAt",
+              "price",
+              "coach"
+            ]
+          }
+        },
+        "required": [
+          "id",
+          "status",
+          "position",
+          "offerExpiresAt",
+          "joinedAt",
+          "session"
+        ]
+      },
+      "WaitlistStatus": {
+        "type": "string",
+        "enum": [
+          "waiting",
+          "offered",
+          "booked",
+          "expired",
+          "left"
+        ]
+      },
+      "TrainingSession": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "coachId": {
+            "type": "string"
+          },
+          "sessionTypeId": {
+            "type": "string"
+          },
+          "kind": {
+            "$ref": "#/components/schemas/SessionKind"
+          },
+          "title": {
+            "type": "string"
+          },
+          "startAt": {
+            "type": "string"
+          },
+          "endAt": {
+            "type": "string"
+          },
+          "durationMin": {
+            "type": "integer"
+          },
+          "capacity": {
+            "type": "integer"
+          },
+          "participantsCount": {
+            "type": "integer"
+          },
+          "spotsLeft": {
+            "type": "integer"
+          },
+          "price": {
+            "$ref": "#/components/schemas/Money"
+          },
+          "location": {
+            "$ref": "#/components/schemas/Location"
+          },
+          "status": {
+            "$ref": "#/components/schemas/SessionStatus"
+          },
+          "cancelReason": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        },
+        "required": [
+          "id",
+          "coachId",
+          "sessionTypeId",
+          "kind",
+          "title",
+          "startAt",
+          "endAt",
+          "durationMin",
+          "capacity",
+          "participantsCount",
+          "spotsLeft",
+          "price",
+          "location",
+          "status",
+          "cancelReason"
         ]
       },
       "ScheduleItem": {
@@ -3969,7 +4160,7 @@
         "tags": [
           "Coaches"
         ],
-        "summary": "Upcoming group sessions of a coach with spots left",
+        "summary": "Upcoming group sessions of a coach with spots left and my waitlist status",
         "security": [
           {
             "bearerAuth": []
@@ -4020,7 +4211,7 @@
                     "items": {
                       "type": "array",
                       "items": {
-                        "$ref": "#/components/schemas/TrainingSession"
+                        "$ref": "#/components/schemas/GroupSession"
                       }
                     }
                   },
@@ -6872,6 +7063,233 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/MyPackages"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "VALIDATION_ERROR",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED, TOKEN_EXPIRED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/group-sessions/{id}/waitlist": {
+      "post": {
+        "tags": [
+          "Waitlist"
+        ],
+        "summary": "Join the waitlist of a full upcoming group session",
+        "description": "When a place frees up it is held for the first waiting client until min(now + 2h, start - 15 min) (`status: offered`, Socket.IO `waitlist:offered`); they book it with the usual POST /bookings { sessionId }.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "x-auth": "client",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "description": "Object id",
+              "example": "6650f0c2a1b2c3d4e5f60718"
+            },
+            "required": true,
+            "description": "Object id",
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WaitlistEntry"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "VALIDATION_ERROR",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED, TOKEN_EXPIRED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "NOT_FOUND",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "SESSION_NOT_FULL, ALREADY_BOOKED, ALREADY_ON_WAITLIST",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Waitlist"
+        ],
+        "summary": "Leave the waitlist (an offer passes to the next client)",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "x-auth": "client",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "description": "Object id",
+              "example": "6650f0c2a1b2c3d4e5f60718"
+            },
+            "required": true,
+            "description": "Object id",
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "No content"
+          },
+          "400": {
+            "description": "VALIDATION_ERROR",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED, TOKEN_EXPIRED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "NOT_FOUND",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/me/waitlist": {
+      "get": {
+        "tags": [
+          "Waitlist"
+        ],
+        "summary": "My waiting and offered waitlist entries (offers first, then by session start)",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "x-auth": "client",
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "items": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/WaitlistEntry"
+                      }
+                    }
+                  },
+                  "required": [
+                    "items"
+                  ]
                 }
               }
             }

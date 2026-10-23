@@ -24,8 +24,15 @@ import {
   findSlots,
   isFreeSlot,
   moveLockedSession,
+  syncSeatCounts,
   unlockSession,
 } from '../sessions/sessions.service.js';
+import {
+  claimOfferedSeat,
+  markBooked,
+  processWaitlist,
+  restoreOfferedSeat,
+} from '../waitlist/waitlist.service.js';
 import {creditsAvailable, returnCredit, takeCredit} from '../packages/packages.service.js';
 import {toUserSummary} from '../users/users.service.js';
 import type {
@@ -315,7 +322,10 @@ export async function joinGroupSession(
   if (await BookingModel.exists({activeKey: activeKey(session._id, client._id)})) {
     throw new AppError('ALREADY_BOOKED');
   }
-  const seat = await takeSeat(session._id, client._id, session.capacity);
+  // Expired offers pass on first; a client with a waitlist offer books the place held for them.
+  await processWaitlist(session._id);
+  const claimed = await claimOfferedSeat(session._id, client._id);
+  const seat = claimed ?? (await takeSeat(session._id, client._id, session.capacity));
   let credit: Awaited<ReturnType<typeof takeCredit>> | null = null;
   try {
     credit = useCredits ? await takeCredit(client._id, session.coachId) : null;
@@ -330,10 +340,12 @@ export async function joinGroupSession(
       activeKey: activeKey(session._id, client._id),
       ...(credit ? creditPayment(credit._id) : initialPayment(session.price.amountCents, false)),
     });
+    await markBooked(session._id, client._id);
     await syncParticipants(session._id);
     return booking;
   } catch (error) {
-    await SeatLockModel.deleteOne({_id: seat._id});
+    if (claimed) await restoreOfferedSeat(session._id, client._id);
+    else await SeatLockModel.deleteOne({_id: seat._id});
     if (credit) await returnCredit(credit._id);
     if (isDuplicateKeyError(error)) throw new AppError('ALREADY_BOOKED');
     throw error;
@@ -353,11 +365,8 @@ async function takeSeat(sessionId: Types.ObjectId, clientId: Types.ObjectId, cap
   throw new AppError('SESSION_FULL');
 }
 
-/** participantsCount mirrors the number of taken seats (for display). */
-export async function syncParticipants(sessionId: Types.ObjectId) {
-  const count = await SeatLockModel.countDocuments({sessionId});
-  await TrainingSessionModel.updateOne({_id: sessionId}, {$set: {participantsCount: count}});
-}
+/** participantsCount / heldCount mirror the taken seats (for display). */
+export const syncParticipants = (sessionId: Types.ObjectId) => syncSeatCounts(sessionId);
 
 // ---------------------------------------------------------------------------------------------
 // Recurring series (individual)
@@ -624,6 +633,8 @@ export async function cancelBookingInternal(booking: BookingDoc, by: CancelledBy
   } else if (session) {
     await SeatLockModel.deleteOne({sessionId: session._id, clientId: cancelled.clientId});
     await syncParticipants(session._id);
+    // A place was freed: the first client on the waitlist gets an offer.
+    await processWaitlist(session._id);
   }
   return cancelled;
 }
@@ -675,12 +686,6 @@ export async function cancelByCoach(coach: UserDoc, bookingId: string, reason: s
 // ---------------------------------------------------------------------------------------------
 // Reschedule (client)
 // ---------------------------------------------------------------------------------------------
-
-/** Hook for the place a client leaves in a group session (waitlist offers). */
-export const seatFreedHooks: ((sessionId: Types.ObjectId) => Promise<void>)[] = [];
-export async function onSeatFreed(sessionId: Types.ObjectId) {
-  for (const hook of seatFreedHooks) await hook(sessionId);
-}
 
 /**
  * Moves a booking to another time (individual) or another group session of the same type (group), before the
@@ -794,7 +799,9 @@ async function rescheduleGroup(
   if (await BookingModel.exists({activeKey: activeKey(target._id, client._id)})) {
     throw new AppError('ALREADY_BOOKED');
   }
-  const seat = await takeSeat(target._id, client._id, target.capacity);
+  await processWaitlist(target._id);
+  const claimed = await claimOfferedSeat(target._id, client._id);
+  const seat = claimed ?? (await takeSeat(target._id, client._id, target.capacity));
   const updated = await BookingModel.findOneAndUpdate(
     {_id: booking._id, sessionId: session._id, status: {$in: ACTIVE}},
     {
@@ -809,12 +816,15 @@ async function rescheduleGroup(
     {returnDocument: 'after'},
   );
   if (!updated) {
-    await SeatLockModel.deleteOne({_id: seat._id});
+    if (claimed) await restoreOfferedSeat(target._id, client._id);
+    else await SeatLockModel.deleteOne({_id: seat._id});
     throw new AppError('RESCHEDULE_WINDOW_PASSED');
   }
+  await markBooked(target._id, client._id);
   await SeatLockModel.deleteOne({sessionId: session._id, clientId: client._id});
   await Promise.all([syncParticipants(session._id), syncParticipants(target._id)]);
-  await onSeatFreed(session._id);
+  // The old place goes to the waitlist of the old session.
+  await processWaitlist(session._id);
   return updated;
 }
 

@@ -12,6 +12,8 @@ const trainingSessionSchema = new Schema(
     endAt: {type: Date, required: true},
     capacity: {type: Number, required: true},
     participantsCount: {type: Number, default: 0},
+    // Places held for waitlist offers (group sessions): taken for everybody but the offered client.
+    heldCount: {type: Number, default: 0},
     price: {type: moneySchema, required: true},
     location: {type: locationSchema, default: null},
     status: {type: String, enum: ['scheduled', 'cancelled', 'completed'], default: 'scheduled'},

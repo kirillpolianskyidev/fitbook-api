@@ -15,4 +15,5 @@ export * from './slotLock.js';
 export * from './trainingSession.js';
 export * from './trialClaim.js';
 export * from './user.js';
+export * from './waitlistEntry.js';
 export * from './seatLock.js';

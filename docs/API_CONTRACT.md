@@ -68,12 +68,12 @@ policy, chat, settings. Theme preference is stored in `user.settings.theme` (`li
 ```json
 {
   "verification": {
-    "id": "815f16a59ea2912a32ed21bee48b3694",
+    "id": "71850fbb09d6d7bf73f54b32cf743038",
     "purpose": "login",
     "email": "client@fitbook.dev",
     "codeLength": 6,
-    "expiresAt": "2026-10-23T11:34:46.110Z",
-    "resendAvailableAt": "2026-10-23T11:25:46.110Z"
+    "expiresAt": "2026-10-23T11:44:38.284Z",
+    "resendAvailableAt": "2026-10-23T11:35:38.284Z"
   }
 }
 ```
@@ -83,7 +83,7 @@ policy, chat, settings. Theme preference is stored in `user.settings.theme` (`li
 ```json
 {
   "user": {
-    "id": "6adb43f4545c992b638b4fa4",
+    "id": "6adb46453899312487e05fcf",
     "email": "client@fitbook.dev",
     "role": "client",
     "firstName": "Jamie",
@@ -101,12 +101,12 @@ policy, chat, settings. Theme preference is stored in `user.settings.theme` (`li
       "theme": "dark"
     },
     "authProviders": ["password"],
-    "createdAt": "2026-10-23T11:24:36.945Z"
+    "createdAt": "2026-10-23T11:34:29.613Z"
   },
   "tokens": {
-    "accessToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJyb2xlIjoiY2xpZW50IiwidHlwIjoiYWNjZXNzIiwiaWF0IjoxNzkyNzU0Njg2LCJleHAiOjE3OTI3NTU1ODYsInN1YiI6IjZhZGI0M2Y0NTQ1Yzk5MmI2MzhiNGZhNCJ9.0tgJxA3Yf8qPMVh3yGL7eoFBtTB0F6OyxvuBD-tnozg",
-    "refreshToken": "wm3F73ZoweLCFuLIKpDJ_6UihPhgYJOD4mKmMZoRbY3aW8NNuYKo2VlUiEcAoz_Q",
-    "accessTokenExpiresAt": "2026-10-23T11:39:46.000Z"
+    "accessToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJyb2xlIjoiY2xpZW50IiwidHlwIjoiYWNjZXNzIiwiaWF0IjoxNzkyNzU1Mjc4LCJleHAiOjE3OTI3NTYxNzgsInN1YiI6IjZhZGI0NjQ1Mzg5OTMxMjQ4N2UwNWZjZiJ9.Qx_aOENd3eH1NnMcKKbC2mdmwadPPMxuLvmOzjkSKQQ",
+    "refreshToken": "smxzGcIi6JVujVc4YiYP7j_9SmByRv4_3pWicL_539-0zlaRTkOCgn7xa1jyDKIM",
+    "accessTokenExpiresAt": "2026-10-23T11:49:38.000Z"
   }
 }
 ```
@@ -180,7 +180,7 @@ or `system`).
 
 ```json
 {
-  "id": "6adb43fe47d4e2dc377e6fab",
+  "id": "6adb464f62b33df22ae26fde",
   "status": "pending_payment",
   "isTrial": false,
   "price": {
@@ -194,7 +194,7 @@ or `system`).
     "clientPackageId": null,
     "refundedAt": null
   },
-  "expiresAt": "2026-10-23T11:39:46.982Z",
+  "expiresAt": "2026-10-23T11:49:39.293Z",
   "startAt": "2026-10-30T11:00:00.000Z",
   "endAt": "2026-10-30T12:00:00.000Z",
   "seriesId": null,
@@ -206,8 +206,8 @@ or `system`).
   "cancelledBy": null,
   "cancelReason": null,
   "session": {
-    "id": "6adb43fe47d4e2dc377e6fa8",
-    "sessionTypeId": "6adb43f4545c992b638b4f73",
+    "id": "6adb464f62b33df22ae26fdb",
+    "sessionTypeId": "6adb46453899312487e05f9e",
     "title": "1:1 Strength Session",
     "kind": "individual",
     "location": {
@@ -223,19 +223,19 @@ or `system`).
     "participantsCount": 1
   },
   "coach": {
-    "id": "6adb43f4545c992b638b4f70",
+    "id": "6adb46453899312487e05f9b",
     "firstName": "Alex",
     "lastName": "Carter",
     "avatarUrl": "https://i.pravatar.cc/300?img=12"
   },
   "client": {
-    "id": "6adb43f4545c992b638b4fa4",
+    "id": "6adb46453899312487e05fcf",
     "firstName": "Jamie",
     "lastName": "Lee",
     "avatarUrl": "https://i.pravatar.cc/300?img=32"
   },
   "notesCount": 0,
-  "createdAt": "2026-10-23T11:24:46.983Z"
+  "createdAt": "2026-10-23T11:34:39.294Z"
 }
 ```
 
@@ -282,11 +282,11 @@ or `system`).
 
 ```json
 {
-  "id": "6adb43ff47d4e2dc377e6fae",
-  "packageId": "6adb43fb545c992b638b5d42",
+  "id": "6adb464f62b33df22ae26fe1",
+  "packageId": "6adb464b3899312487e06d6d",
   "title": "5 sessions",
   "coach": {
-    "id": "6adb43f4545c992b638b4f70",
+    "id": "6adb46453899312487e05f9b",
     "firstName": "Alex",
     "lastName": "Carter",
     "avatarUrl": "https://i.pravatar.cc/300?img=12"
@@ -297,8 +297,8 @@ or `system`).
     "amountCents": 40500,
     "currency": "USD"
   },
-  "purchasedAt": "2026-10-23T11:24:47.068Z",
-  "expiresAt": "2026-12-22T11:24:47.068Z",
+  "purchasedAt": "2026-10-23T11:34:39.388Z",
+  "expiresAt": "2026-12-22T11:34:39.388Z",
   "expired": false
 }
 ```
@@ -307,7 +307,7 @@ or `system`).
 
 ```json
 {
-  "id": "6adb43ff47d4e2dc377e6fb2",
+  "id": "6adb464f62b33df22ae26fe5",
   "status": "confirmed",
   "isTrial": false,
   "price": {
@@ -317,8 +317,8 @@ or `system`).
   "payment": {
     "status": "paid",
     "method": "credits",
-    "paidAt": "2026-10-23T11:24:47.095Z",
-    "clientPackageId": "6adb43ff47d4e2dc377e6fae",
+    "paidAt": "2026-10-23T11:34:39.411Z",
+    "clientPackageId": "6adb464f62b33df22ae26fe1",
     "refundedAt": null
   },
   "expiresAt": null,
@@ -333,8 +333,8 @@ or `system`).
   "cancelledBy": null,
   "cancelReason": null,
   "session": {
-    "id": "6adb43ff47d4e2dc377e6faf",
-    "sessionTypeId": "6adb43f4545c992b638b4f73",
+    "id": "6adb464f62b33df22ae26fe2",
+    "sessionTypeId": "6adb46453899312487e05f9e",
     "title": "1:1 Strength Session",
     "kind": "individual",
     "location": {
@@ -350,23 +350,38 @@ or `system`).
     "participantsCount": 1
   },
   "coach": {
-    "id": "6adb43f4545c992b638b4f70",
+    "id": "6adb46453899312487e05f9b",
     "firstName": "Alex",
     "lastName": "Carter",
     "avatarUrl": "https://i.pravatar.cc/300?img=12"
   },
   "client": {
-    "id": "6adb43f4545c992b638b4fa4",
+    "id": "6adb46453899312487e05fcf",
     "firstName": "Jamie",
     "lastName": "Lee",
     "avatarUrl": "https://i.pravatar.cc/300?img=32"
   },
   "notesCount": 0,
-  "createdAt": "2026-10-23T11:24:47.095Z"
+  "createdAt": "2026-10-23T11:34:39.411Z"
 }
 ```
 
-## 4b. Reviews
+## 4b. Waitlist (full group sessions)
+
+- `GET /coaches/:id/group-sessions` items have `waitlist { count, myStatus, myPosition, offerExpiresAt }`.
+  When `spotsLeft === 0` and `myStatus` is null, offer "Join waitlist": `POST /group-sessions/:id/waitlist` ->
+  `WaitlistEntry` (`SESSION_NOT_FULL` if places are free - book instead, `ALREADY_BOOKED`,
+  `ALREADY_ON_WAITLIST`). Leave any time: `DELETE /group-sessions/:id/waitlist` (204).
+- When a place frees up (cancellation by anyone, or a reschedule to another session) the first `waiting` client
+  gets `status: "offered"`: the place is held for them until `offerExpiresAt` = min(now + 2h, start - 15 min);
+  everybody else keeps seeing `spotsLeft: 0` and gets `SESSION_FULL`. The offered client books with the usual
+  `POST /bookings { sessionId }` (`useCredits` works too); the entry becomes `booked`. An expired or declined
+  (left) offer passes to the next client. If less than 15 minutes remain, the place is simply free for everybody.
+  When the session starts or is cancelled every entry becomes `expired`.
+- `GET /me/waitlist` -> `{ items }` with `waiting` and `offered` entries (offers first). Socket.IO
+  `waitlist:offered { entry }` is sent to the client who got an offer (show an in-app notification).
+
+## 4c. Reviews
 
 - One review per client per coach (`rating` 1-5, optional `text` up to 1000 characters; empty -> `null`).
   `GET /coaches/:id/my-review` -> `{ review, canCreate, editableUntil }`: show "Write a review" when
@@ -383,28 +398,28 @@ or `system`).
 {
   "items": [
     {
-      "id": "6adb43fb545c992b638b5d5f",
+      "id": "6adb464b3899312487e06d8a",
       "rating": 5,
       "text": "Patient, motivating and always on time. Best coach I have had.",
       "author": {
-        "id": "6adb43f4545c992b638b4fb3",
+        "id": "6adb46453899312487e05fde",
         "name": "Elijah W.",
         "avatarUrl": "https://i.pravatar.cc/300?img=57"
       },
-      "createdAt": "2026-10-20T03:17:05.645Z",
-      "updatedAt": "2026-10-20T03:17:05.645Z"
+      "createdAt": "2026-10-20T03:26:00.526Z",
+      "updatedAt": "2026-10-20T03:26:00.526Z"
     },
     {
-      "id": "6adb43fb545c992b638b5d59",
+      "id": "6adb464b3899312487e06d84",
       "rating": 5,
       "text": "Great technique cues, I finally deadlift without back pain.",
       "author": {
-        "id": "6adb43f4545c992b638b4fa8",
+        "id": "6adb46453899312487e05fd3",
         "name": "Mia G.",
         "avatarUrl": "https://i.pravatar.cc/300?img=9"
       },
-      "createdAt": "2026-10-15T05:39:13.507Z",
-      "updatedAt": "2026-10-15T05:39:13.507Z"
+      "createdAt": "2026-10-15T05:47:12.163Z",
+      "updatedAt": "2026-10-15T05:47:12.163Z"
     }
   ],
   "page": 1,
@@ -429,19 +444,19 @@ or `system`).
 ```json
 {
   "review": {
-    "id": "6adb43fe47d4e2dc377e6fa7",
+    "id": "6adb464f62b33df22ae26fda",
     "rating": 5,
     "text": "Great technique cues, I finally deadlift without back pain.",
     "author": {
-      "id": "6adb43f4545c992b638b4fa4",
+      "id": "6adb46453899312487e05fcf",
       "name": "Jamie L.",
       "avatarUrl": "https://i.pravatar.cc/300?img=32"
     },
-    "createdAt": "2026-10-23T11:24:46.926Z",
-    "updatedAt": "2026-10-23T11:24:46.926Z"
+    "createdAt": "2026-10-23T11:34:39.228Z",
+    "updatedAt": "2026-10-23T11:34:39.228Z"
   },
   "canCreate": false,
-  "editableUntil": "2026-10-24T11:24:46.926Z"
+  "editableUntil": "2026-10-24T11:34:39.228Z"
 }
 ```
 
@@ -460,9 +475,9 @@ Profile (`/coach/profile`, publish when `completeness.complete`), training types
   "items": [
     {
       "session": {
-        "id": "6adb43f5545c992b638b5025",
-        "coachId": "6adb43f4545c992b638b4f70",
-        "sessionTypeId": "6adb43f4545c992b638b4f75",
+        "id": "6adb46453899312487e06050",
+        "coachId": "6adb46453899312487e05f9b",
+        "sessionTypeId": "6adb46453899312487e05fa0",
         "kind": "group",
         "title": "Lunchtime Strength Circuit",
         "startAt": "2026-10-23T17:00:00.000Z",
@@ -489,11 +504,11 @@ Profile (`/coach/profile`, publish when `completeness.complete`), training types
       },
       "participants": [
         {
-          "bookingId": "6adb43f5545c992b638b516e",
+          "bookingId": "6adb46463899312487e06199",
           "status": "confirmed",
           "isTrial": false,
           "client": {
-            "id": "6adb43f4545c992b638b4fa4",
+            "id": "6adb46453899312487e05fcf",
             "firstName": "Jamie",
             "lastName": "Lee",
             "avatarUrl": "https://i.pravatar.cc/300?img=32"
@@ -501,11 +516,11 @@ Profile (`/coach/profile`, publish when `completeness.complete`), training types
           "notesCount": 0
         },
         {
-          "bookingId": "6adb43f6545c992b638b51fa",
+          "bookingId": "6adb46463899312487e06225",
           "status": "confirmed",
           "isTrial": false,
           "client": {
-            "id": "6adb43f4545c992b638b4faa",
+            "id": "6adb46453899312487e05fd5",
             "firstName": "Sophia",
             "lastName": "Martinez",
             "avatarUrl": "https://i.pravatar.cc/300?img=16"
@@ -516,9 +531,9 @@ Profile (`/coach/profile`, publish when `completeness.complete`), training types
     },
     {
       "session": {
-        "id": "6adb43f9545c992b638b5752",
-        "coachId": "6adb43f4545c992b638b4f70",
-        "sessionTypeId": "6adb43f4545c992b638b4f73",
+        "id": "6adb464a3899312487e0677d",
+        "coachId": "6adb46453899312487e05f9b",
+        "sessionTypeId": "6adb46453899312487e05f9e",
         "kind": "individual",
         "title": "1:1 Strength Session",
         "startAt": "2026-10-24T15:00:00.000Z",
@@ -545,11 +560,11 @@ Profile (`/coach/profile`, publish when `completeness.complete`), training types
       },
       "participants": [
         {
-          "bookingId": "6adb43f9545c992b638b5755",
+          "bookingId": "6adb464a3899312487e06780",
           "status": "confirmed",
           "isTrial": false,
           "client": {
-            "id": "6adb43f4545c992b638b4fa9",
+            "id": "6adb46453899312487e05fd4",
             "firstName": "Noah",
             "lastName": "Wilson",
             "avatarUrl": "https://i.pravatar.cc/300?img=14"
@@ -572,7 +587,8 @@ const socket = io(SOCKET_URL, {auth: {token: accessToken}, transports: ['websock
 - Reconnect with a fresh access token after refreshing (`socket.auth = {token}; socket.connect()`).
   A rejected handshake emits `connect_error` with message `UNAUTHORIZED` or `TOKEN_EXPIRED`.
 - Server -> app events: `message:new { conversationId, message }`, `message:read { conversationId, readerId,
-readAt }`, `conversation:updated { conversation }`, `typing { conversationId, userId }`.
+readAt }`, `conversation:updated { conversation }`, `typing { conversationId, userId }`,
+  `waitlist:offered { entry: WaitlistEntry }` (a held group place is waiting to be booked).
 - App -> server events (with ack `{ ok: true, data? } | { ok: false, error: { code, message } }`):
   `message:send { conversationId, text }`, `typing { conversationId }`, `conversation:read { conversationId }`.
 - REST equivalents: `GET /conversations`, `POST /conversations` (get or create), `GET/POST
@@ -584,40 +600,40 @@ readAt }`, `conversation:updated { conversation }`, `typing { conversationId, us
 {
   "items": [
     {
-      "id": "6adb43fb545c992b638b5dd3",
-      "coachId": "6adb43f4545c992b638b4f80",
-      "clientId": "6adb43f4545c992b638b4fa4",
+      "id": "6adb464c3899312487e06dfe",
+      "coachId": "6adb46453899312487e05fab",
+      "clientId": "6adb46453899312487e05fcf",
       "participant": {
-        "id": "6adb43f4545c992b638b4f80",
+        "id": "6adb46453899312487e05fab",
         "firstName": "Sofia",
         "lastName": "Alvarez",
         "avatarUrl": "https://i.pravatar.cc/300?img=44"
       },
       "lastMessage": {
         "text": "I will add it to our notes after the session.",
-        "senderId": "6adb43f4545c992b638b4f80",
-        "createdAt": "2026-10-19T16:35:36.065Z"
+        "senderId": "6adb46453899312487e05fab",
+        "createdAt": "2026-10-19T16:45:28.746Z"
       },
       "unreadCount": 1,
-      "lastActivityAt": "2026-10-19T16:35:36.065Z"
+      "lastActivityAt": "2026-10-19T16:45:28.746Z"
     },
     {
-      "id": "6adb43fb545c992b638b5dbe",
-      "coachId": "6adb43f4545c992b638b4f70",
-      "clientId": "6adb43f4545c992b638b4fa4",
+      "id": "6adb464c3899312487e06de9",
+      "coachId": "6adb46453899312487e05f9b",
+      "clientId": "6adb46453899312487e05fcf",
       "participant": {
-        "id": "6adb43f4545c992b638b4f70",
+        "id": "6adb46453899312487e05f9b",
         "firstName": "Alex",
         "lastName": "Carter",
         "avatarUrl": "https://i.pravatar.cc/300?img=12"
       },
       "lastMessage": {
         "text": "Got it, see you at 6.",
-        "senderId": "6adb43f4545c992b638b4f70",
-        "createdAt": "2026-10-10T20:38:36.065Z"
+        "senderId": "6adb46453899312487e05f9b",
+        "createdAt": "2026-10-10T20:48:28.746Z"
       },
       "unreadCount": 1,
-      "lastActivityAt": "2026-10-10T20:38:36.065Z"
+      "lastActivityAt": "2026-10-10T20:48:28.746Z"
     }
   ]
 }
@@ -647,6 +663,8 @@ localized app strings; `message` is an English fallback.
 | `SLOT_UNAVAILABLE`           | 409  | This time is no longer available.                                      | Reload slots and ask the user to pick another time.                                     |
 | `SESSION_FULL`               | 409  | This group session is full.                                            | Refresh the group list; offer other sessions.                                           |
 | `ALREADY_BOOKED`             | 409  | You have already booked this session.                                  |                                                                                         |
+| `SESSION_NOT_FULL`           | 409  | This session still has places — book it now.                           | Places are free: book the session instead.                                              |
+| `ALREADY_ON_WAITLIST`        | 409  | You are already on the waitlist.                                       | Reload the session (`waitlist.myStatus`).                                               |
 | `TRIAL_ALREADY_USED`         | 409  | The free trial has already been used.                                  | Hide the free-trial option; continue with a paid booking.                               |
 | `CANCELLATION_WINDOW_PASSED` | 409  | It is too late to cancel this training.                                | Explain the coach policy using `details.freeCancelHours`.                               |
 | `REVIEW_EDIT_WINDOW_PASSED`  | 409  | Reviews can be changed only during 24 hours.                           | Show the review as read-only.                                                           |
@@ -733,7 +751,7 @@ localized app strings; `message` is an English fallback.
 | `GET`  | `/coaches`                     | any user | Coach catalog (published coaches; my state first unless a state filter is given)      | 200 |                                                 |
 | `GET`  | `/coaches/{id}`                | any user | Coach profile: bio, experience, certifications, highlights, training types and prices | 200 | `NOT_FOUND`                                     |
 | `GET`  | `/coaches/{id}/slots`          | client   | Free start times for an individual training type (range up to 31 days)                | 200 | `FORBIDDEN` `NOT_FOUND` `SESSION_TYPE_INACTIVE` |
-| `GET`  | `/coaches/{id}/group-sessions` | client   | Upcoming group sessions of a coach with spots left                                    | 200 | `FORBIDDEN` `NOT_FOUND`                         |
+| `GET`  | `/coaches/{id}/group-sessions` | client   | Upcoming group sessions of a coach with spots left and my waitlist status             | 200 | `FORBIDDEN` `NOT_FOUND`                         |
 
 ### Coach: profile
 
@@ -812,6 +830,14 @@ localized app strings; `message` is an English fallback.
 | `POST` | `/packages/{id}/purchase` | client | Buy a package (mock payment, paid immediately)                         | 201 | `FORBIDDEN` `NOT_FOUND` `PACKAGE_INACTIVE` |
 | `GET`  | `/me/packages`            | client | My purchased packages and available credits (optionally for one coach) | 200 | `FORBIDDEN`                                |
 
+### Waitlist
+
+| Method   | Path                            | Who    | What                                                                          | OK  | Errors (besides validation/auth)                                                  |
+| -------- | ------------------------------- | ------ | ----------------------------------------------------------------------------- | --- | --------------------------------------------------------------------------------- |
+| `POST`   | `/group-sessions/{id}/waitlist` | client | Join the waitlist of a full upcoming group session                            | 201 | `FORBIDDEN` `NOT_FOUND` `SESSION_NOT_FULL` `ALREADY_BOOKED` `ALREADY_ON_WAITLIST` |
+| `DELETE` | `/group-sessions/{id}/waitlist` | client | Leave the waitlist (an offer passes to the next client)                       | 204 | `FORBIDDEN` `NOT_FOUND`                                                           |
+| `GET`    | `/me/waitlist`                  | client | My waiting and offered waitlist entries (offers first, then by session start) | 200 | `FORBIDDEN`                                                                       |
+
 ### Notes
 
 | Method   | Path                   | Who      | What                                                                     | OK  | Errors (besides validation/auth) |
@@ -837,7 +863,7 @@ localized app strings; `message` is an English fallback.
 
 ```json
 {
-  "id": "6adb43f4545c992b638b4fa4",
+  "id": "6adb46453899312487e05fcf",
   "email": "client@fitbook.dev",
   "role": "client",
   "firstName": "Jamie",
@@ -855,7 +881,7 @@ localized app strings; `message` is an English fallback.
     "theme": "dark"
   },
   "authProviders": ["password"],
-  "createdAt": "2026-10-23T11:24:36.945Z",
+  "createdAt": "2026-10-23T11:34:29.613Z",
   "coachProfile": null
 }
 ```
@@ -866,7 +892,7 @@ localized app strings; `message` is an English fallback.
 {
   "items": [
     {
-      "id": "6adb43f4545c992b638b4f70",
+      "id": "6adb46453899312487e05f9b",
       "firstName": "Alex",
       "lastName": "Carter",
       "avatarUrl": "https://i.pravatar.cc/300?img=12",
@@ -890,7 +916,7 @@ localized app strings; `message` is an English fallback.
       "kinds": ["group", "individual"]
     },
     {
-      "id": "6adb43f4545c992b638b4f76",
+      "id": "6adb46453899312487e05fa1",
       "firstName": "Maya",
       "lastName": "Patel",
       "avatarUrl": "https://i.pravatar.cc/300?img=47",
@@ -924,7 +950,7 @@ localized app strings; `message` is an English fallback.
 
 ```json
 {
-  "id": "6adb43f4545c992b638b4f70",
+  "id": "6adb46453899312487e05f9b",
   "firstName": "Alex",
   "lastName": "Carter",
   "avatarUrl": "https://i.pravatar.cc/300?img=12",
@@ -979,8 +1005,8 @@ localized app strings; `message` is an English fallback.
   },
   "sessionTypes": [
     {
-      "id": "6adb43f4545c992b638b4f75",
-      "coachId": "6adb43f4545c992b638b4f70",
+      "id": "6adb46453899312487e05fa0",
+      "coachId": "6adb46453899312487e05f9b",
       "title": "Lunchtime Strength Circuit",
       "kind": "group",
       "durationMin": 60,
@@ -994,8 +1020,8 @@ localized app strings; `message` is an English fallback.
       "isActive": true
     },
     {
-      "id": "6adb43f4545c992b638b4f73",
-      "coachId": "6adb43f4545c992b638b4f70",
+      "id": "6adb46453899312487e05f9e",
+      "coachId": "6adb46453899312487e05f9b",
       "title": "1:1 Strength Session",
       "kind": "individual",
       "durationMin": 60,
@@ -1011,7 +1037,7 @@ localized app strings; `message` is an English fallback.
   ],
   "packages": [
     {
-      "id": "6adb43fb545c992b638b5d42",
+      "id": "6adb464b3899312487e06d6d",
       "title": "5 sessions",
       "credits": 5,
       "price": {
@@ -1026,7 +1052,7 @@ localized app strings; `message` is an English fallback.
       }
     },
     {
-      "id": "6adb43fb545c992b638b5d41",
+      "id": "6adb464b3899312487e06d6c",
       "title": "10 sessions",
       "credits": 10,
       "price": {
@@ -1060,11 +1086,11 @@ localized app strings; `message` is an English fallback.
 {
   "items": [
     {
-      "id": "6adb43fb545c992b638b5d54",
-      "packageId": "6adb43fb545c992b638b5d41",
+      "id": "6adb464b3899312487e06d7f",
+      "packageId": "6adb464b3899312487e06d6c",
       "title": "10 sessions",
       "coach": {
-        "id": "6adb43f4545c992b638b4f70",
+        "id": "6adb46453899312487e05f9b",
         "firstName": "Alex",
         "lastName": "Carter",
         "avatarUrl": "https://i.pravatar.cc/300?img=12"
@@ -1075,8 +1101,8 @@ localized app strings; `message` is an English fallback.
         "amountCents": 76500,
         "currency": "USD"
       },
-      "purchasedAt": "2026-10-03T11:24:36.065Z",
-      "expiresAt": "2027-01-01T11:24:36.065Z",
+      "purchasedAt": "2026-10-03T11:34:28.746Z",
+      "expiresAt": "2027-01-01T11:34:28.746Z",
       "expired": false
     }
   ],
@@ -1090,7 +1116,7 @@ localized app strings; `message` is an English fallback.
 {
   "items": [
     {
-      "id": "6adb43fb545c992b638b5d42",
+      "id": "6adb464b3899312487e06d6d",
       "title": "5 sessions",
       "credits": 5,
       "price": {
@@ -1105,7 +1131,7 @@ localized app strings; `message` is an English fallback.
       }
     },
     {
-      "id": "6adb43fb545c992b638b5d41",
+      "id": "6adb464b3899312487e06d6c",
       "title": "10 sessions",
       "credits": 10,
       "price": {
@@ -1146,9 +1172,9 @@ localized app strings; `message` is an English fallback.
 {
   "items": [
     {
-      "id": "6adb43f5545c992b638b5025",
-      "coachId": "6adb43f4545c992b638b4f70",
-      "sessionTypeId": "6adb43f4545c992b638b4f75",
+      "id": "6adb46453899312487e06050",
+      "coachId": "6adb46453899312487e05f9b",
+      "sessionTypeId": "6adb46453899312487e05fa0",
       "kind": "group",
       "title": "Lunchtime Strength Circuit",
       "startAt": "2026-10-23T17:00:00.000Z",
@@ -1171,12 +1197,18 @@ localized app strings; `message` is an English fallback.
         "lng": -87.6347
       },
       "status": "scheduled",
-      "cancelReason": null
+      "cancelReason": null,
+      "waitlist": {
+        "count": 0,
+        "myStatus": null,
+        "myPosition": null,
+        "offerExpiresAt": null
+      }
     },
     {
-      "id": "6adb43f5545c992b638b5028",
-      "coachId": "6adb43f4545c992b638b4f70",
-      "sessionTypeId": "6adb43f4545c992b638b4f75",
+      "id": "6adb46453899312487e06053",
+      "coachId": "6adb46453899312487e05f9b",
+      "sessionTypeId": "6adb46453899312487e05fa0",
       "kind": "group",
       "title": "Lunchtime Strength Circuit",
       "startAt": "2026-10-26T17:00:00.000Z",
@@ -1199,7 +1231,13 @@ localized app strings; `message` is an English fallback.
         "lng": -87.6347
       },
       "status": "scheduled",
-      "cancelReason": null
+      "cancelReason": null,
+      "waitlist": {
+        "count": 0,
+        "myStatus": null,
+        "myPosition": null,
+        "offerExpiresAt": null
+      }
     }
   ]
 }
@@ -1209,7 +1247,7 @@ localized app strings; `message` is an English fallback.
 
 ```json
 {
-  "id": "6adb43fe47d4e2dc377e6fab",
+  "id": "6adb464f62b33df22ae26fde",
   "status": "confirmed",
   "isTrial": false,
   "price": {
@@ -1219,7 +1257,7 @@ localized app strings; `message` is an English fallback.
   "payment": {
     "status": "paid",
     "method": "mock",
-    "paidAt": "2026-10-23T11:24:47.020Z",
+    "paidAt": "2026-10-23T11:34:39.327Z",
     "clientPackageId": null,
     "refundedAt": null
   },
@@ -1235,8 +1273,8 @@ localized app strings; `message` is an English fallback.
   "cancelledBy": null,
   "cancelReason": null,
   "session": {
-    "id": "6adb43fe47d4e2dc377e6fa8",
-    "sessionTypeId": "6adb43f4545c992b638b4f73",
+    "id": "6adb464f62b33df22ae26fdb",
+    "sessionTypeId": "6adb46453899312487e05f9e",
     "title": "1:1 Strength Session",
     "kind": "individual",
     "location": {
@@ -1252,19 +1290,19 @@ localized app strings; `message` is an English fallback.
     "participantsCount": 1
   },
   "coach": {
-    "id": "6adb43f4545c992b638b4f70",
+    "id": "6adb46453899312487e05f9b",
     "firstName": "Alex",
     "lastName": "Carter",
     "avatarUrl": "https://i.pravatar.cc/300?img=12"
   },
   "client": {
-    "id": "6adb43f4545c992b638b4fa4",
+    "id": "6adb46453899312487e05fcf",
     "firstName": "Jamie",
     "lastName": "Lee",
     "avatarUrl": "https://i.pravatar.cc/300?img=32"
   },
   "notesCount": 0,
-  "createdAt": "2026-10-23T11:24:46.983Z"
+  "createdAt": "2026-10-23T11:34:39.294Z"
 }
 ```
 
@@ -1272,7 +1310,7 @@ localized app strings; `message` is an English fallback.
 
 ```json
 {
-  "id": "6adb43fe47d4e2dc377e6fab",
+  "id": "6adb464f62b33df22ae26fde",
   "status": "cancelled",
   "isTrial": false,
   "price": {
@@ -1282,9 +1320,9 @@ localized app strings; `message` is an English fallback.
   "payment": {
     "status": "refunded",
     "method": "mock",
-    "paidAt": "2026-10-23T11:24:47.020Z",
+    "paidAt": "2026-10-23T11:34:39.327Z",
     "clientPackageId": null,
-    "refundedAt": "2026-10-23T11:24:47.256Z"
+    "refundedAt": "2026-10-23T11:34:39.573Z"
   },
   "expiresAt": null,
   "startAt": "2026-10-31T16:00:00.000Z",
@@ -1292,14 +1330,14 @@ localized app strings; `message` is an English fallback.
   "seriesId": null,
   "cancellable": false,
   "reschedulable": false,
-  "rescheduledAt": "2026-10-23T11:24:47.040Z",
+  "rescheduledAt": "2026-10-23T11:34:39.355Z",
   "cancelDeadline": null,
-  "cancelledAt": "2026-10-23T11:24:47.256Z",
+  "cancelledAt": "2026-10-23T11:34:39.573Z",
   "cancelledBy": "client",
   "cancelReason": "Schedule change",
   "session": {
-    "id": "6adb43fe47d4e2dc377e6fa8",
-    "sessionTypeId": "6adb43f4545c992b638b4f73",
+    "id": "6adb464f62b33df22ae26fdb",
+    "sessionTypeId": "6adb46453899312487e05f9e",
     "title": "1:1 Strength Session",
     "kind": "individual",
     "location": {
@@ -1315,19 +1353,19 @@ localized app strings; `message` is an English fallback.
     "participantsCount": 1
   },
   "coach": {
-    "id": "6adb43f4545c992b638b4f70",
+    "id": "6adb46453899312487e05f9b",
     "firstName": "Alex",
     "lastName": "Carter",
     "avatarUrl": "https://i.pravatar.cc/300?img=12"
   },
   "client": {
-    "id": "6adb43f4545c992b638b4fa4",
+    "id": "6adb46453899312487e05fcf",
     "firstName": "Jamie",
     "lastName": "Lee",
     "avatarUrl": "https://i.pravatar.cc/300?img=32"
   },
   "notesCount": 1,
-  "createdAt": "2026-10-23T11:24:46.983Z"
+  "createdAt": "2026-10-23T11:34:39.294Z"
 }
 ```
 
@@ -1335,7 +1373,7 @@ localized app strings; `message` is an English fallback.
 
 ```json
 {
-  "id": "6adb43fe47d4e2dc377e6fab",
+  "id": "6adb464f62b33df22ae26fde",
   "status": "confirmed",
   "isTrial": false,
   "price": {
@@ -1345,7 +1383,7 @@ localized app strings; `message` is an English fallback.
   "payment": {
     "status": "paid",
     "method": "mock",
-    "paidAt": "2026-10-23T11:24:47.020Z",
+    "paidAt": "2026-10-23T11:34:39.327Z",
     "clientPackageId": null,
     "refundedAt": null
   },
@@ -1355,14 +1393,14 @@ localized app strings; `message` is an English fallback.
   "seriesId": null,
   "cancellable": true,
   "reschedulable": true,
-  "rescheduledAt": "2026-10-23T11:24:47.040Z",
+  "rescheduledAt": "2026-10-23T11:34:39.355Z",
   "cancelDeadline": "2026-10-30T16:00:00.000Z",
   "cancelledAt": null,
   "cancelledBy": null,
   "cancelReason": null,
   "session": {
-    "id": "6adb43fe47d4e2dc377e6fa8",
-    "sessionTypeId": "6adb43f4545c992b638b4f73",
+    "id": "6adb464f62b33df22ae26fdb",
+    "sessionTypeId": "6adb46453899312487e05f9e",
     "title": "1:1 Strength Session",
     "kind": "individual",
     "location": {
@@ -1378,19 +1416,19 @@ localized app strings; `message` is an English fallback.
     "participantsCount": 1
   },
   "coach": {
-    "id": "6adb43f4545c992b638b4f70",
+    "id": "6adb46453899312487e05f9b",
     "firstName": "Alex",
     "lastName": "Carter",
     "avatarUrl": "https://i.pravatar.cc/300?img=12"
   },
   "client": {
-    "id": "6adb43f4545c992b638b4fa4",
+    "id": "6adb46453899312487e05fcf",
     "firstName": "Jamie",
     "lastName": "Lee",
     "avatarUrl": "https://i.pravatar.cc/300?img=32"
   },
   "notesCount": 0,
-  "createdAt": "2026-10-23T11:24:46.983Z"
+  "createdAt": "2026-10-23T11:34:39.294Z"
 }
 ```
 
@@ -1398,7 +1436,7 @@ localized app strings; `message` is an English fallback.
 
 ```json
 {
-  "seriesId": "6adb43ff47d4e2dc377e6fb4",
+  "seriesId": "6adb464f62b33df22ae26fe7",
   "bookings": [],
   "skipped": [
     {
@@ -1427,7 +1465,7 @@ localized app strings; `message` is an English fallback.
     "lat": 41.8925,
     "lng": -87.6347
   },
-  "notes": "FitBook training with Alex Carter.\nFree cancellation up to 24h before the start.\nBooking: 6adb43fe47d4e2dc377e6fab"
+  "notes": "FitBook training with Alex Carter.\nFree cancellation up to 24h before the start.\nBooking: 6adb464f62b33df22ae26fde"
 }
 ```
 
@@ -1437,18 +1475,18 @@ localized app strings; `message` is an English fallback.
 {
   "before": [
     {
-      "id": "6adb43f5545c992b638b4ff6",
-      "bookingId": "6adb43f5545c992b638b4fcf",
+      "id": "6adb46453899312487e06021",
+      "bookingId": "6adb46453899312487e05ffa",
       "phase": "before",
       "text": "Running a 10K on Sunday - nothing too heavy on the legs please.",
       "author": {
-        "id": "6adb43f4545c992b638b4fa4",
+        "id": "6adb46453899312487e05fcf",
         "role": "client",
         "firstName": "Jamie",
         "lastName": "Lee"
       },
       "lastEditedBy": {
-        "id": "6adb43f4545c992b638b4fa4",
+        "id": "6adb46453899312487e05fcf",
         "role": "client"
       },
       "createdAt": "2026-10-21T16:00:00.000Z",
@@ -1457,18 +1495,18 @@ localized app strings; `message` is an English fallback.
   ],
   "after": [
     {
-      "id": "6adb43f5545c992b638b4ff7",
-      "bookingId": "6adb43f5545c992b638b4fcf",
+      "id": "6adb46453899312487e06022",
+      "bookingId": "6adb46453899312487e05ffa",
       "phase": "after",
       "text": "You hit a new personal best today. Rest well and hydrate.",
       "author": {
-        "id": "6adb43f4545c992b638b4f70",
+        "id": "6adb46453899312487e05f9b",
         "role": "coach",
         "firstName": "Alex",
         "lastName": "Carter"
       },
       "lastEditedBy": {
-        "id": "6adb43f4545c992b638b4f70",
+        "id": "6adb46453899312487e05f9b",
         "role": "coach"
       },
       "createdAt": "2026-10-22T14:00:00.000Z",
@@ -1484,25 +1522,25 @@ localized app strings; `message` is an English fallback.
 {
   "items": [
     {
-      "id": "6adb43fb545c992b638b5dd9",
-      "conversationId": "6adb43fb545c992b638b5dd3",
-      "senderId": "6adb43f4545c992b638b4f80",
+      "id": "6adb464c3899312487e06e04",
+      "conversationId": "6adb464c3899312487e06dfe",
+      "senderId": "6adb46453899312487e05fab",
       "senderRole": "coach",
       "text": "I will add it to our notes after the session.",
-      "createdAt": "2026-10-19T16:35:36.065Z",
+      "createdAt": "2026-10-19T16:45:28.746Z",
       "readAt": null
     },
     {
-      "id": "6adb43fb545c992b638b5dd8",
-      "conversationId": "6adb43fb545c992b638b5dd3",
-      "senderId": "6adb43f4545c992b638b4fa4",
+      "id": "6adb464c3899312487e06e03",
+      "conversationId": "6adb464c3899312487e06dfe",
+      "senderId": "6adb46453899312487e05fcf",
       "senderRole": "client",
       "text": "Can you also send me a stretching routine?",
-      "createdAt": "2026-10-19T15:23:36.065Z",
-      "readAt": "2026-10-19T15:28:36.065Z"
+      "createdAt": "2026-10-19T15:33:28.746Z",
+      "readAt": "2026-10-19T15:38:28.746Z"
     }
   ],
-  "nextCursor": "6adb43fb545c992b638b5dd7"
+  "nextCursor": "6adb464c3899312487e06e02"
 }
 ```
 
@@ -1510,7 +1548,7 @@ localized app strings; `message` is an English fallback.
 
 ```json
 {
-  "userId": "6adb43f4545c992b638b4f70",
+  "userId": "6adb46453899312487e05f9b",
   "headline": "Strength & conditioning coach for busy professionals",
   "bio": "I help people with full calendars get strong, move without pain and actually enjoy training. Every program starts with a movement assessment, then we build simple, progressive sessions around your schedule.\n\nBefore coaching full time I competed in powerlifting and worked with a Division I track team, so I care a lot about technique and smart progression.",
   "specializations": ["strength", "hiit", "mobility"],
@@ -1563,8 +1601,8 @@ localized app strings; `message` is an English fallback.
 {
   "items": [
     {
-      "id": "6adb43f4545c992b638b4f73",
-      "coachId": "6adb43f4545c992b638b4f70",
+      "id": "6adb46453899312487e05f9e",
+      "coachId": "6adb46453899312487e05f9b",
       "title": "1:1 Strength Session",
       "kind": "individual",
       "durationMin": 60,
@@ -1578,8 +1616,8 @@ localized app strings; `message` is an English fallback.
       "isActive": true
     },
     {
-      "id": "6adb43f4545c992b638b4f74",
-      "coachId": "6adb43f4545c992b638b4f70",
+      "id": "6adb46453899312487e05f9f",
+      "coachId": "6adb46453899312487e05f9b",
       "title": "1:1 Strength + Mobility (90 min)",
       "kind": "individual",
       "durationMin": 90,
@@ -1630,7 +1668,7 @@ localized app strings; `message` is an English fallback.
 {
   "items": [
     {
-      "id": "6adb43f4545c992b638b4fa4",
+      "id": "6adb46453899312487e05fcf",
       "firstName": "Jamie",
       "lastName": "Lee",
       "avatarUrl": "https://i.pravatar.cc/300?img=32",
@@ -1638,7 +1676,7 @@ localized app strings; `message` is an English fallback.
       "lastBookingAt": "2026-11-19T13:00:00.000Z"
     },
     {
-      "id": "6adb43f4545c992b638b4fa8",
+      "id": "6adb46453899312487e05fd3",
       "firstName": "Mia",
       "lastName": "Garcia",
       "avatarUrl": "https://i.pravatar.cc/300?img=9",

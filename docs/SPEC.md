@@ -379,6 +379,17 @@ expires first (`NO_CREDITS`; series pre-check `INSUFFICIENT_CREDITS`, nothing bo
 credit to the same purchase (lost if it expired). Rescheduling keeps it. Purchase is a mock payment
 (`PACKAGE_INACTIVE` for inactive packages); a bought package is deactivated instead of deleted.
 
+### Waitlist (group sessions)
+
+`waitlistEntries { sessionId, clientId, status: waiting|offered|booked|expired|left, joinedAt, offeredAt,
+offerExpiresAt, activeKey }` (sparse unique `activeKey` = one active entry per client and session). Joining needs an
+upcoming full session (`SESSION_NOT_FULL`), no active booking (`ALREADY_BOOKED`), no active entry
+(`ALREADY_ON_WAITLIST`). A freed place (cancellation, reschedule out) is offered to the first waiting entry and held as
+a seat lock with `hold: true` until `min(now + 2h, start - 15 min)` (if already past: free for all). The offered
+client's `POST /bookings` turns the hold into the seat; others get `SESSION_FULL` (`spotsLeft` excludes holds,
+`heldCount` on the session). Expired / left offers pass on; started or cancelled sessions expire all entries. The state
+is updated on writes, lazily on reads and by a job every minute. Socket.IO `waitlist:offered { entry }`.
+
 ### Reviews
 
 `reviews { coachId, clientId, rating 1..5, text|null, createdAt, updatedAt }`, unique `(coachId, clientId)`. Creating
@@ -563,6 +574,8 @@ Validation errors list fields: `details: { fields: { email: "Invalid email" } }`
 | 409  | SESSION_FULL                            | group capacity reached                                                                                              |
 | 409  | ALREADY_BOOKED                          | client already in this session                                                                                      |
 | 409  | TRIAL_ALREADY_USED                      | second trial (account or email)                                                                                     |
+| 409  | SESSION_NOT_FULL                        | joining the waitlist of a session with free places                                                                  |
+| 409  | ALREADY_ON_WAITLIST                     | already waiting / offered for this session                                                                          |
 | 409  | NO_CREDITS                              | `useCredits` without a usable credit with the coach                                                                 |
 | 409  | INSUFFICIENT_CREDITS                    | series needs more credits than available (`details.creditsAvailable`)                                               |
 | 409  | PACKAGE_INACTIVE                        | buying an inactive package                                                                                          |

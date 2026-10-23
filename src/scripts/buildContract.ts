@@ -69,6 +69,8 @@ const UI_HINTS: Partial<Record<ErrorCode, string>> = {
   SESSION_FULL: 'Refresh the group list; offer other sessions.',
   TRIAL_ALREADY_USED: 'Hide the free-trial option; continue with a paid booking.',
   CANCELLATION_WINDOW_PASSED: 'Explain the coach policy using `details.freeCancelHours`.',
+  SESSION_NOT_FULL: 'Places are free: book the session instead.',
+  ALREADY_ON_WAITLIST: 'Reload the session (`waitlist.myStatus`).',
   NO_CREDITS: 'Offer to buy a package or pay normally.',
   INSUFFICIENT_CREDITS:
     'Show `details.creditsAvailable`; let the user pick fewer dates or pay normally.',
@@ -221,7 +223,22 @@ ${example('seriesPreview', 'Example: series preview')}
 ${example('clientPackage', 'Example: POST /packages/:id/purchase')}
 ${example('bookingWithCredits', 'Example: POST /bookings with useCredits')}
 
-## 4b. Reviews
+## 4b. Waitlist (full group sessions)
+
+- \`GET /coaches/:id/group-sessions\` items have \`waitlist { count, myStatus, myPosition, offerExpiresAt }\`.
+  When \`spotsLeft === 0\` and \`myStatus\` is null, offer "Join waitlist": \`POST /group-sessions/:id/waitlist\` ->
+  \`WaitlistEntry\` (\`SESSION_NOT_FULL\` if places are free - book instead, \`ALREADY_BOOKED\`,
+  \`ALREADY_ON_WAITLIST\`). Leave any time: \`DELETE /group-sessions/:id/waitlist\` (204).
+- When a place frees up (cancellation by anyone, or a reschedule to another session) the first \`waiting\` client
+  gets \`status: "offered"\`: the place is held for them until \`offerExpiresAt\` = min(now + 2h, start - 15 min);
+  everybody else keeps seeing \`spotsLeft: 0\` and gets \`SESSION_FULL\`. The offered client books with the usual
+  \`POST /bookings { sessionId }\` (\`useCredits\` works too); the entry becomes \`booked\`. An expired or declined
+  (left) offer passes to the next client. If less than 15 minutes remain, the place is simply free for everybody.
+  When the session starts or is cancelled every entry becomes \`expired\`.
+- \`GET /me/waitlist\` -> \`{ items }\` with \`waiting\` and \`offered\` entries (offers first). Socket.IO
+  \`waitlist:offered { entry }\` is sent to the client who got an offer (show an in-app notification).
+
+## 4c. Reviews
 
 - One review per client per coach (\`rating\` 1-5, optional \`text\` up to 1000 characters; empty -> \`null\`).
   \`GET /coaches/:id/my-review\` -> \`{ review, canCreate, editableUntil }\`: show "Write a review" when
@@ -255,7 +272,8 @@ const socket = io(SOCKET_URL, {auth: {token: accessToken}, transports: ['websock
 - Reconnect with a fresh access token after refreshing (\`socket.auth = {token}; socket.connect()\`).
   A rejected handshake emits \`connect_error\` with message \`UNAUTHORIZED\` or \`TOKEN_EXPIRED\`.
 - Server -> app events: \`message:new { conversationId, message }\`, \`message:read { conversationId, readerId,
-  readAt }\`, \`conversation:updated { conversation }\`, \`typing { conversationId, userId }\`.
+  readAt }\`, \`conversation:updated { conversation }\`, \`typing { conversationId, userId }\`,
+  \`waitlist:offered { entry: WaitlistEntry }\` (a held group place is waiting to be booked).
 - App -> server events (with ack \`{ ok: true, data? } | { ok: false, error: { code, message } }\`):
   \`message:send { conversationId, text }\`, \`typing { conversationId }\`, \`conversation:read { conversationId }\`.
 - REST equivalents: \`GET /conversations\`, \`POST /conversations\` (get or create), \`GET/POST

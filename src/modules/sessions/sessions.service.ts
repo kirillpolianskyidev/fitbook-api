@@ -5,6 +5,7 @@ import {AppError, isDuplicateKeyError} from '../../lib/errors.js';
 import {BOOKING_LEAD_MINUTES, computeSlots} from '../../lib/slots.js';
 import {addMinutes, slotBlocks} from '../../lib/time.js';
 import {AvailabilityModel} from '../../models/availability.js';
+import {SeatLockModel} from '../../models/seatLock.js';
 import {SlotLockModel} from '../../models/slotLock.js';
 import type {TrainingSessionDoc} from '../../models/trainingSession.js';
 import {TrainingSessionModel} from '../../models/trainingSession.js';
@@ -23,7 +24,7 @@ export function toSessionDto(session: TrainingSessionDoc): TrainingSessionDto {
     durationMin: Math.round((session.endAt.getTime() - session.startAt.getTime()) / 60_000),
     capacity: session.capacity,
     participantsCount: session.participantsCount,
-    spotsLeft: Math.max(0, session.capacity - session.participantsCount),
+    spotsLeft: Math.max(0, session.capacity - session.participantsCount - (session.heldCount ?? 0)),
     price: toMoneyDto(session.price),
     location: toLocationDto(session.location),
     status: session.status as 'scheduled' | 'cancelled' | 'completed',
@@ -116,6 +117,15 @@ export async function lockSession(session: TrainingSessionDoc) {
     }
     throw error;
   }
+}
+
+/** participantsCount / heldCount mirror the booked and held seats of a group session (for display). */
+export async function syncSeatCounts(sessionId: Types.ObjectId) {
+  const [participantsCount, heldCount] = await Promise.all([
+    SeatLockModel.countDocuments({sessionId, hold: {$ne: true}}),
+    SeatLockModel.countDocuments({sessionId, hold: true}),
+  ]);
+  await TrainingSessionModel.updateOne({_id: sessionId}, {$set: {participantsCount, heldCount}});
 }
 
 export const unlockSession = (sessionId: Types.ObjectId) => SlotLockModel.deleteMany({sessionId});
