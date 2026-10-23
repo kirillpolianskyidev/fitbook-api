@@ -23,7 +23,13 @@ import {
   type SessionTypeDoc,
   type TrainingSessionDoc,
   type UserDoc,
+  ReviewModel,
+  ClientPackageModel,
+  PackageModel,
+  FavoriteModel,
+  MeasurementModel,
 } from '../models/index.js';
+import {refreshCoachRating} from '../modules/reviews/reviews.service.js';
 import {createLockedSession} from '../modules/sessions/sessions.service.js';
 import {refreshCoachCatalogFields} from '../modules/sessionTypes/sessionTypes.service.js';
 import {ensureCoachSetup} from '../modules/users/users.service.js';
@@ -36,6 +42,7 @@ import {
   INCOMPLETE_COACH,
   NEW_CLIENT,
   NOTE_TEXTS,
+  REVIEW_TEXTS,
   type SeedClient,
   type SeedCoach,
 } from './data.js';
@@ -561,6 +568,172 @@ async function main() {
     if (chance(0.55)) await addNote(booking, 'after', 'coach', pick(NOTE_TEXTS.coachAfter));
     if (chance(0.25)) await addNote(booking, 'after', 'client', pick(NOTE_TEXTS.clientAfter));
   }
+
+  // --- Progress of Jamie: goal 3/week, completed trainings in the last 8 weeks, measurements ------
+  jamie.weeklyGoal = 3;
+  await jamie.save();
+  const jamieWeek = DateTime.now().setZone(chicago).startOf('week');
+  // Completed trainings per week, 8 weeks ago -> last week (a streak of 3+ weeks at the end).
+  const weeklyTargets = [1, 2, 2, 3, 2, 3, 3, 3];
+  const progressSlots: [number, number][] = [
+    [0, 6],
+    [2, 6],
+    [4, 6],
+    [5, 8],
+    [1, 18],
+    [3, 18],
+  ];
+  const progressCoaches = [maya, marcus];
+  for (const [index, target] of weeklyTargets.entries()) {
+    const weekStart = jamieWeek.minus({weeks: weeklyTargets.length - index});
+    let missing =
+      target -
+      (await BookingModel.countDocuments({
+        clientId: jamie._id,
+        status: 'completed',
+        startAt: {$gte: weekStart.toJSDate(), $lt: weekStart.plus({weeks: 1}).toJSDate()},
+      }));
+    for (const [slotIndex, [day, hour]] of progressSlots.entries()) {
+      if (missing <= 0) break;
+      const coach = progressCoaches[slotIndex % progressCoaches.length]!;
+      const type = [...coach.types.values()].find(t => t.kind === 'individual')!;
+      const startAt = weekStart.plus({days: day}).set({hour}).toUTC().toJSDate();
+      if (startAt >= now) continue;
+      const session = await createSession(coach, type, startAt);
+      if (!session) continue;
+      if (await addBooking(session, jamie)) missing -= 1;
+    }
+  }
+  for (let weeksAgo = 9; weeksAgo >= 0; weeksAgo -= 1) {
+    const measuredAt = jamieWeek.minus({weeks: weeksAgo}).plus({days: 1}).toISODate()!;
+    if (measuredAt > DateTime.now().setZone(chicago).toISODate()!) continue;
+    const progress = 9 - weeksAgo;
+    await MeasurementModel.create({
+      clientId: jamie._id,
+      type: 'weight',
+      value: Math.round((186.4 - progress * 0.5 + (progress % 3 === 1 ? 0.4 : 0)) * 10) / 10,
+      measuredAt,
+      note: progress === 0 ? 'Starting point' : null,
+    });
+    if (weeksAgo % 2 === 1 || weeksAgo === 0) {
+      await MeasurementModel.create({
+        clientId: jamie._id,
+        type: 'waist',
+        value: Math.round((35.6 - progress * 0.2) * 10) / 10,
+        measuredAt,
+        note: null,
+      });
+    }
+  }
+
+  // --- Packages: 1-2 per coach; Jamie bought Alex's 10-pack and used 3 credits ---------------------
+  const roundTo5Dollars = (cents: number) => Math.round(cents / 500) * 500;
+  const packagesByCoach = new Map<string, {id: Types.ObjectId; title: string; credits: number}[]>();
+  for (const coach of coaches) {
+    const individual = coach.seed.types.filter(t => t.kind === 'individual');
+    if (!individual.length) continue;
+    const base = Math.min(...individual.map(t => t.priceCents));
+    const offers = [
+      {title: '10 sessions', credits: 10, discount: 0.9, validityDays: 90},
+      ...(coach === alex || chance(0.6)
+        ? [{title: '5 sessions', credits: 5, discount: 0.95, validityDays: 60}]
+        : []),
+    ];
+    const created = [];
+    for (const offer of offers) {
+      const pkg = await PackageModel.create({
+        coachId: coach.user._id,
+        title: offer.title,
+        credits: offer.credits,
+        price: {
+          amountCents: roundTo5Dollars(base * offer.credits * offer.discount),
+          currency: 'USD',
+        },
+        validityDays: offer.validityDays,
+        isActive: true,
+      });
+      created.push({id: pkg._id, title: pkg.title, credits: pkg.credits});
+    }
+    packagesByCoach.set(coach.user._id.toString(), created);
+  }
+  const alexTen = await PackageModel.findOne({coachId: alex.user._id, credits: 10});
+  if (alexTen) {
+    const purchasedAt = addMinutes(now, -20 * 1440);
+    const purchase = await ClientPackageModel.create({
+      clientId: jamie._id,
+      coachId: alex.user._id,
+      packageId: alexTen._id,
+      title: alexTen.title,
+      creditsTotal: 10,
+      creditsLeft: 7,
+      price: alexTen.price,
+      purchasedAt,
+      expiresAt: addMinutes(purchasedAt, alexTen.validityDays * 1440),
+    });
+    // The three most recent past trainings of Jamie's series were paid with credits of this purchase.
+    const paidWithCredits = pastSeries.filter(b => b.startAt > purchasedAt).slice(-3);
+    for (const booking of paidWithCredits) {
+      booking.payment = {
+        status: 'paid',
+        method: 'credits',
+        paidAt: purchasedAt,
+        clientPackageId: purchase._id,
+      };
+      await booking.save();
+    }
+    purchase.creditsLeft = 10 - paidWithCredits.length;
+    await purchase.save();
+  }
+
+  // --- Favorites: Jamie's two regular coaches ---------------------------------------------------
+  await FavoriteModel.create({clientId: jamie._id, coachId: maya.user._id});
+  await FavoriteModel.create({clientId: jamie._id, coachId: alex.user._id});
+
+  // --- Reviews: one per client who completed a training with the coach (most of them) ------------
+  const completed = await BookingModel.find({status: 'completed'})
+    .select('coachId clientId endAt')
+    .lean();
+  const firstCompleted = new Map<string, Date>();
+  for (const b of completed) {
+    const key = `${b.coachId}:${b.clientId}`;
+    const prev = firstCompleted.get(key);
+    if (!prev || b.endAt < prev) firstCompleted.set(key, b.endAt);
+  }
+  const reviewersOf = (coachId: string) =>
+    [...firstCompleted.keys()].filter(key => key.startsWith(`${coachId}:`)).length;
+  const ratingFor = (average: number, reviewers: number): 3 | 4 | 5 => {
+    const r = random();
+    // An occasional 3 only for coaches with many reviews (a lone 3-star review would sink a small coach).
+    if (r < 0.04 && reviewers >= 6) return 3;
+    return r < 0.04 + (5 - average) * 1.2 ? 4 : 5;
+  };
+  for (const [key, firstEnd] of firstCompleted) {
+    const [coachId, clientId] = key.split(':') as [string, string];
+    const coach = coaches.find(c => c.user._id.toString() === coachId);
+    if (!coach) continue;
+    const isJamie = clientId === jamie._id.toString();
+    // Jamie reviewed Maya a few hours ago (still editable) and has not reviewed Alex yet ("Write a review").
+    if (isJamie && coach !== maya) continue;
+    if (!isJamie && !chance(0.8)) continue;
+    const rating = isJamie ? 5 : ratingFor(coach.seed.rating.average, reviewersOf(coachId));
+    const createdAt = isJamie
+      ? addMinutes(now, -180)
+      : new Date(
+          firstEnd.getTime() +
+            random() * Math.max(0, now.getTime() - firstEnd.getTime() - 2 * 86_400_000),
+        );
+    await new ReviewModel({
+      coachId: coach.user._id,
+      clientId,
+      rating,
+      text: isJamie
+        ? 'Lovely, calm first class - my hamstrings thank you!'
+        : pick(REVIEW_TEXTS[rating]),
+      createdAt,
+      updatedAt: createdAt,
+    }).save({timestamps: false});
+  }
+  for (const coach of coaches) await refreshCoachRating(coach.user._id);
 
   // --- Chats --------------------------------------------------------------------------------------
   await conversation(

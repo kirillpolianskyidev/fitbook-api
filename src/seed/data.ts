@@ -701,6 +701,28 @@ export const CLIENTS: SeedClient[] = [
   client('Leo', 'Hill', 62, MIAMI),
 ];
 
+/** Review texts by rating (null = rating without text). */
+export const REVIEW_TEXTS: Record<3 | 4 | 5, (string | null)[]> = {
+  5: [
+    'Great technique cues, I finally deadlift without back pain.',
+    'Every session is planned around my goals. Down two belt holes in six weeks!',
+    'Patient, motivating and always on time. Best coach I have had.',
+    'Explains the why behind every exercise. I feel stronger and move better.',
+    'Fun, tough and safe. My knees have never felt this good.',
+    'Super encouraging without being pushy. Worth every dollar.',
+    'Workouts fit my crazy schedule and I actually look forward to them.',
+    null,
+    null,
+  ],
+  4: [
+    'Really solid sessions. Sometimes runs a few minutes late, but the training is great.',
+    'Good programming and clear feedback. Would love more variety in warm-ups.',
+    'Knows the craft well. The location can be busy on weekends.',
+    null,
+  ],
+  3: ['Good coach, but the sessions felt a bit rushed for me.'],
+};
+
 export const NOTE_TEXTS = {
   clientBefore: [
     'Slept badly last night, might need an easier session.',

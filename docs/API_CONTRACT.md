@@ -68,12 +68,12 @@ policy, chat, settings. Theme preference is stored in `user.settings.theme` (`li
 ```json
 {
   "verification": {
-    "id": "9c1c722dcba9ff37aad9f1cad2490710",
+    "id": "a2c81810d3549a95479f4eef1585cd08",
     "purpose": "login",
     "email": "client@fitbook.dev",
     "codeLength": 6,
-    "expiresAt": "2026-10-21T17:50:18.218Z",
-    "resendAvailableAt": "2026-10-21T17:41:18.218Z"
+    "expiresAt": "2026-10-23T11:59:33.735Z",
+    "resendAvailableAt": "2026-10-23T11:50:33.735Z"
   }
 }
 ```
@@ -83,7 +83,7 @@ policy, chat, settings. Theme preference is stored in `user.settings.theme` (`li
 ```json
 {
   "user": {
-    "id": "6ad8f8f9ae15ad411e7f0b37",
+    "id": "6adb49c48e120d4d6239a13c",
     "email": "client@fitbook.dev",
     "role": "client",
     "firstName": "Jamie",
@@ -101,12 +101,12 @@ policy, chat, settings. Theme preference is stored in `user.settings.theme` (`li
       "theme": "dark"
     },
     "authProviders": ["password"],
-    "createdAt": "2026-10-21T17:40:09.215Z"
+    "createdAt": "2026-10-23T11:49:24.989Z"
   },
   "tokens": {
-    "accessToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJyb2xlIjoiY2xpZW50IiwidHlwIjoiYWNjZXNzIiwiaWF0IjoxNzkyNjA0NDE4LCJleHAiOjE3OTI2MDUzMTgsInN1YiI6IjZhZDhmOGY5YWUxNWFkNDExZTdmMGIzNyJ9.v5Bvz_FJM2A4RLYwuIXKjiT-o86WlDrcJAVIrr_kRxk",
-    "refreshToken": "Mku04Qu0j6bsNpJLRrRpr5Mfko6Q1Fn_4gwaF90V5mnN_RngU77KHWWEDP3hxPPC",
-    "accessTokenExpiresAt": "2026-10-21T17:55:18.000Z"
+    "accessToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJyb2xlIjoiY2xpZW50IiwidHlwIjoiYWNjZXNzIiwiaWF0IjoxNzkyNzU2MTczLCJleHAiOjE3OTI3NTcwNzMsInN1YiI6IjZhZGI0OWM0OGUxMjBkNGQ2MjM5YTEzYyJ9.UyOQIN7te4bpgRtkq7BG0PT7NsVk4nZLacJuEGEUMIc",
+    "refreshToken": "AGWFwfUouCmWovIDIpGysAbP83PO13dqDzcBOzqY7_tagqWtJgC8e7TlAfDnD68b",
+    "accessTokenExpiresAt": "2026-10-23T12:04:33.000Z"
   }
 }
 ```
@@ -154,6 +154,13 @@ policy, chat, settings. Theme preference is stored in `user.settings.theme` (`li
   `comment` (meeting point). Otherwise the training type or coach default location is used.
 - **Cancellation:** use `booking.cancellable` and `booking.cancelDeadline` to show the button and the deadline.
   Confirmed bookings can be cancelled only before the coach's `freeCancelHours`; unpaid ones any time before start.
+- **Reschedule:** while `booking.reschedulable` (same window as cancelling: before `cancelDeadline`, or before the
+  start for unpaid bookings) the client can move the booking: `POST /bookings/:id/reschedule` with
+  `{ startAt }` (individual: a free slot of the same type from `/coaches/:id/slots`; the booking's own slot does
+  not block it) or `{ sessionId }` (group: another upcoming group session of the same type with free places;
+  `session.sessionTypeId` tells which). Same `id`, payment, trial, price, notes, location and series; the old
+  slot / place is released; `rescheduledAt` is set. Errors: `RESCHEDULE_WINDOW_PASSED`, `SLOT_UNAVAILABLE`,
+  `SESSION_FULL`, `NOT_FOUND` (target group session), `VALIDATION_ERROR` (none / both fields, same time).
 - **Refunds (mock, instant):** cancelling a **paid** booking always returns the full price:
   `payment.status` becomes `refunded` and `payment.refundedAt` is set. The client can cancel only before
   `cancelDeadline` (after it -> `409 CANCELLATION_WINDOW_PASSED`, nothing changes); cancellations by the coach
@@ -173,7 +180,7 @@ or `system`).
 
 ```json
 {
-  "id": "6ad8f903ad2a35d9171d6385",
+  "id": "6adb49ce03a3a0caa555f265",
   "status": "pending_payment",
   "isTrial": false,
   "price": {
@@ -184,19 +191,23 @@ or `system`).
     "status": "unpaid",
     "method": "mock",
     "paidAt": null,
+    "clientPackageId": null,
     "refundedAt": null
   },
-  "expiresAt": "2026-10-21T17:55:19.089Z",
-  "startAt": "2026-10-28T11:00:00.000Z",
-  "endAt": "2026-10-28T12:00:00.000Z",
+  "expiresAt": "2026-10-23T12:04:34.588Z",
+  "startAt": "2026-10-30T11:00:00.000Z",
+  "endAt": "2026-10-30T12:00:00.000Z",
   "seriesId": null,
   "cancellable": true,
-  "cancelDeadline": "2026-10-27T11:00:00.000Z",
+  "reschedulable": true,
+  "rescheduledAt": null,
+  "cancelDeadline": "2026-10-29T11:00:00.000Z",
   "cancelledAt": null,
   "cancelledBy": null,
   "cancelReason": null,
   "session": {
-    "id": "6ad8f903ad2a35d9171d6382",
+    "id": "6adb49ce03a3a0caa555f262",
+    "sessionTypeId": "6adb49c48e120d4d6239a10b",
     "title": "1:1 Strength Session",
     "kind": "individual",
     "location": {
@@ -212,19 +223,19 @@ or `system`).
     "participantsCount": 1
   },
   "coach": {
-    "id": "6ad8f8f9ae15ad411e7f0b03",
+    "id": "6adb49c48e120d4d6239a108",
     "firstName": "Alex",
     "lastName": "Carter",
     "avatarUrl": "https://i.pravatar.cc/300?img=12"
   },
   "client": {
-    "id": "6ad8f8f9ae15ad411e7f0b37",
+    "id": "6adb49c48e120d4d6239a13c",
     "firstName": "Jamie",
     "lastName": "Lee",
     "avatarUrl": "https://i.pravatar.cc/300?img=32"
   },
   "notesCount": 0,
-  "createdAt": "2026-10-21T17:40:19.090Z"
+  "createdAt": "2026-10-23T11:49:34.589Z"
 }
 ```
 
@@ -234,19 +245,350 @@ or `system`).
 {
   "items": [
     {
-      "date": "2026-10-29",
-      "startAt": "2026-10-29T23:00:00.000Z",
-      "endAt": "2026-10-30T00:00:00.000Z",
+      "date": "2026-10-31",
+      "startAt": "2026-10-31T23:00:00.000Z",
+      "endAt": "2026-11-01T00:00:00.000Z",
       "available": false,
       "reason": "EXCEPTION"
     },
     {
-      "date": "2026-11-05",
-      "startAt": "2026-11-06T00:00:00.000Z",
-      "endAt": "2026-11-06T01:00:00.000Z",
-      "available": true
+      "date": "2026-11-07",
+      "startAt": "2026-11-08T00:00:00.000Z",
+      "endAt": "2026-11-08T01:00:00.000Z",
+      "available": false,
+      "reason": "UNAVAILABLE"
     }
   ]
+}
+```
+
+## 4a. Packages (credits)
+
+- A coach sells packages (`GET /coaches/:id` -> `packages`, active only): e.g. 10 credits for $700, valid
+  `validityDays` after purchase. 1 credit = 1 training with this coach of any type (individual or a group place).
+- `POST /packages/:id/purchase` (mock payment, instant) -> `ClientPackage`; inactive -> `PACKAGE_INACTIVE`.
+  `GET /me/packages?coachId=` -> `{ items, creditsAvailable }` (usable purchases first, soonest to expire first).
+- Book with a credit: `useCredits: true` in `POST /bookings` (individual or group) or `POST /bookings/series`
+  (1 credit per booked date, `INSUFFICIENT_CREDITS` with `details.creditsAvailable` and nothing booked). The
+  booking is `confirmed` immediately: `payment = { status: "paid", method: "credits", clientPackageId }`; the
+  credit comes from the purchase that expires first. No usable credit -> `NO_CREDITS`. Not with `isTrial`.
+- When a paid booking would be refunded (client before the deadline, coach, system), a credit booking gets its credit
+  back into the same purchase instead (`payment.status = "refunded"`); if that purchase expired meanwhile the
+  credit is lost. Rescheduling keeps the credit.
+- Coach: `GET/POST /coach/packages`, `PATCH/DELETE /coach/packages/:id` (changes apply to new purchases; a bought
+  package is deactivated instead of deleted).
+
+**Example: POST /packages/:id/purchase**
+
+```json
+{
+  "id": "6adb49ce03a3a0caa555f269",
+  "packageId": "6adb49cb8e120d4d6239af2a",
+  "title": "5 sessions",
+  "coach": {
+    "id": "6adb49c48e120d4d6239a108",
+    "firstName": "Alex",
+    "lastName": "Carter",
+    "avatarUrl": "https://i.pravatar.cc/300?img=12"
+  },
+  "creditsTotal": 5,
+  "creditsLeft": 5,
+  "price": {
+    "amountCents": 40500,
+    "currency": "USD"
+  },
+  "purchasedAt": "2026-10-23T11:49:34.770Z",
+  "expiresAt": "2026-12-22T11:49:34.770Z",
+  "expired": false
+}
+```
+
+**Example: POST /bookings with useCredits**
+
+```json
+{
+  "id": "6adb49ce03a3a0caa555f26d",
+  "status": "confirmed",
+  "isTrial": false,
+  "price": {
+    "amountCents": 8500,
+    "currency": "USD"
+  },
+  "payment": {
+    "status": "paid",
+    "method": "credits",
+    "paidAt": "2026-10-23T11:49:34.788Z",
+    "clientPackageId": "6adb49ce03a3a0caa555f269",
+    "refundedAt": null
+  },
+  "expiresAt": null,
+  "startAt": "2026-10-30T11:30:00.000Z",
+  "endAt": "2026-10-30T12:30:00.000Z",
+  "seriesId": null,
+  "cancellable": true,
+  "reschedulable": true,
+  "rescheduledAt": null,
+  "cancelDeadline": "2026-10-29T11:30:00.000Z",
+  "cancelledAt": null,
+  "cancelledBy": null,
+  "cancelReason": null,
+  "session": {
+    "id": "6adb49ce03a3a0caa555f26a",
+    "sessionTypeId": "6adb49c48e120d4d6239a10b",
+    "title": "1:1 Strength Session",
+    "kind": "individual",
+    "location": {
+      "name": "Iron Loop Gym",
+      "address": "216 W Ohio St, Chicago, IL 60654",
+      "city": "Chicago",
+      "state": "IL",
+      "country": "US",
+      "lat": 41.8925,
+      "lng": -87.6347
+    },
+    "capacity": 1,
+    "participantsCount": 1
+  },
+  "coach": {
+    "id": "6adb49c48e120d4d6239a108",
+    "firstName": "Alex",
+    "lastName": "Carter",
+    "avatarUrl": "https://i.pravatar.cc/300?img=12"
+  },
+  "client": {
+    "id": "6adb49c48e120d4d6239a13c",
+    "firstName": "Jamie",
+    "lastName": "Lee",
+    "avatarUrl": "https://i.pravatar.cc/300?img=32"
+  },
+  "notesCount": 0,
+  "createdAt": "2026-10-23T11:49:34.789Z"
+}
+```
+
+## 4b. Waitlist (full group sessions)
+
+- `GET /coaches/:id/group-sessions` items have `waitlist { count, myStatus, myPosition, offerExpiresAt }`.
+  When `spotsLeft === 0` and `myStatus` is null, offer "Join waitlist": `POST /group-sessions/:id/waitlist` ->
+  `WaitlistEntry` (`SESSION_NOT_FULL` if places are free - book instead, `ALREADY_BOOKED`,
+  `ALREADY_ON_WAITLIST`). Leave any time: `DELETE /group-sessions/:id/waitlist` (204).
+- When a place frees up (cancellation by anyone, or a reschedule to another session) the first `waiting` client
+  gets `status: "offered"`: the place is held for them until `offerExpiresAt` = min(now + 2h, start - 15 min);
+  everybody else keeps seeing `spotsLeft: 0` and gets `SESSION_FULL`. The offered client books with the usual
+  `POST /bookings { sessionId }` (`useCredits` works too); the entry becomes `booked`. An expired or declined
+  (left) offer passes to the next client. If less than 15 minutes remain, the place is simply free for everybody.
+  When the session starts or is cancelled every entry becomes `expired`.
+- `GET /me/waitlist` -> `{ items }` with `waiting` and `offered` entries (offers first). Socket.IO
+  `waitlist:offered { entry }` is sent to the client who got an offer (show an in-app notification).
+
+## 4c. Favorites and "Book again"
+
+- `PUT /me/favorites/:coachId` / `DELETE /me/favorites/:coachId` (both 204, idempotent; unknown or unpublished
+  coach -> `NOT_FOUND`). `GET /me/favorites` -> `{ items: CoachCard[] }`, most recently added first.
+- Every coach object (`GET /coaches` items, `GET /coaches/:id`, favorites) has `isFavorite` (false for
+  coaches). Catalog filter: `GET /coaches?favorites=true` (same paging).
+- "Book again": a past booking has `coach.id` and `session.sessionTypeId` -> open the slots of that type
+  (`GET /coaches/:id/slots?sessionTypeId`). If the type was deactivated the slots call returns
+  `SESSION_TYPE_INACTIVE` / `NOT_FOUND`.
+
+**Example: GET /me/favorites**
+
+```json
+{
+  "items": [
+    {
+      "id": "6adb49c48e120d4d6239a108",
+      "firstName": "Alex",
+      "lastName": "Carter",
+      "avatarUrl": "https://i.pravatar.cc/300?img=12",
+      "headline": "Strength & conditioning coach for busy professionals",
+      "specializations": ["strength", "hiit", "mobility"],
+      "experienceYears": 9,
+      "rating": {
+        "average": 5,
+        "count": 11
+      },
+      "homeArea": {
+        "city": "Chicago",
+        "state": "IL",
+        "country": "US",
+        "timezone": "America/Chicago"
+      },
+      "priceFrom": {
+        "amountCents": 2500,
+        "currency": "USD"
+      },
+      "kinds": ["group", "individual"],
+      "isFavorite": true
+    },
+    {
+      "id": "6adb49c48e120d4d6239a10e",
+      "firstName": "Maya",
+      "lastName": "Patel",
+      "avatarUrl": "https://i.pravatar.cc/300?img=47",
+      "headline": "Vinyasa & mobility yoga, on the lakefront and in your living room",
+      "specializations": ["yoga", "mobility"],
+      "experienceYears": 7,
+      "rating": {
+        "average": 5,
+        "count": 11
+      },
+      "homeArea": {
+        "city": "Chicago",
+        "state": "IL",
+        "country": "US",
+        "timezone": "America/Chicago"
+      },
+      "priceFrom": {
+        "amountCents": 1800,
+        "currency": "USD"
+      },
+      "kinds": ["group", "individual"],
+      "isFavorite": true
+    }
+  ]
+}
+```
+
+## 4d. Progress (client) and client progress (coach)
+
+- `GET /me/progress?weeks=12` (4-52) -> `{ totals { completed, thisMonth, coaches }, goal { trainingsPerWeek },
+thisWeek { weekStart, completed, planned }, streakWeeks, weekly [{ weekStart, completed }] }`. A training counts
+  when its booking is `completed`; `planned` = `confirmed` bookings later this week. Weeks start on Monday in
+  the client's `homeArea.timezone` (`weekStart` = that Monday, YYYY-MM-DD). `weekly` has exactly `weeks`
+  items, oldest first, the last one is the current week. `streakWeeks` = consecutive weeks meeting the goal
+  (`>= 1` training without a goal), ending with the last finished week, or the current week if its goal is met.
+- `PUT /me/goal { trainingsPerWeek: 1..14 | null }` -> `{ trainingsPerWeek }`.
+- Measurements (fixed units): `weight` lb 50-700, `body_fat` % 2-70, `waist` in 15-80, at most 1 decimal.
+  `POST /me/measurements { type, value, measuredAt?, note? }` -> 201; the same type on the same local day replaces the
+  value -> 200 (same `id`). `measuredAt` defaults to today in the client's time zone, never in the future.
+  `GET /me/measurements?type&limit` (newest first, limit <= 200), `DELETE /me/measurements/:id`.
+- Coach: `GET /coach/clients/:clientId/progress?weeks` - same body, but `totals` and `weekly` count only
+  trainings with this coach (`thisWeek` and `streakWeeks` are the client's overall), plus
+  `measurements.latest { weight, body_fat, waist }`; `GET /coach/clients/:clientId/measurements`. Only for clients
+  who have (or had) a booking with the coach, otherwise `NOT_FOUND`.
+
+**Example: GET /me/progress**
+
+```json
+{
+  "totals": {
+    "completed": 21,
+    "thisMonth": 9,
+    "coaches": 3
+  },
+  "goal": {
+    "trainingsPerWeek": 3
+  },
+  "thisWeek": {
+    "weekStart": "2026-10-19",
+    "completed": 2,
+    "planned": 2
+  },
+  "streakWeeks": 3,
+  "weekly": [
+    {
+      "weekStart": "2026-08-03",
+      "completed": 0
+    },
+    {
+      "weekStart": "2026-08-10",
+      "completed": 0
+    }
+  ]
+}
+```
+
+**Example: POST /me/measurements**
+
+```json
+{
+  "id": "6adb49ce03a3a0caa555f268",
+  "type": "weight",
+  "value": 181.6,
+  "unit": "lb",
+  "measuredAt": "2026-10-23",
+  "note": null,
+  "createdAt": "2026-10-23T11:49:34.684Z"
+}
+```
+
+## 4e. Reviews
+
+- One review per client per coach (`rating` 1-5, optional `text` up to 1000 characters; empty -> `null`).
+  `GET /coaches/:id/my-review` -> `{ review, canCreate, editableUntil }`: show "Write a review" when
+  `canCreate` (needs a completed training with the coach), "Edit" while `now < editableUntil` (24 hours after
+  creation), otherwise the review is read-only. Reviews cannot be deleted; coaches do not reply in v1.
+- `PUT /coaches/:id/my-review { rating, text? }` -> `201` created / `200` updated, same body as GET.
+- `GET /coaches/:id/reviews?page&pageSize` -> newest first + `summary { average, count, distribution }`.
+  Authors are shown as "First L." with `avatarUrl`. `coach.rating` in the catalog and profile is calculated from the
+  reviews (average rounded to 2 decimals).
+
+**Example: GET /coaches/:id/reviews**
+
+```json
+{
+  "items": [
+    {
+      "id": "6adb49cb8e120d4d6239af44",
+      "rating": 5,
+      "text": "Patient, motivating and always on time. Best coach I have had.",
+      "author": {
+        "id": "6adb49c58e120d4d6239a145",
+        "name": "Lucas M.",
+        "avatarUrl": "https://i.pravatar.cc/300?img=51"
+      },
+      "createdAt": "2026-10-19T11:16:26.577Z",
+      "updatedAt": "2026-10-19T11:16:26.577Z"
+    },
+    {
+      "id": "6adb49cb8e120d4d6239af47",
+      "rating": 5,
+      "text": "Patient, motivating and always on time. Best coach I have had.",
+      "author": {
+        "id": "6adb49c58e120d4d6239a142",
+        "name": "Sophia M.",
+        "avatarUrl": "https://i.pravatar.cc/300?img=16"
+      },
+      "createdAt": "2026-10-11T18:21:04.247Z",
+      "updatedAt": "2026-10-11T18:21:04.247Z"
+    }
+  ],
+  "page": 1,
+  "pageSize": 3,
+  "total": 10,
+  "summary": {
+    "average": 5,
+    "count": 10,
+    "distribution": {
+      "1": 0,
+      "2": 0,
+      "3": 0,
+      "4": 0,
+      "5": 10
+    }
+  }
+}
+```
+
+**Example: PUT /coaches/:id/my-review (created)**
+
+```json
+{
+  "review": {
+    "id": "6adb49ce03a3a0caa555f261",
+    "rating": 5,
+    "text": "Great technique cues, I finally deadlift without back pain.",
+    "author": {
+      "id": "6adb49c48e120d4d6239a13c",
+      "name": "Jamie L.",
+      "avatarUrl": "https://i.pravatar.cc/300?img=32"
+    },
+    "createdAt": "2026-10-23T11:49:34.512Z",
+    "updatedAt": "2026-10-23T11:49:34.512Z"
+  },
+  "canCreate": false,
+  "editableUntil": "2026-10-24T11:49:34.512Z"
 }
 ```
 
@@ -265,19 +607,19 @@ Profile (`/coach/profile`, publish when `completeness.complete`), training types
   "items": [
     {
       "session": {
-        "id": "6ad8f8f9ae15ad411e7f0b5f",
-        "coachId": "6ad8f8f9ae15ad411e7f0b03",
-        "sessionTypeId": "6ad8f8f9ae15ad411e7f0b06",
-        "kind": "individual",
-        "title": "1:1 Strength Session",
-        "startAt": "2026-10-22T12:00:00.000Z",
-        "endAt": "2026-10-22T13:00:00.000Z",
+        "id": "6adb49c58e120d4d6239a1bd",
+        "coachId": "6adb49c48e120d4d6239a108",
+        "sessionTypeId": "6adb49c48e120d4d6239a10d",
+        "kind": "group",
+        "title": "Lunchtime Strength Circuit",
+        "startAt": "2026-10-23T17:00:00.000Z",
+        "endAt": "2026-10-23T18:00:00.000Z",
         "durationMin": 60,
-        "capacity": 1,
-        "participantsCount": 0,
-        "spotsLeft": 1,
+        "capacity": 8,
+        "participantsCount": 6,
+        "spotsLeft": 2,
         "price": {
-          "amountCents": 8500,
+          "amountCents": 2500,
           "currency": "USD"
         },
         "location": {
@@ -294,28 +636,40 @@ Profile (`/coach/profile`, publish when `completeness.complete`), training types
       },
       "participants": [
         {
-          "bookingId": "6ad8f8f9ae15ad411e7f0b62",
+          "bookingId": "6adb49c58e120d4d6239a306",
           "status": "confirmed",
           "isTrial": false,
           "client": {
-            "id": "6ad8f8f9ae15ad411e7f0b37",
+            "id": "6adb49c48e120d4d6239a13c",
             "firstName": "Jamie",
             "lastName": "Lee",
             "avatarUrl": "https://i.pravatar.cc/300?img=32"
           },
-          "notesCount": 1
+          "notesCount": 0
+        },
+        {
+          "bookingId": "6adb49c68e120d4d6239a392",
+          "status": "confirmed",
+          "isTrial": false,
+          "client": {
+            "id": "6adb49c58e120d4d6239a142",
+            "firstName": "Sophia",
+            "lastName": "Martinez",
+            "avatarUrl": "https://i.pravatar.cc/300?img=16"
+          },
+          "notesCount": 0
         }
       ]
     },
     {
       "session": {
-        "id": "6ad8f8feae15ad411e7f12c8",
-        "coachId": "6ad8f8f9ae15ad411e7f0b03",
-        "sessionTypeId": "6ad8f8f9ae15ad411e7f0b06",
+        "id": "6adb49c98e120d4d6239a8ea",
+        "coachId": "6adb49c48e120d4d6239a108",
+        "sessionTypeId": "6adb49c48e120d4d6239a10b",
         "kind": "individual",
         "title": "1:1 Strength Session",
-        "startAt": "2026-10-22T22:00:00.000Z",
-        "endAt": "2026-10-22T23:00:00.000Z",
+        "startAt": "2026-10-24T15:00:00.000Z",
+        "endAt": "2026-10-24T16:00:00.000Z",
         "durationMin": 60,
         "capacity": 1,
         "participantsCount": 0,
@@ -338,14 +692,14 @@ Profile (`/coach/profile`, publish when `completeness.complete`), training types
       },
       "participants": [
         {
-          "bookingId": "6ad8f8feae15ad411e7f12cb",
+          "bookingId": "6adb49c98e120d4d6239a8ed",
           "status": "confirmed",
           "isTrial": false,
           "client": {
-            "id": "6ad8f8f9ae15ad411e7f0b43",
-            "firstName": "Grace",
-            "lastName": "Harris",
-            "avatarUrl": "https://i.pravatar.cc/300?img=24"
+            "id": "6adb49c58e120d4d6239a141",
+            "firstName": "Noah",
+            "lastName": "Wilson",
+            "avatarUrl": "https://i.pravatar.cc/300?img=14"
           },
           "notesCount": 0
         }
@@ -365,7 +719,8 @@ const socket = io(SOCKET_URL, {auth: {token: accessToken}, transports: ['websock
 - Reconnect with a fresh access token after refreshing (`socket.auth = {token}; socket.connect()`).
   A rejected handshake emits `connect_error` with message `UNAUTHORIZED` or `TOKEN_EXPIRED`.
 - Server -> app events: `message:new { conversationId, message }`, `message:read { conversationId, readerId,
-readAt }`, `conversation:updated { conversation }`, `typing { conversationId, userId }`.
+readAt }`, `conversation:updated { conversation }`, `typing { conversationId, userId }`,
+  `waitlist:offered { entry: WaitlistEntry }` (a held group place is waiting to be booked).
 - App -> server events (with ack `{ ok: true, data? } | { ok: false, error: { code, message } }`):
   `message:send { conversationId, text }`, `typing { conversationId }`, `conversation:read { conversationId }`.
 - REST equivalents: `GET /conversations`, `POST /conversations` (get or create), `GET/POST
@@ -377,40 +732,40 @@ readAt }`, `conversation:updated { conversation }`, `typing { conversationId, us
 {
   "items": [
     {
-      "id": "6ad8f900ae15ad411e7f1873",
-      "coachId": "6ad8f8f9ae15ad411e7f0b13",
-      "clientId": "6ad8f8f9ae15ad411e7f0b37",
+      "id": "6adb49cb8e120d4d6239afbc",
+      "coachId": "6adb49c48e120d4d6239a118",
+      "clientId": "6adb49c48e120d4d6239a13c",
       "participant": {
-        "id": "6ad8f8f9ae15ad411e7f0b13",
+        "id": "6adb49c48e120d4d6239a118",
         "firstName": "Sofia",
         "lastName": "Alvarez",
         "avatarUrl": "https://i.pravatar.cc/300?img=44"
       },
       "lastMessage": {
         "text": "I will add it to our notes after the session.",
-        "senderId": "6ad8f8f9ae15ad411e7f0b13",
-        "createdAt": "2026-10-17T23:24:08.255Z"
+        "senderId": "6adb49c48e120d4d6239a118",
+        "createdAt": "2026-10-19T17:35:24.145Z"
       },
       "unreadCount": 1,
-      "lastActivityAt": "2026-10-17T23:24:08.255Z"
+      "lastActivityAt": "2026-10-19T17:35:24.145Z"
     },
     {
-      "id": "6ad8f8ffae15ad411e7f185e",
-      "coachId": "6ad8f8f9ae15ad411e7f0b03",
-      "clientId": "6ad8f8f9ae15ad411e7f0b37",
+      "id": "6adb49cb8e120d4d6239afa7",
+      "coachId": "6adb49c48e120d4d6239a108",
+      "clientId": "6adb49c48e120d4d6239a13c",
       "participant": {
-        "id": "6ad8f8f9ae15ad411e7f0b03",
+        "id": "6adb49c48e120d4d6239a108",
         "firstName": "Alex",
         "lastName": "Carter",
         "avatarUrl": "https://i.pravatar.cc/300?img=12"
       },
       "lastMessage": {
         "text": "Got it, see you at 6.",
-        "senderId": "6ad8f8f9ae15ad411e7f0b03",
-        "createdAt": "2026-10-09T07:28:08.255Z"
+        "senderId": "6adb49c48e120d4d6239a108",
+        "createdAt": "2026-10-10T23:43:24.145Z"
       },
       "unreadCount": 1,
-      "lastActivityAt": "2026-10-09T07:28:08.255Z"
+      "lastActivityAt": "2026-10-10T23:43:24.145Z"
     }
   ]
 }
@@ -433,15 +788,23 @@ localized app strings; `message` is an English fallback.
 | `INVALID_CREDENTIALS`        | 401  | Email or password is incorrect.                                        |                                                                                         |
 | `SOCIAL_TOKEN_INVALID`       | 401  | Sign-in with this provider failed.                                     |                                                                                         |
 | `FORBIDDEN`                  | 403  | You do not have access to this resource.                               |                                                                                         |
+| `REVIEW_NOT_ALLOWED`         | 403  | You can review a coach after your first completed training.            | Hide "Write a review" (`canCreate` is false until a training is completed).             |
 | `ONBOARDING_REQUIRED`        | 403  | Complete your profile first.                                           | Open the onboarding screen (role + city/state).                                         |
 | `NOT_FOUND`                  | 404  | Not found.                                                             |                                                                                         |
 | `EMAIL_TAKEN`                | 409  | An account with this email already exists.                             |                                                                                         |
 | `SLOT_UNAVAILABLE`           | 409  | This time is no longer available.                                      | Reload slots and ask the user to pick another time.                                     |
 | `SESSION_FULL`               | 409  | This group session is full.                                            | Refresh the group list; offer other sessions.                                           |
 | `ALREADY_BOOKED`             | 409  | You have already booked this session.                                  |                                                                                         |
+| `SESSION_NOT_FULL`           | 409  | This session still has places — book it now.                           | Places are free: book the session instead.                                              |
+| `ALREADY_ON_WAITLIST`        | 409  | You are already on the waitlist.                                       | Reload the session (`waitlist.myStatus`).                                               |
 | `TRIAL_ALREADY_USED`         | 409  | The free trial has already been used.                                  | Hide the free-trial option; continue with a paid booking.                               |
 | `CANCELLATION_WINDOW_PASSED` | 409  | It is too late to cancel this training.                                | Explain the coach policy using `details.freeCancelHours`.                               |
+| `REVIEW_EDIT_WINDOW_PASSED`  | 409  | Reviews can be changed only during 24 hours.                           | Show the review as read-only.                                                           |
+| `RESCHEDULE_WINDOW_PASSED`   | 409  | It is too late to reschedule this training.                            | Hide "Reschedule"; reload the booking (`reschedulable` is false now).                   |
 | `BOOKING_NOT_PAYABLE`        | 409  | This booking cannot be paid.                                           | Reload the booking; it was paid or released.                                            |
+| `NO_CREDITS`                 | 409  | You have no credits left with this coach.                              | Offer to buy a package or pay normally.                                                 |
+| `INSUFFICIENT_CREDITS`       | 409  | Not enough credits for all dates.                                      | Show `details.creditsAvailable`; let the user pick fewer dates or pay normally.         |
+| `PACKAGE_INACTIVE`           | 409  | This package is no longer available.                                   | Reload the coach profile (the package was withdrawn).                                   |
 | `TRIAL_NOT_ALLOWED`          | 422  | The free trial is available for individual trainings only.             |                                                                                         |
 | `PROFILE_INCOMPLETE`         | 422  | Complete the profile before publishing.                                |                                                                                         |
 | `SESSION_TYPE_INACTIVE`      | 422  | This training type is not available.                                   |                                                                                         |
@@ -474,7 +837,7 @@ localized app strings; `message` is an English fallback.
 ## 8. Enums
 
 - Role: `coach | client`; Theme: `light | dark | system`; Training kind: `individual | group`
-- Booking status: `pending_payment | confirmed | cancelled | completed`; Payment status: `unpaid | paid | refunded | not_required`
+- Booking status: `pending_payment | confirmed | cancelled | completed`; Payment status: `unpaid | paid | refunded | not_required`; Payment method: `mock | credits`
 - Session status: `scheduled | cancelled | completed`; Note phase: `before | after`
 - Specializations: `strength`, `yoga`, `running`, `boxing`, `pilates`, `crossfit`, `swimming`, `tennis`, `hiit`, `mobility`
 - States: 2-letter US state codes (`IL`, `NY`, ...); country is always `US`.
@@ -520,7 +883,7 @@ localized app strings; `message` is an English fallback.
 | `GET`  | `/coaches`                     | any user | Coach catalog (published coaches; my state first unless a state filter is given)      | 200 |                                                 |
 | `GET`  | `/coaches/{id}`                | any user | Coach profile: bio, experience, certifications, highlights, training types and prices | 200 | `NOT_FOUND`                                     |
 | `GET`  | `/coaches/{id}/slots`          | client   | Free start times for an individual training type (range up to 31 days)                | 200 | `FORBIDDEN` `NOT_FOUND` `SESSION_TYPE_INACTIVE` |
-| `GET`  | `/coaches/{id}/group-sessions` | client   | Upcoming group sessions of a coach with spots left                                    | 200 | `FORBIDDEN` `NOT_FOUND`                         |
+| `GET`  | `/coaches/{id}/group-sessions` | client   | Upcoming group sessions of a coach with spots left and my waitlist status             | 200 | `FORBIDDEN` `NOT_FOUND`                         |
 
 ### Coach: profile
 
@@ -530,6 +893,39 @@ localized app strings; `message` is an English fallback.
 | `PUT`  | `/coach/profile`               | coach | Update my coach profile (unpublishes automatically if it becomes incomplete) | 200 | `FORBIDDEN`                      |
 | `POST` | `/coach/profile/publish`       | coach | Publish or hide my profile in the catalog                                    | 200 | `FORBIDDEN` `PROFILE_INCOMPLETE` |
 | `PUT`  | `/coach/settings/cancellation` | coach | Set how many hours before a training clients can still cancel                | 200 | `FORBIDDEN`                      |
+
+### Reviews
+
+| Method | Path                      | Who      | What                                                    | OK  | Errors (besides validation/auth)                                         |
+| ------ | ------------------------- | -------- | ------------------------------------------------------- | --- | ------------------------------------------------------------------------ |
+| `GET`  | `/coaches/{id}/reviews`   | any user | Reviews of a coach, newest first, with a rating summary | 200 | `NOT_FOUND`                                                              |
+| `GET`  | `/coaches/{id}/my-review` | client   | My review of the coach and what I can do with it        | 200 | `FORBIDDEN` `NOT_FOUND`                                                  |
+| `PUT`  | `/coaches/{id}/my-review` | client   | Create (201) or update (200) my review of the coach     | 200 | `REVIEW_NOT_ALLOWED` `FORBIDDEN` `NOT_FOUND` `REVIEW_EDIT_WINDOW_PASSED` |
+
+### Favorites
+
+| Method   | Path                      | Who    | What                                            | OK  | Errors (besides validation/auth) |
+| -------- | ------------------------- | ------ | ----------------------------------------------- | --- | -------------------------------- |
+| `GET`    | `/me/favorites`           | client | My favorite coaches (most recently added first) | 200 | `FORBIDDEN`                      |
+| `PUT`    | `/me/favorites/{coachId}` | client | Add a coach to my favorites (idempotent)        | 204 | `FORBIDDEN` `NOT_FOUND`          |
+| `DELETE` | `/me/favorites/{coachId}` | client | Remove a coach from my favorites (idempotent)   | 204 | `FORBIDDEN`                      |
+
+### Progress
+
+| Method   | Path                    | Who    | What                                                                                        | OK  | Errors (besides validation/auth) |
+| -------- | ----------------------- | ------ | ------------------------------------------------------------------------------------------- | --- | -------------------------------- |
+| `GET`    | `/me/progress`          | client | My training stats: totals, this week, weekly chart, streak and goal (weeks start on Monday) | 200 | `FORBIDDEN`                      |
+| `PUT`    | `/me/goal`              | client | Set (1-14) or remove (null) my weekly training goal                                         | 200 | `FORBIDDEN`                      |
+| `GET`    | `/me/measurements`      | client | My body measurements, newest first                                                          | 200 | `FORBIDDEN`                      |
+| `POST`   | `/me/measurements`      | client | Save a measurement (201); the same type on the same day replaces the value (200)            | 200 | `FORBIDDEN`                      |
+| `DELETE` | `/me/measurements/{id}` | client | Delete a measurement                                                                        | 204 | `FORBIDDEN` `NOT_FOUND`          |
+
+### Coach: clients
+
+| Method | Path                                     | Who   | What                                                                                       | OK  | Errors (besides validation/auth) |
+| ------ | ---------------------------------------- | ----- | ------------------------------------------------------------------------------------------ | --- | -------------------------------- |
+| `GET`  | `/coach/clients/{clientId}/progress`     | coach | A client's progress with me (totals and weekly: my trainings only) and latest measurements | 200 | `FORBIDDEN` `NOT_FOUND`          |
+| `GET`  | `/coach/clients/{clientId}/measurements` | coach | A client's body measurements (clients share them with their coaches)                       | 200 | `FORBIDDEN` `NOT_FOUND`          |
 
 ### Coach: training types
 
@@ -551,17 +947,18 @@ localized app strings; `message` is an English fallback.
 
 ### Bookings
 
-| Method | Path                            | Who      | What                                                                                    | OK  | Errors (besides validation/auth)                                                                                                            |
-| ------ | ------------------------------- | -------- | --------------------------------------------------------------------------------------- | --- | ------------------------------------------------------------------------------------------------------------------------------------------- |
-| `POST` | `/bookings`                     | client   | Book an individual training (optionally the free trial) or join a group session         | 201 | `FORBIDDEN` `NOT_FOUND` `SLOT_UNAVAILABLE` `SESSION_FULL` `ALREADY_BOOKED` `TRIAL_ALREADY_USED` `TRIAL_NOT_ALLOWED` `SESSION_TYPE_INACTIVE` |
-| `GET`  | `/bookings`                     | client   | My bookings for the calendar: upcoming (ascending) or past (descending)                 | 200 | `FORBIDDEN`                                                                                                                                 |
-| `POST` | `/bookings/series/preview`      | client   | Preview a recurring series: which dates are free                                        | 200 | `FORBIDDEN` `NOT_FOUND` `SESSION_TYPE_INACTIVE`                                                                                             |
-| `POST` | `/bookings/series`              | client   | Book the chosen dates of a recurring series (taken dates are skipped)                   | 201 | `FORBIDDEN` `NOT_FOUND` `SESSION_TYPE_INACTIVE`                                                                                             |
-| `POST` | `/bookings/series/{id}/pay`     | client   | Pay all pending bookings of a series (mock payment)                                     | 200 | `FORBIDDEN` `NOT_FOUND` `BOOKING_NOT_PAYABLE`                                                                                               |
-| `GET`  | `/bookings/{id}`                | any user | Booking details (client or coach of the booking)                                        | 200 | `NOT_FOUND`                                                                                                                                 |
-| `POST` | `/bookings/{id}/pay`            | client   | Pay a pending booking (mock payment)                                                    | 200 | `FORBIDDEN` `NOT_FOUND` `BOOKING_NOT_PAYABLE`                                                                                               |
-| `POST` | `/bookings/{id}/cancel`         | client   | Cancel my booking (confirmed bookings only within the coach's free-cancellation window) | 200 | `FORBIDDEN` `NOT_FOUND` `CANCELLATION_WINDOW_PASSED`                                                                                        |
-| `GET`  | `/bookings/{id}/calendar-event` | any user | Event data for adding the training to the device calendar                               | 200 | `NOT_FOUND`                                                                                                                                 |
+| Method | Path                            | Who      | What                                                                                    | OK  | Errors (besides validation/auth)                                                                                                                         |
+| ------ | ------------------------------- | -------- | --------------------------------------------------------------------------------------- | --- | -------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `POST` | `/bookings`                     | client   | Book an individual training (optionally the free trial) or join a group session         | 201 | `FORBIDDEN` `NOT_FOUND` `SLOT_UNAVAILABLE` `SESSION_FULL` `ALREADY_BOOKED` `TRIAL_ALREADY_USED` `NO_CREDITS` `TRIAL_NOT_ALLOWED` `SESSION_TYPE_INACTIVE` |
+| `GET`  | `/bookings`                     | client   | My bookings for the calendar: upcoming (ascending) or past (descending)                 | 200 | `FORBIDDEN`                                                                                                                                              |
+| `POST` | `/bookings/series/preview`      | client   | Preview a recurring series: which dates are free                                        | 200 | `FORBIDDEN` `NOT_FOUND` `SESSION_TYPE_INACTIVE`                                                                                                          |
+| `POST` | `/bookings/series`              | client   | Book the chosen dates of a recurring series (taken dates are skipped)                   | 201 | `FORBIDDEN` `NOT_FOUND` `INSUFFICIENT_CREDITS` `SESSION_TYPE_INACTIVE`                                                                                   |
+| `POST` | `/bookings/series/{id}/pay`     | client   | Pay all pending bookings of a series (mock payment)                                     | 200 | `FORBIDDEN` `NOT_FOUND` `BOOKING_NOT_PAYABLE`                                                                                                            |
+| `GET`  | `/bookings/{id}`                | any user | Booking details (client or coach of the booking)                                        | 200 | `NOT_FOUND`                                                                                                                                              |
+| `POST` | `/bookings/{id}/pay`            | client   | Pay a pending booking (mock payment)                                                    | 200 | `FORBIDDEN` `NOT_FOUND` `BOOKING_NOT_PAYABLE`                                                                                                            |
+| `POST` | `/bookings/{id}/cancel`         | client   | Cancel my booking (confirmed bookings only within the coach's free-cancellation window) | 200 | `FORBIDDEN` `NOT_FOUND` `CANCELLATION_WINDOW_PASSED`                                                                                                     |
+| `POST` | `/bookings/{id}/reschedule`     | client   | Move my booking to another time (individual) or another group session (group)           | 200 | `FORBIDDEN` `NOT_FOUND` `RESCHEDULE_WINDOW_PASSED` `SLOT_UNAVAILABLE` `SESSION_FULL` `ALREADY_BOOKED`                                                    |
+| `GET`  | `/bookings/{id}/calendar-event` | any user | Event data for adding the training to the device calendar                               | 200 | `NOT_FOUND`                                                                                                                                              |
 
 ### Coach: schedule
 
@@ -573,6 +970,30 @@ localized app strings; `message` is an English fallback.
 | `GET`  | `/coach/schedule`                   | coach | My work calendar: sessions with participants in a range (up to 62 days) | 200 | `FORBIDDEN`                                          |
 | `GET`  | `/coach/sessions/{id}`              | coach | One session with its participants                                       | 200 | `FORBIDDEN` `NOT_FOUND`                              |
 | `GET`  | `/coach/clients`                    | coach | Clients who booked with me                                              | 200 | `FORBIDDEN`                                          |
+
+### Coach: packages
+
+| Method   | Path                   | Who   | What                                                                        | OK  | Errors (besides validation/auth) |
+| -------- | ---------------------- | ----- | --------------------------------------------------------------------------- | --- | -------------------------------- |
+| `GET`    | `/coach/packages`      | coach | My packages (active and inactive)                                           | 200 | `FORBIDDEN`                      |
+| `POST`   | `/coach/packages`      | coach | Create a package (N credits for a price, valid validityDays after purchase) | 201 | `FORBIDDEN`                      |
+| `PATCH`  | `/coach/packages/{id}` | coach | Update a package (applies to new purchases only)                            | 200 | `FORBIDDEN` `NOT_FOUND`          |
+| `DELETE` | `/coach/packages/{id}` | coach | Delete a package (deactivated instead if it was already bought)             | 204 | `FORBIDDEN` `NOT_FOUND`          |
+
+### Packages
+
+| Method | Path                      | Who    | What                                                                   | OK  | Errors (besides validation/auth)           |
+| ------ | ------------------------- | ------ | ---------------------------------------------------------------------- | --- | ------------------------------------------ |
+| `POST` | `/packages/{id}/purchase` | client | Buy a package (mock payment, paid immediately)                         | 201 | `FORBIDDEN` `NOT_FOUND` `PACKAGE_INACTIVE` |
+| `GET`  | `/me/packages`            | client | My purchased packages and available credits (optionally for one coach) | 200 | `FORBIDDEN`                                |
+
+### Waitlist
+
+| Method   | Path                            | Who    | What                                                                          | OK  | Errors (besides validation/auth)                                                  |
+| -------- | ------------------------------- | ------ | ----------------------------------------------------------------------------- | --- | --------------------------------------------------------------------------------- |
+| `POST`   | `/group-sessions/{id}/waitlist` | client | Join the waitlist of a full upcoming group session                            | 201 | `FORBIDDEN` `NOT_FOUND` `SESSION_NOT_FULL` `ALREADY_BOOKED` `ALREADY_ON_WAITLIST` |
+| `DELETE` | `/group-sessions/{id}/waitlist` | client | Leave the waitlist (an offer passes to the next client)                       | 204 | `FORBIDDEN` `NOT_FOUND`                                                           |
+| `GET`    | `/me/waitlist`                  | client | My waiting and offered waitlist entries (offers first, then by session start) | 200 | `FORBIDDEN`                                                                       |
 
 ### Notes
 
@@ -599,7 +1020,7 @@ localized app strings; `message` is an English fallback.
 
 ```json
 {
-  "id": "6ad8f8f9ae15ad411e7f0b37",
+  "id": "6adb49c48e120d4d6239a13c",
   "email": "client@fitbook.dev",
   "role": "client",
   "firstName": "Jamie",
@@ -617,7 +1038,7 @@ localized app strings; `message` is an English fallback.
     "theme": "dark"
   },
   "authProviders": ["password"],
-  "createdAt": "2026-10-21T17:40:09.215Z",
+  "createdAt": "2026-10-23T11:49:24.989Z",
   "coachProfile": null
 }
 ```
@@ -628,7 +1049,7 @@ localized app strings; `message` is an English fallback.
 {
   "items": [
     {
-      "id": "6ad8f8f9ae15ad411e7f0b09",
+      "id": "6adb49c48e120d4d6239a10e",
       "firstName": "Maya",
       "lastName": "Patel",
       "avatarUrl": "https://i.pravatar.cc/300?img=47",
@@ -636,8 +1057,8 @@ localized app strings; `message` is an English fallback.
       "specializations": ["yoga", "mobility"],
       "experienceYears": 7,
       "rating": {
-        "average": 4.95,
-        "count": 188
+        "average": 5,
+        "count": 11
       },
       "homeArea": {
         "city": "Chicago",
@@ -649,10 +1070,11 @@ localized app strings; `message` is an English fallback.
         "amountCents": 1800,
         "currency": "USD"
       },
-      "kinds": ["group", "individual"]
+      "kinds": ["group", "individual"],
+      "isFavorite": true
     },
     {
-      "id": "6ad8f8f9ae15ad411e7f0b03",
+      "id": "6adb49c48e120d4d6239a108",
       "firstName": "Alex",
       "lastName": "Carter",
       "avatarUrl": "https://i.pravatar.cc/300?img=12",
@@ -660,8 +1082,8 @@ localized app strings; `message` is an English fallback.
       "specializations": ["strength", "hiit", "mobility"],
       "experienceYears": 9,
       "rating": {
-        "average": 4.9,
-        "count": 142
+        "average": 5,
+        "count": 10
       },
       "homeArea": {
         "city": "Chicago",
@@ -673,7 +1095,8 @@ localized app strings; `message` is an English fallback.
         "amountCents": 2500,
         "currency": "USD"
       },
-      "kinds": ["group", "individual"]
+      "kinds": ["group", "individual"],
+      "isFavorite": true
     }
   ],
   "page": 1,
@@ -686,7 +1109,7 @@ localized app strings; `message` is an English fallback.
 
 ```json
 {
-  "id": "6ad8f8f9ae15ad411e7f0b03",
+  "id": "6adb49c48e120d4d6239a108",
   "firstName": "Alex",
   "lastName": "Carter",
   "avatarUrl": "https://i.pravatar.cc/300?img=12",
@@ -694,8 +1117,8 @@ localized app strings; `message` is an English fallback.
   "specializations": ["strength", "hiit", "mobility"],
   "experienceYears": 9,
   "rating": {
-    "average": 4.9,
-    "count": 142
+    "average": 5,
+    "count": 10
   },
   "homeArea": {
     "city": "Chicago",
@@ -708,6 +1131,7 @@ localized app strings; `message` is an English fallback.
     "currency": "USD"
   },
   "kinds": ["group", "individual"],
+  "isFavorite": true,
   "bio": "I help people with full calendars get strong, move without pain and actually enjoy training. Every program starts with a movement assessment, then we build simple, progressive sessions around your schedule.\n\nBefore coaching full time I competed in powerlifting and worked with a Division I track team, so I care a lot about technique and smart progression.",
   "certifications": [
     {
@@ -741,8 +1165,8 @@ localized app strings; `message` is an English fallback.
   },
   "sessionTypes": [
     {
-      "id": "6ad8f8f9ae15ad411e7f0b08",
-      "coachId": "6ad8f8f9ae15ad411e7f0b03",
+      "id": "6adb49c48e120d4d6239a10d",
+      "coachId": "6adb49c48e120d4d6239a108",
       "title": "Lunchtime Strength Circuit",
       "kind": "group",
       "durationMin": 60,
@@ -756,8 +1180,8 @@ localized app strings; `message` is an English fallback.
       "isActive": true
     },
     {
-      "id": "6ad8f8f9ae15ad411e7f0b06",
-      "coachId": "6ad8f8f9ae15ad411e7f0b03",
+      "id": "6adb49c48e120d4d6239a10b",
+      "coachId": "6adb49c48e120d4d6239a108",
       "title": "1:1 Strength Session",
       "kind": "individual",
       "durationMin": 60,
@@ -770,6 +1194,117 @@ localized app strings; `message` is an English fallback.
       "description": "Personal strength session with technique coaching and a plan for the week.",
       "isActive": true
     }
+  ],
+  "packages": [
+    {
+      "id": "6adb49cb8e120d4d6239af2a",
+      "title": "5 sessions",
+      "credits": 5,
+      "price": {
+        "amountCents": 40500,
+        "currency": "USD"
+      },
+      "validityDays": 60,
+      "isActive": true,
+      "pricePerCredit": {
+        "amountCents": 8100,
+        "currency": "USD"
+      }
+    },
+    {
+      "id": "6adb49cb8e120d4d6239af29",
+      "title": "10 sessions",
+      "credits": 10,
+      "price": {
+        "amountCents": 76500,
+        "currency": "USD"
+      },
+      "validityDays": 90,
+      "isActive": true,
+      "pricePerCredit": {
+        "amountCents": 7650,
+        "currency": "USD"
+      }
+    }
+  ]
+}
+```
+
+**GET /coaches/:id/my-review**
+
+```json
+{
+  "review": null,
+  "canCreate": true,
+  "editableUntil": null
+}
+```
+
+**GET /me/packages**
+
+```json
+{
+  "items": [
+    {
+      "id": "6adb49cb8e120d4d6239af3b",
+      "packageId": "6adb49cb8e120d4d6239af29",
+      "title": "10 sessions",
+      "coach": {
+        "id": "6adb49c48e120d4d6239a108",
+        "firstName": "Alex",
+        "lastName": "Carter",
+        "avatarUrl": "https://i.pravatar.cc/300?img=12"
+      },
+      "creditsTotal": 10,
+      "creditsLeft": 7,
+      "price": {
+        "amountCents": 76500,
+        "currency": "USD"
+      },
+      "purchasedAt": "2026-10-03T11:49:24.145Z",
+      "expiresAt": "2027-01-01T11:49:24.145Z",
+      "expired": false
+    }
+  ],
+  "creditsAvailable": 7
+}
+```
+
+**GET /coach/packages**
+
+```json
+{
+  "items": [
+    {
+      "id": "6adb49cb8e120d4d6239af2a",
+      "title": "5 sessions",
+      "credits": 5,
+      "price": {
+        "amountCents": 40500,
+        "currency": "USD"
+      },
+      "validityDays": 60,
+      "isActive": true,
+      "pricePerCredit": {
+        "amountCents": 8100,
+        "currency": "USD"
+      }
+    },
+    {
+      "id": "6adb49cb8e120d4d6239af29",
+      "title": "10 sessions",
+      "credits": 10,
+      "price": {
+        "amountCents": 76500,
+        "currency": "USD"
+      },
+      "validityDays": 90,
+      "isActive": true,
+      "pricePerCredit": {
+        "amountCents": 7650,
+        "currency": "USD"
+      }
+    }
   ]
 }
 ```
@@ -780,12 +1315,12 @@ localized app strings; `message` is an English fallback.
 {
   "items": [
     {
-      "startAt": "2026-10-28T11:00:00.000Z",
-      "endAt": "2026-10-28T12:00:00.000Z"
+      "startAt": "2026-10-30T11:00:00.000Z",
+      "endAt": "2026-10-30T12:00:00.000Z"
     },
     {
-      "startAt": "2026-10-28T11:30:00.000Z",
-      "endAt": "2026-10-28T12:30:00.000Z"
+      "startAt": "2026-10-30T11:30:00.000Z",
+      "endAt": "2026-10-30T12:30:00.000Z"
     }
   ]
 }
@@ -797,17 +1332,17 @@ localized app strings; `message` is an English fallback.
 {
   "items": [
     {
-      "id": "6ad8f8f9ae15ad411e7f0bb9",
-      "coachId": "6ad8f8f9ae15ad411e7f0b03",
-      "sessionTypeId": "6ad8f8f9ae15ad411e7f0b08",
+      "id": "6adb49c58e120d4d6239a1bd",
+      "coachId": "6adb49c48e120d4d6239a108",
+      "sessionTypeId": "6adb49c48e120d4d6239a10d",
       "kind": "group",
       "title": "Lunchtime Strength Circuit",
       "startAt": "2026-10-23T17:00:00.000Z",
       "endAt": "2026-10-23T18:00:00.000Z",
       "durationMin": 60,
       "capacity": 8,
-      "participantsCount": 7,
-      "spotsLeft": 1,
+      "participantsCount": 6,
+      "spotsLeft": 2,
       "price": {
         "amountCents": 2500,
         "currency": "USD"
@@ -822,20 +1357,26 @@ localized app strings; `message` is an English fallback.
         "lng": -87.6347
       },
       "status": "scheduled",
-      "cancelReason": null
+      "cancelReason": null,
+      "waitlist": {
+        "count": 0,
+        "myStatus": null,
+        "myPosition": null,
+        "offerExpiresAt": null
+      }
     },
     {
-      "id": "6ad8f8f9ae15ad411e7f0bbc",
-      "coachId": "6ad8f8f9ae15ad411e7f0b03",
-      "sessionTypeId": "6ad8f8f9ae15ad411e7f0b08",
+      "id": "6adb49c58e120d4d6239a1c0",
+      "coachId": "6adb49c48e120d4d6239a108",
+      "sessionTypeId": "6adb49c48e120d4d6239a10d",
       "kind": "group",
       "title": "Lunchtime Strength Circuit",
       "startAt": "2026-10-26T17:00:00.000Z",
       "endAt": "2026-10-26T18:00:00.000Z",
       "durationMin": 60,
       "capacity": 8,
-      "participantsCount": 5,
-      "spotsLeft": 3,
+      "participantsCount": 6,
+      "spotsLeft": 2,
       "price": {
         "amountCents": 2500,
         "currency": "USD"
@@ -850,7 +1391,13 @@ localized app strings; `message` is an English fallback.
         "lng": -87.6347
       },
       "status": "scheduled",
-      "cancelReason": null
+      "cancelReason": null,
+      "waitlist": {
+        "count": 0,
+        "myStatus": null,
+        "myPosition": null,
+        "offerExpiresAt": null
+      }
     }
   ]
 }
@@ -860,7 +1407,7 @@ localized app strings; `message` is an English fallback.
 
 ```json
 {
-  "id": "6ad8f903ad2a35d9171d6385",
+  "id": "6adb49ce03a3a0caa555f265",
   "status": "confirmed",
   "isTrial": false,
   "price": {
@@ -870,20 +1417,24 @@ localized app strings; `message` is an English fallback.
   "payment": {
     "status": "paid",
     "method": "mock",
-    "paidAt": "2026-10-21T17:40:19.124Z",
+    "paidAt": "2026-10-23T11:49:34.624Z",
+    "clientPackageId": null,
     "refundedAt": null
   },
   "expiresAt": null,
-  "startAt": "2026-10-28T11:00:00.000Z",
-  "endAt": "2026-10-28T12:00:00.000Z",
+  "startAt": "2026-10-30T11:00:00.000Z",
+  "endAt": "2026-10-30T12:00:00.000Z",
   "seriesId": null,
   "cancellable": true,
-  "cancelDeadline": "2026-10-27T11:00:00.000Z",
+  "reschedulable": true,
+  "rescheduledAt": null,
+  "cancelDeadline": "2026-10-29T11:00:00.000Z",
   "cancelledAt": null,
   "cancelledBy": null,
   "cancelReason": null,
   "session": {
-    "id": "6ad8f903ad2a35d9171d6382",
+    "id": "6adb49ce03a3a0caa555f262",
+    "sessionTypeId": "6adb49c48e120d4d6239a10b",
     "title": "1:1 Strength Session",
     "kind": "individual",
     "location": {
@@ -899,19 +1450,19 @@ localized app strings; `message` is an English fallback.
     "participantsCount": 1
   },
   "coach": {
-    "id": "6ad8f8f9ae15ad411e7f0b03",
+    "id": "6adb49c48e120d4d6239a108",
     "firstName": "Alex",
     "lastName": "Carter",
     "avatarUrl": "https://i.pravatar.cc/300?img=12"
   },
   "client": {
-    "id": "6ad8f8f9ae15ad411e7f0b37",
+    "id": "6adb49c48e120d4d6239a13c",
     "firstName": "Jamie",
     "lastName": "Lee",
     "avatarUrl": "https://i.pravatar.cc/300?img=32"
   },
   "notesCount": 0,
-  "createdAt": "2026-10-21T17:40:19.090Z"
+  "createdAt": "2026-10-23T11:49:34.589Z"
 }
 ```
 
@@ -919,7 +1470,7 @@ localized app strings; `message` is an English fallback.
 
 ```json
 {
-  "id": "6ad8f903ad2a35d9171d6385",
+  "id": "6adb49ce03a3a0caa555f265",
   "status": "cancelled",
   "isTrial": false,
   "price": {
@@ -929,20 +1480,24 @@ localized app strings; `message` is an English fallback.
   "payment": {
     "status": "refunded",
     "method": "mock",
-    "paidAt": "2026-10-21T17:40:19.124Z",
-    "refundedAt": "2026-10-21T17:40:19.367Z"
+    "paidAt": "2026-10-23T11:49:34.624Z",
+    "clientPackageId": null,
+    "refundedAt": "2026-10-23T11:49:34.945Z"
   },
   "expiresAt": null,
-  "startAt": "2026-10-28T11:00:00.000Z",
-  "endAt": "2026-10-28T12:00:00.000Z",
+  "startAt": "2026-10-31T16:00:00.000Z",
+  "endAt": "2026-10-31T17:00:00.000Z",
   "seriesId": null,
   "cancellable": false,
+  "reschedulable": false,
+  "rescheduledAt": "2026-10-23T11:49:34.650Z",
   "cancelDeadline": null,
-  "cancelledAt": "2026-10-21T17:40:19.367Z",
+  "cancelledAt": "2026-10-23T11:49:34.945Z",
   "cancelledBy": "client",
   "cancelReason": "Schedule change",
   "session": {
-    "id": "6ad8f903ad2a35d9171d6382",
+    "id": "6adb49ce03a3a0caa555f262",
+    "sessionTypeId": "6adb49c48e120d4d6239a10b",
     "title": "1:1 Strength Session",
     "kind": "individual",
     "location": {
@@ -958,19 +1513,82 @@ localized app strings; `message` is an English fallback.
     "participantsCount": 1
   },
   "coach": {
-    "id": "6ad8f8f9ae15ad411e7f0b03",
+    "id": "6adb49c48e120d4d6239a108",
     "firstName": "Alex",
     "lastName": "Carter",
     "avatarUrl": "https://i.pravatar.cc/300?img=12"
   },
   "client": {
-    "id": "6ad8f8f9ae15ad411e7f0b37",
+    "id": "6adb49c48e120d4d6239a13c",
     "firstName": "Jamie",
     "lastName": "Lee",
     "avatarUrl": "https://i.pravatar.cc/300?img=32"
   },
   "notesCount": 1,
-  "createdAt": "2026-10-21T17:40:19.090Z"
+  "createdAt": "2026-10-23T11:49:34.589Z"
+}
+```
+
+**POST /bookings/:id/reschedule**
+
+```json
+{
+  "id": "6adb49ce03a3a0caa555f265",
+  "status": "confirmed",
+  "isTrial": false,
+  "price": {
+    "amountCents": 8500,
+    "currency": "USD"
+  },
+  "payment": {
+    "status": "paid",
+    "method": "mock",
+    "paidAt": "2026-10-23T11:49:34.624Z",
+    "clientPackageId": null,
+    "refundedAt": null
+  },
+  "expiresAt": null,
+  "startAt": "2026-10-31T16:00:00.000Z",
+  "endAt": "2026-10-31T17:00:00.000Z",
+  "seriesId": null,
+  "cancellable": true,
+  "reschedulable": true,
+  "rescheduledAt": "2026-10-23T11:49:34.650Z",
+  "cancelDeadline": "2026-10-30T16:00:00.000Z",
+  "cancelledAt": null,
+  "cancelledBy": null,
+  "cancelReason": null,
+  "session": {
+    "id": "6adb49ce03a3a0caa555f262",
+    "sessionTypeId": "6adb49c48e120d4d6239a10b",
+    "title": "1:1 Strength Session",
+    "kind": "individual",
+    "location": {
+      "name": "Iron Loop Gym",
+      "address": "216 W Ohio St, Chicago, IL 60654",
+      "city": "Chicago",
+      "state": "IL",
+      "country": "US",
+      "lat": 41.8925,
+      "lng": -87.6347
+    },
+    "capacity": 1,
+    "participantsCount": 1
+  },
+  "coach": {
+    "id": "6adb49c48e120d4d6239a108",
+    "firstName": "Alex",
+    "lastName": "Carter",
+    "avatarUrl": "https://i.pravatar.cc/300?img=12"
+  },
+  "client": {
+    "id": "6adb49c48e120d4d6239a13c",
+    "firstName": "Jamie",
+    "lastName": "Lee",
+    "avatarUrl": "https://i.pravatar.cc/300?img=32"
+  },
+  "notesCount": 0,
+  "createdAt": "2026-10-23T11:49:34.589Z"
 }
 ```
 
@@ -978,121 +1596,16 @@ localized app strings; `message` is an English fallback.
 
 ```json
 {
-  "seriesId": "6ad8f903ad2a35d9171d6387",
-  "bookings": [
-    {
-      "id": "6ad8f903ad2a35d9171d638b",
-      "status": "pending_payment",
-      "isTrial": false,
-      "price": {
-        "amountCents": 8500,
-        "currency": "USD"
-      },
-      "payment": {
-        "status": "unpaid",
-        "method": "mock",
-        "paidAt": null,
-        "refundedAt": null
-      },
-      "expiresAt": "2026-10-21T17:55:19.262Z",
-      "startAt": "2026-11-06T00:00:00.000Z",
-      "endAt": "2026-11-06T01:00:00.000Z",
-      "seriesId": "6ad8f903ad2a35d9171d6387",
-      "cancellable": true,
-      "cancelDeadline": "2026-11-05T00:00:00.000Z",
-      "cancelledAt": null,
-      "cancelledBy": null,
-      "cancelReason": null,
-      "session": {
-        "id": "6ad8f903ad2a35d9171d6388",
-        "title": "1:1 Strength Session",
-        "kind": "individual",
-        "location": {
-          "name": "Iron Loop Gym",
-          "address": "216 W Ohio St, Chicago, IL 60654",
-          "city": "Chicago",
-          "state": "IL",
-          "country": "US",
-          "lat": 41.8925,
-          "lng": -87.6347
-        },
-        "capacity": 1,
-        "participantsCount": 1
-      },
-      "coach": {
-        "id": "6ad8f8f9ae15ad411e7f0b03",
-        "firstName": "Alex",
-        "lastName": "Carter",
-        "avatarUrl": "https://i.pravatar.cc/300?img=12"
-      },
-      "client": {
-        "id": "6ad8f8f9ae15ad411e7f0b37",
-        "firstName": "Jamie",
-        "lastName": "Lee",
-        "avatarUrl": "https://i.pravatar.cc/300?img=32"
-      },
-      "notesCount": 0,
-      "createdAt": "2026-10-21T17:40:19.263Z"
-    },
-    {
-      "id": "6ad8f903ad2a35d9171d638f",
-      "status": "pending_payment",
-      "isTrial": false,
-      "price": {
-        "amountCents": 8500,
-        "currency": "USD"
-      },
-      "payment": {
-        "status": "unpaid",
-        "method": "mock",
-        "paidAt": null,
-        "refundedAt": null
-      },
-      "expiresAt": "2026-10-21T17:55:19.280Z",
-      "startAt": "2026-11-13T00:00:00.000Z",
-      "endAt": "2026-11-13T01:00:00.000Z",
-      "seriesId": "6ad8f903ad2a35d9171d6387",
-      "cancellable": true,
-      "cancelDeadline": "2026-11-12T00:00:00.000Z",
-      "cancelledAt": null,
-      "cancelledBy": null,
-      "cancelReason": null,
-      "session": {
-        "id": "6ad8f903ad2a35d9171d638c",
-        "title": "1:1 Strength Session",
-        "kind": "individual",
-        "location": {
-          "name": "Iron Loop Gym",
-          "address": "216 W Ohio St, Chicago, IL 60654",
-          "city": "Chicago",
-          "state": "IL",
-          "country": "US",
-          "lat": 41.8925,
-          "lng": -87.6347
-        },
-        "capacity": 1,
-        "participantsCount": 1
-      },
-      "coach": {
-        "id": "6ad8f8f9ae15ad411e7f0b03",
-        "firstName": "Alex",
-        "lastName": "Carter",
-        "avatarUrl": "https://i.pravatar.cc/300?img=12"
-      },
-      "client": {
-        "id": "6ad8f8f9ae15ad411e7f0b37",
-        "firstName": "Jamie",
-        "lastName": "Lee",
-        "avatarUrl": "https://i.pravatar.cc/300?img=32"
-      },
-      "notesCount": 0,
-      "createdAt": "2026-10-21T17:40:19.281Z"
-    }
-  ],
+  "seriesId": "6adb49ce03a3a0caa555f26f",
+  "bookings": [],
   "skipped": [
     {
-      "date": "2026-10-29",
+      "date": "2026-10-31",
       "reason": "EXCEPTION"
+    },
+    {
+      "date": "2026-11-07",
+      "reason": "UNAVAILABLE"
     }
   ]
 }
@@ -1103,8 +1616,8 @@ localized app strings; `message` is an English fallback.
 ```json
 {
   "title": "1:1 Strength Session with Alex Carter",
-  "startAt": "2026-10-28T11:00:00.000Z",
-  "endAt": "2026-10-28T12:00:00.000Z",
+  "startAt": "2026-10-31T16:00:00.000Z",
+  "endAt": "2026-10-31T17:00:00.000Z",
   "timezone": "America/Chicago",
   "location": {
     "name": "Iron Loop Gym",
@@ -1112,7 +1625,7 @@ localized app strings; `message` is an English fallback.
     "lat": 41.8925,
     "lng": -87.6347
   },
-  "notes": "FitBook training with Alex Carter.\nFree cancellation up to 24h before the start.\nBooking: 6ad8f903ad2a35d9171d6385"
+  "notes": "FitBook training with Alex Carter.\nFree cancellation up to 24h before the start.\nBooking: 6adb49ce03a3a0caa555f265"
 }
 ```
 
@@ -1122,42 +1635,42 @@ localized app strings; `message` is an English fallback.
 {
   "before": [
     {
-      "id": "6ad8f8f9ae15ad411e7f0b87",
-      "bookingId": "6ad8f8f9ae15ad411e7f0b5e",
+      "id": "6adb49c58e120d4d6239a18e",
+      "bookingId": "6adb49c58e120d4d6239a167",
       "phase": "before",
-      "text": "Can we work on my squat depth today?",
+      "text": "Running a 10K on Sunday - nothing too heavy on the legs please.",
       "author": {
-        "id": "6ad8f8f9ae15ad411e7f0b37",
+        "id": "6adb49c48e120d4d6239a13c",
         "role": "client",
         "firstName": "Jamie",
         "lastName": "Lee"
       },
       "lastEditedBy": {
-        "id": "6ad8f8f9ae15ad411e7f0b37",
+        "id": "6adb49c48e120d4d6239a13c",
         "role": "client"
       },
-      "createdAt": "2026-10-19T16:00:00.000Z",
-      "updatedAt": "2026-10-19T16:00:00.000Z"
+      "createdAt": "2026-10-21T16:00:00.000Z",
+      "updatedAt": "2026-10-21T16:00:00.000Z"
     }
   ],
   "after": [
     {
-      "id": "6ad8f8f9ae15ad411e7f0b88",
-      "bookingId": "6ad8f8f9ae15ad411e7f0b5e",
+      "id": "6adb49c58e120d4d6239a18f",
+      "bookingId": "6adb49c58e120d4d6239a167",
       "phase": "after",
-      "text": "Good effort. Remember: shoulders down and back during presses.",
+      "text": "You hit a new personal best today. Rest well and hydrate.",
       "author": {
-        "id": "6ad8f8f9ae15ad411e7f0b03",
+        "id": "6adb49c48e120d4d6239a108",
         "role": "coach",
         "firstName": "Alex",
         "lastName": "Carter"
       },
       "lastEditedBy": {
-        "id": "6ad8f8f9ae15ad411e7f0b03",
+        "id": "6adb49c48e120d4d6239a108",
         "role": "coach"
       },
-      "createdAt": "2026-10-20T14:00:00.000Z",
-      "updatedAt": "2026-10-20T14:00:00.000Z"
+      "createdAt": "2026-10-22T14:00:00.000Z",
+      "updatedAt": "2026-10-22T14:00:00.000Z"
     }
   ]
 }
@@ -1169,25 +1682,25 @@ localized app strings; `message` is an English fallback.
 {
   "items": [
     {
-      "id": "6ad8f900ae15ad411e7f1879",
-      "conversationId": "6ad8f900ae15ad411e7f1873",
-      "senderId": "6ad8f8f9ae15ad411e7f0b13",
+      "id": "6adb49cb8e120d4d6239afc2",
+      "conversationId": "6adb49cb8e120d4d6239afbc",
+      "senderId": "6adb49c48e120d4d6239a118",
       "senderRole": "coach",
       "text": "I will add it to our notes after the session.",
-      "createdAt": "2026-10-17T23:24:08.255Z",
+      "createdAt": "2026-10-19T17:35:24.145Z",
       "readAt": null
     },
     {
-      "id": "6ad8f900ae15ad411e7f1878",
-      "conversationId": "6ad8f900ae15ad411e7f1873",
-      "senderId": "6ad8f8f9ae15ad411e7f0b37",
+      "id": "6adb49cb8e120d4d6239afc1",
+      "conversationId": "6adb49cb8e120d4d6239afbc",
+      "senderId": "6adb49c48e120d4d6239a13c",
       "senderRole": "client",
       "text": "Can you also send me a stretching routine?",
-      "createdAt": "2026-10-17T22:55:08.255Z",
-      "readAt": "2026-10-17T23:00:08.255Z"
+      "createdAt": "2026-10-19T16:23:24.145Z",
+      "readAt": "2026-10-19T16:28:24.145Z"
     }
   ],
-  "nextCursor": "6ad8f900ae15ad411e7f1877"
+  "nextCursor": "6adb49cb8e120d4d6239afc0"
 }
 ```
 
@@ -1195,7 +1708,7 @@ localized app strings; `message` is an English fallback.
 
 ```json
 {
-  "userId": "6ad8f8f9ae15ad411e7f0b03",
+  "userId": "6adb49c48e120d4d6239a108",
   "headline": "Strength & conditioning coach for busy professionals",
   "bio": "I help people with full calendars get strong, move without pain and actually enjoy training. Every program starts with a movement assessment, then we build simple, progressive sessions around your schedule.\n\nBefore coaching full time I competed in powerlifting and worked with a Division I track team, so I care a lot about technique and smart progression.",
   "specializations": ["strength", "hiit", "mobility"],
@@ -1231,8 +1744,8 @@ localized app strings; `message` is an English fallback.
     "freeCancelHours": 24
   },
   "rating": {
-    "average": 4.9,
-    "count": 142
+    "average": 5,
+    "count": 11
   },
   "isPublished": true,
   "completeness": {
@@ -1248,8 +1761,8 @@ localized app strings; `message` is an English fallback.
 {
   "items": [
     {
-      "id": "6ad8f8f9ae15ad411e7f0b06",
-      "coachId": "6ad8f8f9ae15ad411e7f0b03",
+      "id": "6adb49c48e120d4d6239a10b",
+      "coachId": "6adb49c48e120d4d6239a108",
       "title": "1:1 Strength Session",
       "kind": "individual",
       "durationMin": 60,
@@ -1263,8 +1776,8 @@ localized app strings; `message` is an English fallback.
       "isActive": true
     },
     {
-      "id": "6ad8f8f9ae15ad411e7f0b07",
-      "coachId": "6ad8f8f9ae15ad411e7f0b03",
+      "id": "6adb49c48e120d4d6239a10c",
+      "coachId": "6adb49c48e120d4d6239a108",
       "title": "1:1 Strength + Mobility (90 min)",
       "kind": "individual",
       "durationMin": 90,
@@ -1300,7 +1813,7 @@ localized app strings; `message` is an English fallback.
   ],
   "exceptions": [
     {
-      "date": "2026-10-29",
+      "date": "2026-10-31",
       "start": "16:00",
       "end": "20:00",
       "reason": "Physio appointment"
@@ -1315,20 +1828,101 @@ localized app strings; `message` is an English fallback.
 {
   "items": [
     {
-      "id": "6ad8f8f9ae15ad411e7f0b37",
+      "id": "6adb49c48e120d4d6239a13c",
       "firstName": "Jamie",
       "lastName": "Lee",
       "avatarUrl": "https://i.pravatar.cc/300?img=32",
-      "totalBookings": 15,
+      "totalBookings": 14,
       "lastBookingAt": "2026-11-19T13:00:00.000Z"
     },
     {
-      "id": "6ad8f8f9ae15ad411e7f0b41",
-      "firstName": "Chloe",
-      "lastName": "Jackson",
-      "avatarUrl": "https://i.pravatar.cc/300?img=23",
-      "totalBookings": 13,
-      "lastBookingAt": "2026-11-11T14:00:00.000Z"
+      "id": "6adb49c58e120d4d6239a140",
+      "firstName": "Mia",
+      "lastName": "Garcia",
+      "avatarUrl": "https://i.pravatar.cc/300?img=9",
+      "totalBookings": 12,
+      "lastBookingAt": "2026-11-06T18:00:00.000Z"
+    }
+  ]
+}
+```
+
+**GET /coach/clients/:clientId/progress**
+
+```json
+{
+  "totals": {
+    "completed": 4,
+    "thisMonth": 4,
+    "coaches": 1
+  },
+  "goal": {
+    "trainingsPerWeek": 3
+  },
+  "thisWeek": {
+    "weekStart": "2026-10-19",
+    "completed": 2,
+    "planned": 2
+  },
+  "streakWeeks": 3,
+  "weekly": [
+    {
+      "weekStart": "2026-08-31",
+      "completed": 0
+    },
+    {
+      "weekStart": "2026-09-07",
+      "completed": 0
+    }
+  ],
+  "measurements": {
+    "latest": {
+      "weight": {
+        "id": "6adb49ce03a3a0caa555f268",
+        "type": "weight",
+        "value": 181.6,
+        "unit": "lb",
+        "measuredAt": "2026-10-23",
+        "note": null,
+        "createdAt": "2026-10-23T11:49:34.684Z"
+      },
+      "body_fat": null,
+      "waist": {
+        "id": "6adb49cb8e120d4d6239af28",
+        "type": "waist",
+        "value": 33.8,
+        "unit": "in",
+        "measuredAt": "2026-10-20",
+        "note": null,
+        "createdAt": "2026-10-23T11:49:31.480Z"
+      }
+    }
+  }
+}
+```
+
+**GET /me/measurements**
+
+```json
+{
+  "items": [
+    {
+      "id": "6adb49cb8e120d4d6239af28",
+      "type": "waist",
+      "value": 33.8,
+      "unit": "in",
+      "measuredAt": "2026-10-20",
+      "note": null,
+      "createdAt": "2026-10-23T11:49:31.480Z"
+    },
+    {
+      "id": "6adb49cb8e120d4d6239af27",
+      "type": "weight",
+      "value": 181.9,
+      "unit": "lb",
+      "measuredAt": "2026-10-20",
+      "note": null,
+      "createdAt": "2026-10-23T11:49:31.479Z"
     }
   ]
 }

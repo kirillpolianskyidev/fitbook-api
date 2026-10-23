@@ -12,6 +12,7 @@ import {TrainingSessionModel, type TrainingSessionDoc} from '../../models/traini
 import {UserModel, type UserDoc} from '../../models/user.js';
 import {cancelBookingInternal} from '../bookings/bookings.service.js';
 import {toUserSummary} from '../users/users.service.js';
+import {expireWaitlist} from '../waitlist/waitlist.service.js';
 import {createLockedSession, toSessionDto, unlockSession} from './sessions.service.js';
 
 type Repeat = {weekdays: number[]; weeks: number};
@@ -96,6 +97,10 @@ export async function cancelGroupSession(coach: UserDoc, sessionId: string, reas
   if (session.status !== 'scheduled' || session.startAt <= new Date()) {
     throw new AppError('CANCELLATION_WINDOW_PASSED', 'Only upcoming sessions can be cancelled.');
   }
+  // Cancelled first, so freed places are not offered to the waitlist while the bookings are cancelled.
+  session.status = 'cancelled';
+  session.cancelReason = reason;
+  await session.save();
   const bookings = await BookingModel.find({
     sessionId: session._id,
     status: {$in: ['pending_payment', 'confirmed']},
@@ -103,9 +108,9 @@ export async function cancelGroupSession(coach: UserDoc, sessionId: string, reas
   for (const booking of bookings) {
     await cancelBookingInternal(booking, 'coach', reason);
   }
-  session.status = 'cancelled';
-  session.cancelReason = reason;
+  await expireWaitlist(session._id);
   session.participantsCount = 0;
+  session.heldCount = 0;
   await session.save();
   await unlockSession(session._id);
   await SeatLockModel.deleteMany({sessionId: session._id});

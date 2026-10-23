@@ -69,6 +69,15 @@ const UI_HINTS: Partial<Record<ErrorCode, string>> = {
   SESSION_FULL: 'Refresh the group list; offer other sessions.',
   TRIAL_ALREADY_USED: 'Hide the free-trial option; continue with a paid booking.',
   CANCELLATION_WINDOW_PASSED: 'Explain the coach policy using `details.freeCancelHours`.',
+  SESSION_NOT_FULL: 'Places are free: book the session instead.',
+  ALREADY_ON_WAITLIST: 'Reload the session (`waitlist.myStatus`).',
+  NO_CREDITS: 'Offer to buy a package or pay normally.',
+  INSUFFICIENT_CREDITS:
+    'Show `details.creditsAvailable`; let the user pick fewer dates or pay normally.',
+  PACKAGE_INACTIVE: 'Reload the coach profile (the package was withdrawn).',
+  REVIEW_NOT_ALLOWED: 'Hide "Write a review" (`canCreate` is false until a training is completed).',
+  REVIEW_EDIT_WINDOW_PASSED: 'Show the review as read-only.',
+  RESCHEDULE_WINDOW_PASSED: 'Hide "Reschedule"; reload the booking (`reschedulable` is false now).',
   BOOKING_NOT_PAYABLE: 'Reload the booking; it was paid or released.',
   RATE_LIMITED: 'Ask to try again later (`details.retryAfterSeconds` when present).',
   VERIFICATION_CODE_INVALID: 'Show under the code cells, clear them; `details.attemptsLeft`.',
@@ -170,6 +179,13 @@ ${example('errorResendTooEarly', 'Example: resend before resendAvailableAt')}
   \`comment\` (meeting point). Otherwise the training type or coach default location is used.
 - **Cancellation:** use \`booking.cancellable\` and \`booking.cancelDeadline\` to show the button and the deadline.
   Confirmed bookings can be cancelled only before the coach's \`freeCancelHours\`; unpaid ones any time before start.
+- **Reschedule:** while \`booking.reschedulable\` (same window as cancelling: before \`cancelDeadline\`, or before the
+  start for unpaid bookings) the client can move the booking: \`POST /bookings/:id/reschedule\` with
+  \`{ startAt }\` (individual: a free slot of the same type from \`/coaches/:id/slots\`; the booking's own slot does
+  not block it) or \`{ sessionId }\` (group: another upcoming group session of the same type with free places;
+  \`session.sessionTypeId\` tells which). Same \`id\`, payment, trial, price, notes, location and series; the old
+  slot / place is released; \`rescheduledAt\` is set. Errors: \`RESCHEDULE_WINDOW_PASSED\`, \`SLOT_UNAVAILABLE\`,
+  \`SESSION_FULL\`, \`NOT_FOUND\` (target group session), \`VALIDATION_ERROR\` (none / both fields, same time).
 - **Refunds (mock, instant):** cancelling a **paid** booking always returns the full price:
   \`payment.status\` becomes \`refunded\` and \`payment.refundedAt\` is set. The client can cancel only before
   \`cancelDeadline\` (after it -> \`409 CANCELLATION_WINDOW_PASSED\`, nothing changes); cancellations by the coach
@@ -187,6 +203,87 @@ or \`system\`).
 
 ${example('bookingPending', 'Example: new booking (pending payment)')}
 ${example('seriesPreview', 'Example: series preview')}
+
+## 4a. Packages (credits)
+
+- A coach sells packages (\`GET /coaches/:id\` -> \`packages\`, active only): e.g. 10 credits for $700, valid
+  \`validityDays\` after purchase. 1 credit = 1 training with this coach of any type (individual or a group place).
+- \`POST /packages/:id/purchase\` (mock payment, instant) -> \`ClientPackage\`; inactive -> \`PACKAGE_INACTIVE\`.
+  \`GET /me/packages?coachId=\` -> \`{ items, creditsAvailable }\` (usable purchases first, soonest to expire first).
+- Book with a credit: \`useCredits: true\` in \`POST /bookings\` (individual or group) or \`POST /bookings/series\`
+  (1 credit per booked date, \`INSUFFICIENT_CREDITS\` with \`details.creditsAvailable\` and nothing booked). The
+  booking is \`confirmed\` immediately: \`payment = { status: "paid", method: "credits", clientPackageId }\`; the
+  credit comes from the purchase that expires first. No usable credit -> \`NO_CREDITS\`. Not with \`isTrial\`.
+- When a paid booking would be refunded (client before the deadline, coach, system), a credit booking gets its credit
+  back into the same purchase instead (\`payment.status = "refunded"\`); if that purchase expired meanwhile the
+  credit is lost. Rescheduling keeps the credit.
+- Coach: \`GET/POST /coach/packages\`, \`PATCH/DELETE /coach/packages/:id\` (changes apply to new purchases; a bought
+  package is deactivated instead of deleted).
+
+${example('clientPackage', 'Example: POST /packages/:id/purchase')}
+${example('bookingWithCredits', 'Example: POST /bookings with useCredits')}
+
+## 4b. Waitlist (full group sessions)
+
+- \`GET /coaches/:id/group-sessions\` items have \`waitlist { count, myStatus, myPosition, offerExpiresAt }\`.
+  When \`spotsLeft === 0\` and \`myStatus\` is null, offer "Join waitlist": \`POST /group-sessions/:id/waitlist\` ->
+  \`WaitlistEntry\` (\`SESSION_NOT_FULL\` if places are free - book instead, \`ALREADY_BOOKED\`,
+  \`ALREADY_ON_WAITLIST\`). Leave any time: \`DELETE /group-sessions/:id/waitlist\` (204).
+- When a place frees up (cancellation by anyone, or a reschedule to another session) the first \`waiting\` client
+  gets \`status: "offered"\`: the place is held for them until \`offerExpiresAt\` = min(now + 2h, start - 15 min);
+  everybody else keeps seeing \`spotsLeft: 0\` and gets \`SESSION_FULL\`. The offered client books with the usual
+  \`POST /bookings { sessionId }\` (\`useCredits\` works too); the entry becomes \`booked\`. An expired or declined
+  (left) offer passes to the next client. If less than 15 minutes remain, the place is simply free for everybody.
+  When the session starts or is cancelled every entry becomes \`expired\`.
+- \`GET /me/waitlist\` -> \`{ items }\` with \`waiting\` and \`offered\` entries (offers first). Socket.IO
+  \`waitlist:offered { entry }\` is sent to the client who got an offer (show an in-app notification).
+
+## 4c. Favorites and "Book again"
+
+- \`PUT /me/favorites/:coachId\` / \`DELETE /me/favorites/:coachId\` (both 204, idempotent; unknown or unpublished
+  coach -> \`NOT_FOUND\`). \`GET /me/favorites\` -> \`{ items: CoachCard[] }\`, most recently added first.
+- Every coach object (\`GET /coaches\` items, \`GET /coaches/:id\`, favorites) has \`isFavorite\` (false for
+  coaches). Catalog filter: \`GET /coaches?favorites=true\` (same paging).
+- "Book again": a past booking has \`coach.id\` and \`session.sessionTypeId\` -> open the slots of that type
+  (\`GET /coaches/:id/slots?sessionTypeId\`). If the type was deactivated the slots call returns
+  \`SESSION_TYPE_INACTIVE\` / \`NOT_FOUND\`.
+
+${example('favorites', 'Example: GET /me/favorites')}
+
+## 4d. Progress (client) and client progress (coach)
+
+- \`GET /me/progress?weeks=12\` (4-52) -> \`{ totals { completed, thisMonth, coaches }, goal { trainingsPerWeek },
+  thisWeek { weekStart, completed, planned }, streakWeeks, weekly [{ weekStart, completed }] }\`. A training counts
+  when its booking is \`completed\`; \`planned\` = \`confirmed\` bookings later this week. Weeks start on Monday in
+  the client's \`homeArea.timezone\` (\`weekStart\` = that Monday, YYYY-MM-DD). \`weekly\` has exactly \`weeks\`
+  items, oldest first, the last one is the current week. \`streakWeeks\` = consecutive weeks meeting the goal
+  (\`>= 1\` training without a goal), ending with the last finished week, or the current week if its goal is met.
+- \`PUT /me/goal { trainingsPerWeek: 1..14 | null }\` -> \`{ trainingsPerWeek }\`.
+- Measurements (fixed units): \`weight\` lb 50-700, \`body_fat\` % 2-70, \`waist\` in 15-80, at most 1 decimal.
+  \`POST /me/measurements { type, value, measuredAt?, note? }\` -> 201; the same type on the same local day replaces the
+  value -> 200 (same \`id\`). \`measuredAt\` defaults to today in the client's time zone, never in the future.
+  \`GET /me/measurements?type&limit\` (newest first, limit <= 200), \`DELETE /me/measurements/:id\`.
+- Coach: \`GET /coach/clients/:clientId/progress?weeks\` - same body, but \`totals\` and \`weekly\` count only
+  trainings with this coach (\`thisWeek\` and \`streakWeeks\` are the client's overall), plus
+  \`measurements.latest { weight, body_fat, waist }\`; \`GET /coach/clients/:clientId/measurements\`. Only for clients
+  who have (or had) a booking with the coach, otherwise \`NOT_FOUND\`.
+
+${example('progress', 'Example: GET /me/progress')}
+${example('measurement', 'Example: POST /me/measurements')}
+
+## 4e. Reviews
+
+- One review per client per coach (\`rating\` 1-5, optional \`text\` up to 1000 characters; empty -> \`null\`).
+  \`GET /coaches/:id/my-review\` -> \`{ review, canCreate, editableUntil }\`: show "Write a review" when
+  \`canCreate\` (needs a completed training with the coach), "Edit" while \`now < editableUntil\` (24 hours after
+  creation), otherwise the review is read-only. Reviews cannot be deleted; coaches do not reply in v1.
+- \`PUT /coaches/:id/my-review { rating, text? }\` -> \`201\` created / \`200\` updated, same body as GET.
+- \`GET /coaches/:id/reviews?page&pageSize\` -> newest first + \`summary { average, count, distribution }\`.
+  Authors are shown as "First L." with \`avatarUrl\`. \`coach.rating\` in the catalog and profile is calculated from the
+  reviews (average rounded to 2 decimals).
+
+${example('reviews', 'Example: GET /coaches/:id/reviews')}
+${example('myReviewCreated', 'Example: PUT /coaches/:id/my-review (created)')}
 
 ## 5. Coach flows
 
@@ -208,7 +305,8 @@ const socket = io(SOCKET_URL, {auth: {token: accessToken}, transports: ['websock
 - Reconnect with a fresh access token after refreshing (\`socket.auth = {token}; socket.connect()\`).
   A rejected handshake emits \`connect_error\` with message \`UNAUTHORIZED\` or \`TOKEN_EXPIRED\`.
 - Server -> app events: \`message:new { conversationId, message }\`, \`message:read { conversationId, readerId,
-  readAt }\`, \`conversation:updated { conversation }\`, \`typing { conversationId, userId }\`.
+  readAt }\`, \`conversation:updated { conversation }\`, \`typing { conversationId, userId }\`,
+  \`waitlist:offered { entry: WaitlistEntry }\` (a held group place is waiting to be booked).
 - App -> server events (with ack \`{ ok: true, data? } | { ok: false, error: { code, message } }\`):
   \`message:send { conversationId, text }\`, \`typing { conversationId }\`, \`conversation:read { conversationId }\`.
 - REST equivalents: \`GET /conversations\`, \`POST /conversations\` (get or create), \`GET/POST
@@ -230,7 +328,7 @@ ${example('errorValidation', 'Example: validation error')}
 ## 8. Enums
 
 - Role: \`coach | client\`; Theme: \`light | dark | system\`; Training kind: \`individual | group\`
-- Booking status: \`pending_payment | confirmed | cancelled | completed\`; Payment status: \`unpaid | paid | refunded | not_required\`
+- Booking status: \`pending_payment | confirmed | cancelled | completed\`; Payment status: \`unpaid | paid | refunded | not_required\`; Payment method: \`mock | credits\`
 - Session status: \`scheduled | cancelled | completed\`; Note phase: \`before | after\`
 - Specializations: ${SPECIALIZATIONS.map(s => `\`${s}\``).join(', ')}
 - States: 2-letter US state codes (\`IL\`, \`NY\`, ...); country is always \`US\`.
@@ -244,10 +342,14 @@ ${endpointTables()}
 ${example('me', 'GET /me')}
 ${example('coachList', 'GET /coaches')}
 ${example('coachDetails', 'GET /coaches/:id')}
+${example('myReview', 'GET /coaches/:id/my-review')}
+${example('myPackages', 'GET /me/packages')}
+${example('coachPackages', 'GET /coach/packages')}
 ${example('slots', 'GET /coaches/:id/slots')}
 ${example('groupSessions', 'GET /coaches/:id/group-sessions')}
 ${example('bookingConfirmed', 'POST /bookings/:id/pay')}
 ${example('bookingCancelled', 'POST /bookings/:id/cancel')}
+${example('bookingRescheduled', 'POST /bookings/:id/reschedule')}
 ${example('seriesResult', 'POST /bookings/series')}
 ${example('calendarEvent', 'GET /bookings/:id/calendar-event')}
 ${example('notes', 'GET /bookings/:id/notes')}
@@ -256,6 +358,8 @@ ${example('coachProfile', 'GET /coach/profile')}
 ${example('sessionTypes', 'GET /coach/session-types')}
 ${example('availability', 'GET /coach/availability')}
 ${example('coachClients', 'GET /coach/clients')}
+${example('coachClientProgress', 'GET /coach/clients/:clientId/progress')}
+${example('measurements', 'GET /me/measurements')}
 ${example('errorSlotUnavailable', 'Error: SLOT_UNAVAILABLE')}
 ${example('errorTrialUsed', 'Error: TRIAL_ALREADY_USED')}
 ${example('errorForbidden', 'Error: FORBIDDEN')}

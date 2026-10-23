@@ -161,6 +161,28 @@ async function main() {
     200,
     'coachDetails',
   );
+  await step(
+    'coach reviews',
+    () => api().get(`${v1}/coaches/${coachId}/reviews?pageSize=3`).set(client),
+    200,
+    'reviews',
+  );
+  await step(
+    'my review (none yet, can create)',
+    () => api().get(`${v1}/coaches/${coachId}/my-review`).set(client),
+    200,
+    'myReview',
+  );
+  await step(
+    'write a review',
+    () =>
+      api()
+        .put(`${v1}/coaches/${coachId}/my-review`)
+        .set(client)
+        .send({rating: 5, text: 'Great technique cues, I finally deadlift without back pain.'}),
+    201,
+    'myReviewCreated',
+  );
   const individualType = (
     details.body.sessionTypes as {id: string; kind: string; durationMin: number}[]
   ).find(t => t.kind === 'individual' && t.durationMin === 60)!;
@@ -233,6 +255,68 @@ async function main() {
     () => api().post(`${v1}/bookings/${bookingId}/pay`).set(client),
     200,
     'bookingConfirmed',
+  );
+  const lastFree = freeSlots.at(-1)!;
+  await step(
+    'reschedule to another free slot',
+    () =>
+      api()
+        .post(`${v1}/bookings/${bookingId}/reschedule`)
+        .set(client)
+        .send({startAt: lastFree.startAt}),
+    200,
+    'bookingRescheduled',
+  );
+  await step('my progress', () => api().get(`${v1}/me/progress`).set(client), 200, 'progress');
+  await step(
+    'my measurements',
+    () => api().get(`${v1}/me/measurements?limit=4`).set(client),
+    200,
+    'measurements',
+  );
+  await step(
+    'save today weight',
+    () => api().post(`${v1}/me/measurements`).set(client).send({type: 'weight', value: 181.6}),
+    201,
+    'measurement',
+  );
+  await step(
+    'set goal',
+    () => api().put(`${v1}/me/goal`).set(client).send({trainingsPerWeek: 3}),
+    200,
+  );
+  const clientId = (login.body.user as {id: string}).id;
+  await step(
+    'coach: client progress',
+    () => api().get(`${v1}/coach/clients/${clientId}/progress?weeks=8`).set(coach),
+    200,
+    'coachClientProgress',
+  );
+  await step('my favorites', () => api().get(`${v1}/me/favorites`).set(client), 200, 'favorites');
+  await step('add favorite', () => api().put(`${v1}/me/favorites/${coachId}`).set(client), 204);
+  await step('my packages', () => api().get(`${v1}/me/packages`).set(client), 200, 'myPackages');
+  await step(
+    'coach packages',
+    () => api().get(`${v1}/coach/packages`).set(coach),
+    200,
+    'coachPackages',
+  );
+  const packageId = (details.body.packages as {id: string}[])[0]!.id;
+  await step(
+    'buy a package',
+    () => api().post(`${v1}/packages/${packageId}/purchase`).set(client),
+    201,
+    'clientPackage',
+  );
+  await step(
+    'book with a credit',
+    () =>
+      api()
+        .post(`${v1}/bookings`)
+        .set(client)
+        .send({sessionTypeId: individualType.id, startAt: freeSlots[1]!.startAt, useCredits: true}),
+    201,
+    'bookingWithCredits',
   );
   await step(
     'calendar event',

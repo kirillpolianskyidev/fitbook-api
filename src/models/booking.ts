@@ -23,7 +23,9 @@ const bookingSchema = new Schema(
             enum: ['unpaid', 'paid', 'refunded', 'not_required'],
             required: true,
           },
-          method: {type: String, enum: ['mock'], default: 'mock'},
+          method: {type: String, enum: ['mock', 'credits'], default: 'mock'},
+          // Purchase the credit was taken from (method = credits).
+          clientPackageId: {type: Schema.Types.ObjectId, ref: 'ClientPackage', default: null},
           paidAt: Date,
           // Set when a paid booking is cancelled: the full price goes back to the client (mock, instant).
           refundedAt: Date,
@@ -38,6 +40,8 @@ const bookingSchema = new Schema(
     cancelledAt: Date,
     cancelledBy: {type: String, enum: ['coach', 'client', 'system']},
     cancelReason: String,
+    // Last time the client moved the booking to another time / group session.
+    rescheduledAt: {type: Date, default: null},
     // `${sessionId}:${clientId}` while the booking is active; removed ($unset) when cancelled,
     // so a client can re-join a session later. Must stay absent (not null) for the sparse index.
     activeKey: {type: String},

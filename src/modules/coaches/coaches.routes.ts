@@ -1,11 +1,6 @@
 import {route} from '../../lib/route.js';
 import {IdParams, itemsOf, pageOf} from '../../lib/schemas.js';
-import {
-  RangeQuery,
-  SlotSchema,
-  SlotsQuery,
-  TrainingSessionSchema,
-} from '../sessions/sessions.schemas.js';
+import {RangeQuery, SlotSchema, SlotsQuery} from '../sessions/sessions.schemas.js';
 import {
   CancellationPolicySchema,
   CoachCardSchema,
@@ -16,6 +11,7 @@ import {
   UpdateCoachProfileBody,
 } from './coaches.schemas.js';
 import * as service from './coaches.service.js';
+import {GroupSessionSchema} from '../waitlist/waitlist.schemas.js';
 
 route({
   method: 'get',
@@ -37,7 +33,7 @@ route({
   params: IdParams,
   response: CoachDetailsSchema,
   errors: ['NOT_FOUND'],
-  handler: ({params}) => service.getCoachDetails(params.id),
+  handler: ({user, params}) => service.getCoachDetails(params.id, user),
 });
 
 route({
@@ -58,14 +54,14 @@ route({
   method: 'get',
   path: '/coaches/:id/group-sessions',
   tags: ['Coaches'],
-  summary: 'Upcoming group sessions of a coach with spots left',
+  summary: 'Upcoming group sessions of a coach with spots left and my waitlist status',
   auth: 'client',
   params: IdParams,
   query: RangeQuery,
-  response: itemsOf(TrainingSessionSchema),
+  response: itemsOf(GroupSessionSchema),
   errors: ['NOT_FOUND'],
-  handler: ({params, query}) =>
-    service.getCoachGroupSessions(params.id, new Date(query.from), new Date(query.to)),
+  handler: ({user, params, query}) =>
+    service.getCoachGroupSessions(params.id, new Date(query.from), new Date(query.to), user._id),
 });
 
 const coachTags = ['Coach: profile'];

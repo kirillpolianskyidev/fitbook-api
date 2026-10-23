@@ -23,8 +23,17 @@ import {
   createLockedSession,
   findSlots,
   isFreeSlot,
+  moveLockedSession,
+  syncSeatCounts,
   unlockSession,
 } from '../sessions/sessions.service.js';
+import {
+  claimOfferedSeat,
+  markBooked,
+  processWaitlist,
+  restoreOfferedSeat,
+} from '../waitlist/waitlist.service.js';
+import {creditsAvailable, returnCredit, takeCredit} from '../packages/packages.service.js';
 import {toUserSummary} from '../users/users.service.js';
 import type {
   BookingDto,
@@ -45,7 +54,10 @@ const activeKey = (sessionId: Types.ObjectId, clientId: Types.ObjectId) =>
 // ---------------------------------------------------------------------------------------------
 
 /** Builds booking DTOs for a list, loading related sessions, users, policies and note counts in batches. */
-export async function toBookingDtos(bookings: BookingDoc[]): Promise<BookingDto[]> {
+export async function toBookingDtos(
+  bookings: BookingDoc[],
+  viewerId?: Types.ObjectId,
+): Promise<BookingDto[]> {
   if (bookings.length === 0) return [];
   const sessionIds = [...new Set(bookings.map(b => b.sessionId.toString()))];
   const userIds = [
@@ -85,6 +97,8 @@ export async function toBookingDtos(bookings: BookingDoc[]): Promise<BookingDto[
       isActive &&
       booking.startAt.getTime() > now &&
       (status === 'pending_payment' || now <= deadline.getTime());
+    // Same window as cancelling, and only for the client of the booking.
+    const reschedulable = cancellable && (!viewerId || booking.clientId.equals(viewerId));
     return {
       id: booking.id as string,
       status,
@@ -92,8 +106,9 @@ export async function toBookingDtos(bookings: BookingDoc[]): Promise<BookingDto[
       price: toMoneyDto(booking.price),
       payment: {
         status: booking.payment.status as 'unpaid' | 'paid' | 'refunded' | 'not_required',
-        method: 'mock' as const,
+        method: (booking.payment.method ?? 'mock') as 'mock' | 'credits',
         paidAt: booking.payment.paidAt?.toISOString() ?? null,
+        clientPackageId: booking.payment.clientPackageId?.toString() ?? null,
         refundedAt: booking.payment.refundedAt?.toISOString() ?? null,
       },
       expiresAt: status === 'pending_payment' ? (booking.expiresAt?.toISOString() ?? null) : null,
@@ -101,12 +116,15 @@ export async function toBookingDtos(bookings: BookingDoc[]): Promise<BookingDto[
       endAt: booking.endAt.toISOString(),
       seriesId: booking.seriesId?.toString() ?? null,
       cancellable,
+      reschedulable,
+      rescheduledAt: booking.rescheduledAt?.toISOString() ?? null,
       cancelDeadline: isActive ? deadline.toISOString() : null,
       cancelledAt: booking.cancelledAt?.toISOString() ?? null,
       cancelledBy: (booking.cancelledBy as CancelledBy | undefined) ?? null,
       cancelReason: booking.cancelReason ?? null,
       session: {
         id: booking.sessionId.toString(),
+        sessionTypeId: session?.sessionTypeId.toString() ?? '',
         title: session?.title ?? '',
         kind: (session?.kind as 'individual' | 'group') ?? 'individual',
         location: toLocationDto(session?.location),
@@ -125,8 +143,8 @@ export async function toBookingDtos(bookings: BookingDoc[]): Promise<BookingDto[
   });
 }
 
-export async function toBookingDto(booking: BookingDoc) {
-  const [dto] = await toBookingDtos([booking]);
+export async function toBookingDto(booking: BookingDoc, viewerId?: Types.ObjectId) {
+  const [dto] = await toBookingDtos([booking], viewerId);
   return dto!;
 }
 
@@ -149,6 +167,20 @@ async function assertPublishedCoach(coachId: Types.ObjectId) {
   if (!(await CoachProfileModel.exists({userId: coachId, isPublished: true}))) {
     throw new AppError('NOT_FOUND', 'Coach not found.');
   }
+}
+
+/** A booking paid with a credit: confirmed immediately. */
+function creditPayment(clientPackageId: Types.ObjectId) {
+  return {
+    status: 'confirmed' as const,
+    payment: {
+      status: 'paid' as const,
+      method: 'credits' as const,
+      paidAt: new Date(),
+      clientPackageId,
+    },
+    expiresAt: null,
+  };
 }
 
 function initialPayment(priceCents: number, isTrial: boolean) {
@@ -174,6 +206,7 @@ type IndividualInput = {
   sessionTypeId: string;
   startAt: string;
   isTrial: boolean;
+  useCredits?: boolean;
   location?: Location;
 };
 
@@ -200,6 +233,9 @@ export async function createIndividualBooking(
   if (!isOnSlotGrid(startAt) || !(await isFreeSlot(type.coachId, type.durationMin, startAt))) {
     throw new AppError('SLOT_UNAVAILABLE');
   }
+
+  // A credit is taken before the time is locked and given back if anything below fails.
+  const credit = input.useCredits ? await takeCredit(client._id, type.coachId) : null;
 
   // Claim the trial first: the unique index on emailKey makes it race-safe across accounts.
   if (input.isTrial) {
@@ -235,6 +271,7 @@ export async function createIndividualBooking(
   } catch (error) {
     if (input.isTrial)
       await TrialClaimModel.deleteOne({emailKey: client.emailKey, bookingId: null});
+    if (credit) await returnCredit(credit._id);
     throw error;
   }
 
@@ -248,7 +285,7 @@ export async function createIndividualBooking(
     startAt: session.startAt,
     endAt: session.endAt,
     activeKey: activeKey(session._id, client._id),
-    ...initialPayment(price.amountCents, input.isTrial),
+    ...(credit ? creditPayment(credit._id) : initialPayment(price.amountCents, input.isTrial)),
   });
 
   if (input.isTrial) {
@@ -263,7 +300,12 @@ export async function createIndividualBooking(
 // Group sessions
 // ---------------------------------------------------------------------------------------------
 
-export async function joinGroupSession(client: UserDoc, sessionId: string, isTrial?: boolean) {
+export async function joinGroupSession(
+  client: UserDoc,
+  sessionId: string,
+  isTrial?: boolean,
+  useCredits = false,
+) {
   if (isTrial) {
     throw new AppError('TRIAL_NOT_ALLOWED');
   }
@@ -280,8 +322,13 @@ export async function joinGroupSession(client: UserDoc, sessionId: string, isTri
   if (await BookingModel.exists({activeKey: activeKey(session._id, client._id)})) {
     throw new AppError('ALREADY_BOOKED');
   }
-  const seat = await takeSeat(session._id, client._id, session.capacity);
+  // Expired offers pass on first; a client with a waitlist offer books the place held for them.
+  await processWaitlist(session._id);
+  const claimed = await claimOfferedSeat(session._id, client._id);
+  const seat = claimed ?? (await takeSeat(session._id, client._id, session.capacity));
+  let credit: Awaited<ReturnType<typeof takeCredit>> | null = null;
   try {
+    credit = useCredits ? await takeCredit(client._id, session.coachId) : null;
     const booking = await BookingModel.create({
       sessionId: session._id,
       coachId: session.coachId,
@@ -291,12 +338,15 @@ export async function joinGroupSession(client: UserDoc, sessionId: string, isTri
       startAt: session.startAt,
       endAt: session.endAt,
       activeKey: activeKey(session._id, client._id),
-      ...initialPayment(session.price.amountCents, false),
+      ...(credit ? creditPayment(credit._id) : initialPayment(session.price.amountCents, false)),
     });
+    await markBooked(session._id, client._id);
     await syncParticipants(session._id);
     return booking;
   } catch (error) {
-    await SeatLockModel.deleteOne({_id: seat._id});
+    if (claimed) await restoreOfferedSeat(session._id, client._id);
+    else await SeatLockModel.deleteOne({_id: seat._id});
+    if (credit) await returnCredit(credit._id);
     if (isDuplicateKeyError(error)) throw new AppError('ALREADY_BOOKED');
     throw error;
   }
@@ -315,11 +365,8 @@ async function takeSeat(sessionId: Types.ObjectId, clientId: Types.ObjectId, cap
   throw new AppError('SESSION_FULL');
 }
 
-/** participantsCount mirrors the number of taken seats (for display). */
-export async function syncParticipants(sessionId: Types.ObjectId) {
-  const count = await SeatLockModel.countDocuments({sessionId});
-  await TrainingSessionModel.updateOne({_id: sessionId}, {$set: {participantsCount: count}});
-}
+/** participantsCount / heldCount mirror the taken seats (for display). */
+export const syncParticipants = (sessionId: Types.ObjectId) => syncSeatCounts(sessionId);
 
 // ---------------------------------------------------------------------------------------------
 // Recurring series (individual)
@@ -396,6 +443,16 @@ export async function createSeries(client: UserDoc, input: z.infer<typeof Series
     });
   }
   const type = await seriesType(input.sessionTypeId);
+  if (input.useCredits) {
+    const needed = [...new Set(input.dates)].filter(date => byDate.get(date)!.available).length;
+    const available = await creditsAvailable(client._id, type.coachId);
+    if (available < needed) {
+      throw new AppError('INSUFFICIENT_CREDITS', undefined, {
+        creditsAvailable: available,
+        creditsNeeded: needed,
+      });
+    }
+  }
   const series = await BookingSeriesModel.create({
     clientId: client._id,
     coachId: type.coachId,
@@ -418,7 +475,12 @@ export async function createSeries(client: UserDoc, input: z.infer<typeof Series
       bookings.push(
         await createIndividualBooking(
           client,
-          {sessionTypeId: input.sessionTypeId, startAt: item.startAt, isTrial: false},
+          {
+            sessionTypeId: input.sessionTypeId,
+            startAt: item.startAt,
+            isTrial: false,
+            useCredits: input.useCredits,
+          },
           {seriesId: series._id},
         ),
       );
@@ -426,6 +488,15 @@ export async function createSeries(client: UserDoc, input: z.infer<typeof Series
       if (error instanceof AppError && error.code === 'SLOT_UNAVAILABLE') {
         skipped.push({date, reason: 'UNAVAILABLE'});
         continue;
+      }
+      if (error instanceof AppError && error.code === 'NO_CREDITS') {
+        // Credits were used up in parallel: nothing is booked (credits go back).
+        for (const booking of bookings) await cancelBookingInternal(booking, 'system');
+        await BookingModel.deleteMany({_id: {$in: bookings.map(b => b._id)}});
+        await series.deleteOne();
+        throw new AppError('INSUFFICIENT_CREDITS', undefined, {
+          creditsAvailable: await creditsAvailable(client._id, type.coachId),
+        });
       }
       throw error;
     }
@@ -545,6 +616,14 @@ export async function cancelBookingInternal(booking: BookingDoc, by: CancelledBy
   if (!cancelled) {
     return null;
   }
+  // Paid with a credit: the refund is the credit, back into the same purchase (lost if it expired).
+  if (
+    cancelled.payment.method === 'credits' &&
+    cancelled.payment.status === 'refunded' &&
+    cancelled.payment.clientPackageId
+  ) {
+    await returnCredit(cancelled.payment.clientPackageId);
+  }
   const session = await TrainingSessionModel.findById(cancelled.sessionId);
   if (session?.kind === 'individual') {
     session.status = 'cancelled';
@@ -554,6 +633,8 @@ export async function cancelBookingInternal(booking: BookingDoc, by: CancelledBy
   } else if (session) {
     await SeatLockModel.deleteOne({sessionId: session._id, clientId: cancelled.clientId});
     await syncParticipants(session._id);
+    // A place was freed: the first client on the waitlist gets an offer.
+    await processWaitlist(session._id);
   }
   return cancelled;
 }
@@ -600,6 +681,151 @@ export async function cancelByCoach(coach: UserDoc, bookingId: string, reason: s
     throw new AppError('CANCELLATION_WINDOW_PASSED', 'This booking is not active.');
   }
   return cancelled;
+}
+
+// ---------------------------------------------------------------------------------------------
+// Reschedule (client)
+// ---------------------------------------------------------------------------------------------
+
+/**
+ * Moves a booking to another time (individual) or another group session of the same type (group), before the
+ * free-cancellation deadline. Payment, trial flag, price, notes, location and series stay as they are.
+ */
+export async function rescheduleBooking(
+  client: UserDoc,
+  bookingId: string,
+  input: {startAt?: string; sessionId?: string},
+) {
+  const booking = await BookingModel.findById(bookingId);
+  if (!booking) {
+    throw new AppError('NOT_FOUND', 'Booking not found.');
+  }
+  if (!booking.clientId.equals(client._id)) {
+    throw new AppError('FORBIDDEN');
+  }
+  const now = new Date();
+  if (!ACTIVE.includes(booking.status as (typeof ACTIVE)[number]) || booking.startAt <= now) {
+    throw new AppError('RESCHEDULE_WINDOW_PASSED');
+  }
+  if (booking.status === 'confirmed') {
+    const profile = await CoachProfileModel.findOne({userId: booking.coachId}).lean();
+    const freeCancelHours = profile?.cancellationPolicy?.freeCancelHours ?? 24;
+    const deadline = addMinutes(booking.startAt, -freeCancelHours * 60);
+    if (now > deadline) {
+      throw new AppError('RESCHEDULE_WINDOW_PASSED', undefined, {
+        freeCancelHours,
+        deadline: deadline.toISOString(),
+      });
+    }
+  }
+  const session = await TrainingSessionModel.findById(booking.sessionId);
+  if (!session) {
+    throw new AppError('NOT_FOUND', 'Session not found.');
+  }
+  const moved =
+    session.kind === 'individual'
+      ? await rescheduleIndividual(booking, session, input)
+      : await rescheduleGroup(client, booking, session, input);
+  return moved;
+}
+
+async function rescheduleIndividual(
+  booking: BookingDoc,
+  session: TrainingSessionDoc,
+  input: {startAt?: string; sessionId?: string},
+) {
+  if (!input.startAt) {
+    throw new AppError('VALIDATION_ERROR', undefined, {
+      fields: {startAt: 'Individual bookings are moved with startAt'},
+    });
+  }
+  const startAt = new Date(input.startAt);
+  if (startAt.getTime() === session.startAt.getTime()) {
+    throw new AppError('VALIDATION_ERROR', undefined, {
+      fields: {startAt: 'Choose a different time'},
+    });
+  }
+  const durationMin = Math.round((session.endAt.getTime() - session.startAt.getTime()) / 60_000);
+  // The booking's own slot does not block the new time.
+  if (
+    !isOnSlotGrid(startAt) ||
+    !(await isFreeSlot(session.coachId, durationMin, startAt, session._id))
+  ) {
+    throw new AppError('SLOT_UNAVAILABLE');
+  }
+  const oldStart = booking.startAt;
+  const endAt = addMinutes(startAt, durationMin);
+  await moveLockedSession(session, startAt, endAt);
+  const updated = await BookingModel.findOneAndUpdate(
+    {_id: booking._id, startAt: oldStart, status: {$in: ACTIVE}},
+    {$set: {startAt, endAt, rescheduledAt: new Date()}},
+    {returnDocument: 'after'},
+  );
+  if (!updated) {
+    // Cancelled or moved in parallel: put the session back.
+    await moveLockedSession(session, oldStart, addMinutes(oldStart, durationMin));
+    throw new AppError('RESCHEDULE_WINDOW_PASSED');
+  }
+  return updated;
+}
+
+async function rescheduleGroup(
+  client: UserDoc,
+  booking: BookingDoc,
+  session: TrainingSessionDoc,
+  input: {startAt?: string; sessionId?: string},
+) {
+  if (!input.sessionId) {
+    throw new AppError('VALIDATION_ERROR', undefined, {
+      fields: {sessionId: 'Group bookings are moved with sessionId'},
+    });
+  }
+  if (input.sessionId === session.id) {
+    throw new AppError('VALIDATION_ERROR', undefined, {
+      fields: {sessionId: 'Choose a different session'},
+    });
+  }
+  const target = await TrainingSessionModel.findOne({
+    _id: input.sessionId,
+    kind: 'group',
+    status: 'scheduled',
+    startAt: {$gt: new Date()},
+    coachId: session.coachId,
+    sessionTypeId: session.sessionTypeId,
+  });
+  if (!target) {
+    throw new AppError('NOT_FOUND', 'Group session not found.');
+  }
+  if (await BookingModel.exists({activeKey: activeKey(target._id, client._id)})) {
+    throw new AppError('ALREADY_BOOKED');
+  }
+  await processWaitlist(target._id);
+  const claimed = await claimOfferedSeat(target._id, client._id);
+  const seat = claimed ?? (await takeSeat(target._id, client._id, target.capacity));
+  const updated = await BookingModel.findOneAndUpdate(
+    {_id: booking._id, sessionId: session._id, status: {$in: ACTIVE}},
+    {
+      $set: {
+        sessionId: target._id,
+        startAt: target.startAt,
+        endAt: target.endAt,
+        activeKey: activeKey(target._id, client._id),
+        rescheduledAt: new Date(),
+      },
+    },
+    {returnDocument: 'after'},
+  );
+  if (!updated) {
+    if (claimed) await restoreOfferedSeat(target._id, client._id);
+    else await SeatLockModel.deleteOne({_id: seat._id});
+    throw new AppError('RESCHEDULE_WINDOW_PASSED');
+  }
+  await markBooked(target._id, client._id);
+  await SeatLockModel.deleteOne({sessionId: session._id, clientId: client._id});
+  await Promise.all([syncParticipants(session._id), syncParticipants(target._id)]);
+  // The old place goes to the waitlist of the old session.
+  await processWaitlist(session._id);
+  return updated;
 }
 
 // ---------------------------------------------------------------------------------------------

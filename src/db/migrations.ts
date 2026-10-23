@@ -1,5 +1,7 @@
 import {logger} from '../lib/logger.js';
 import {BookingModel} from '../models/booking.js';
+import {CoachProfileModel} from '../models/coachProfile.js';
+import {ReviewModel} from '../models/review.js';
 import {UserModel} from '../models/user.js';
 
 /**
@@ -39,5 +41,28 @@ export async function runMigrations() {
       {bookings: refunded.modifiedCount},
       'Migration: marked cancelled paid bookings refunded',
     );
+  }
+
+  // 2026-10: reviews. coachProfile.rating is calculated from reviews; profiles whose stored rating does not match
+  // their reviews (e.g. ratings typed into older seed data) are recalculated.
+  const [summaries, profiles] = await Promise.all([
+    ReviewModel.aggregate<{_id: unknown; count: number; sum: number}>([
+      {$group: {_id: '$coachId', count: {$sum: 1}, sum: {$sum: '$rating'}}},
+    ]),
+    CoachProfileModel.find().select('userId rating').lean(),
+  ]);
+  const byCoach = new Map(summaries.map(s => [String(s._id), s]));
+  let fixed = 0;
+  for (const profile of profiles) {
+    const s = byCoach.get(profile.userId.toString());
+    const count = s?.count ?? 0;
+    const average = s ? Math.round((s.sum / s.count) * 100) / 100 : 0;
+    if (profile.rating?.count !== count || profile.rating?.average !== average) {
+      await CoachProfileModel.updateOne({_id: profile._id}, {$set: {rating: {average, count}}});
+      fixed += 1;
+    }
+  }
+  if (fixed > 0) {
+    logger.info({coaches: fixed}, 'Migration: coach ratings recalculated from reviews');
   }
 }

@@ -2,16 +2,16 @@
   "health": {
     "status": "ok",
     "db": "up",
-    "time": "2026-10-21T17:40:17.804Z"
+    "time": "2026-10-23T11:49:33.342Z"
   },
   "verification": {
     "verification": {
-      "id": "9c1c722dcba9ff37aad9f1cad2490710",
+      "id": "a2c81810d3549a95479f4eef1585cd08",
       "purpose": "login",
       "email": "client@fitbook.dev",
       "codeLength": 6,
-      "expiresAt": "2026-10-21T17:50:18.218Z",
-      "resendAvailableAt": "2026-10-21T17:41:18.218Z"
+      "expiresAt": "2026-10-23T11:59:33.735Z",
+      "resendAvailableAt": "2026-10-23T11:50:33.735Z"
     }
   },
   "errorResendTooEarly": {
@@ -34,7 +34,7 @@
   },
   "authResult": {
     "user": {
-      "id": "6ad8f8f9ae15ad411e7f0b37",
+      "id": "6adb49c48e120d4d6239a13c",
       "email": "client@fitbook.dev",
       "role": "client",
       "firstName": "Jamie",
@@ -52,12 +52,12 @@
         "theme": "dark"
       },
       "authProviders": ["password"],
-      "createdAt": "2026-10-21T17:40:09.215Z"
+      "createdAt": "2026-10-23T11:49:24.989Z"
     },
     "tokens": {
-      "accessToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJyb2xlIjoiY2xpZW50IiwidHlwIjoiYWNjZXNzIiwiaWF0IjoxNzkyNjA0NDE4LCJleHAiOjE3OTI2MDUzMTgsInN1YiI6IjZhZDhmOGY5YWUxNWFkNDExZTdmMGIzNyJ9.v5Bvz_FJM2A4RLYwuIXKjiT-o86WlDrcJAVIrr_kRxk",
-      "refreshToken": "Mku04Qu0j6bsNpJLRrRpr5Mfko6Q1Fn_4gwaF90V5mnN_RngU77KHWWEDP3hxPPC",
-      "accessTokenExpiresAt": "2026-10-21T17:55:18.000Z"
+      "accessToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJyb2xlIjoiY2xpZW50IiwidHlwIjoiYWNjZXNzIiwiaWF0IjoxNzkyNzU2MTczLCJleHAiOjE3OTI3NTcwNzMsInN1YiI6IjZhZGI0OWM0OGUxMjBkNGQ2MjM5YTEzYyJ9.UyOQIN7te4bpgRtkq7BG0PT7NsVk4nZLacJuEGEUMIc",
+      "refreshToken": "AGWFwfUouCmWovIDIpGysAbP83PO13dqDzcBOzqY7_tagqWtJgC8e7TlAfDnD68b",
+      "accessTokenExpiresAt": "2026-10-23T12:04:33.000Z"
     }
   },
   "errorCodeExpired": {
@@ -73,12 +73,12 @@
     }
   },
   "tokens": {
-    "accessToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJyb2xlIjoiY2xpZW50IiwidHlwIjoiYWNjZXNzIiwiaWF0IjoxNzkyNjA0NDE4LCJleHAiOjE3OTI2MDUzMTgsInN1YiI6IjZhZDhmOGY5YWUxNWFkNDExZTdmMGIzNyJ9.v5Bvz_FJM2A4RLYwuIXKjiT-o86WlDrcJAVIrr_kRxk",
-    "refreshToken": "sRi_ywjU3YJbO2LX3Mzlr7NOEEtEV6cTq-HMigw6MkWSqYVhtt68TFLDHZvfZnSU",
-    "accessTokenExpiresAt": "2026-10-21T17:55:18.000Z"
+    "accessToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJyb2xlIjoiY2xpZW50IiwidHlwIjoiYWNjZXNzIiwiaWF0IjoxNzkyNzU2MTc0LCJleHAiOjE3OTI3NTcwNzQsInN1YiI6IjZhZGI0OWM0OGUxMjBkNGQ2MjM5YTEzYyJ9.VImJmZLXYqz2vPYOOdFrBpgHFCK6vwSrUP0NuZyINyo",
+    "refreshToken": "6kzlFGm0zcDRrIbclHvGt3FF19QkHSZDDjsEVhlGymQEONsfY7DOYMKhIFuW7J8o",
+    "accessTokenExpiresAt": "2026-10-23T12:04:34.000Z"
   },
   "me": {
-    "id": "6ad8f8f9ae15ad411e7f0b37",
+    "id": "6adb49c48e120d4d6239a13c",
     "email": "client@fitbook.dev",
     "role": "client",
     "firstName": "Jamie",
@@ -96,7 +96,7 @@
       "theme": "dark"
     },
     "authProviders": ["password"],
-    "createdAt": "2026-10-21T17:40:09.215Z",
+    "createdAt": "2026-10-23T11:49:24.989Z",
     "coachProfile": null
   },
   "trialStatus": {
@@ -106,7 +106,7 @@
   "coachList": {
     "items": [
       {
-        "id": "6ad8f8f9ae15ad411e7f0b09",
+        "id": "6adb49c48e120d4d6239a10e",
         "firstName": "Maya",
         "lastName": "Patel",
         "avatarUrl": "https://i.pravatar.cc/300?img=47",
@@ -114,8 +114,8 @@
         "specializations": ["yoga", "mobility"],
         "experienceYears": 7,
         "rating": {
-          "average": 4.95,
-          "count": 188
+          "average": 5,
+          "count": 11
         },
         "homeArea": {
           "city": "Chicago",
@@ -127,10 +127,11 @@
           "amountCents": 1800,
           "currency": "USD"
         },
-        "kinds": ["group", "individual"]
+        "kinds": ["group", "individual"],
+        "isFavorite": true
       },
       {
-        "id": "6ad8f8f9ae15ad411e7f0b03",
+        "id": "6adb49c48e120d4d6239a108",
         "firstName": "Alex",
         "lastName": "Carter",
         "avatarUrl": "https://i.pravatar.cc/300?img=12",
@@ -138,8 +139,8 @@
         "specializations": ["strength", "hiit", "mobility"],
         "experienceYears": 9,
         "rating": {
-          "average": 4.9,
-          "count": 142
+          "average": 5,
+          "count": 10
         },
         "homeArea": {
           "city": "Chicago",
@@ -151,7 +152,8 @@
           "amountCents": 2500,
           "currency": "USD"
         },
-        "kinds": ["group", "individual"]
+        "kinds": ["group", "individual"],
+        "isFavorite": true
       }
     ],
     "page": 1,
@@ -159,7 +161,7 @@
     "total": 10
   },
   "coachDetails": {
-    "id": "6ad8f8f9ae15ad411e7f0b03",
+    "id": "6adb49c48e120d4d6239a108",
     "firstName": "Alex",
     "lastName": "Carter",
     "avatarUrl": "https://i.pravatar.cc/300?img=12",
@@ -167,8 +169,8 @@
     "specializations": ["strength", "hiit", "mobility"],
     "experienceYears": 9,
     "rating": {
-      "average": 4.9,
-      "count": 142
+      "average": 5,
+      "count": 10
     },
     "homeArea": {
       "city": "Chicago",
@@ -181,6 +183,7 @@
       "currency": "USD"
     },
     "kinds": ["group", "individual"],
+    "isFavorite": true,
     "bio": "I help people with full calendars get strong, move without pain and actually enjoy training. Every program starts with a movement assessment, then we build simple, progressive sessions around your schedule.\n\nBefore coaching full time I competed in powerlifting and worked with a Division I track team, so I care a lot about technique and smart progression.",
     "certifications": [
       {
@@ -214,8 +217,8 @@
     },
     "sessionTypes": [
       {
-        "id": "6ad8f8f9ae15ad411e7f0b08",
-        "coachId": "6ad8f8f9ae15ad411e7f0b03",
+        "id": "6adb49c48e120d4d6239a10d",
+        "coachId": "6adb49c48e120d4d6239a108",
         "title": "Lunchtime Strength Circuit",
         "kind": "group",
         "durationMin": 60,
@@ -229,8 +232,8 @@
         "isActive": true
       },
       {
-        "id": "6ad8f8f9ae15ad411e7f0b06",
-        "coachId": "6ad8f8f9ae15ad411e7f0b03",
+        "id": "6adb49c48e120d4d6239a10b",
+        "coachId": "6adb49c48e120d4d6239a108",
         "title": "1:1 Strength Session",
         "kind": "individual",
         "durationMin": 60,
@@ -243,34 +246,129 @@
         "description": "Personal strength session with technique coaching and a plan for the week.",
         "isActive": true
       }
+    ],
+    "packages": [
+      {
+        "id": "6adb49cb8e120d4d6239af2a",
+        "title": "5 sessions",
+        "credits": 5,
+        "price": {
+          "amountCents": 40500,
+          "currency": "USD"
+        },
+        "validityDays": 60,
+        "isActive": true,
+        "pricePerCredit": {
+          "amountCents": 8100,
+          "currency": "USD"
+        }
+      },
+      {
+        "id": "6adb49cb8e120d4d6239af29",
+        "title": "10 sessions",
+        "credits": 10,
+        "price": {
+          "amountCents": 76500,
+          "currency": "USD"
+        },
+        "validityDays": 90,
+        "isActive": true,
+        "pricePerCredit": {
+          "amountCents": 7650,
+          "currency": "USD"
+        }
+      }
     ]
+  },
+  "reviews": {
+    "items": [
+      {
+        "id": "6adb49cb8e120d4d6239af44",
+        "rating": 5,
+        "text": "Patient, motivating and always on time. Best coach I have had.",
+        "author": {
+          "id": "6adb49c58e120d4d6239a145",
+          "name": "Lucas M.",
+          "avatarUrl": "https://i.pravatar.cc/300?img=51"
+        },
+        "createdAt": "2026-10-19T11:16:26.577Z",
+        "updatedAt": "2026-10-19T11:16:26.577Z"
+      },
+      {
+        "id": "6adb49cb8e120d4d6239af47",
+        "rating": 5,
+        "text": "Patient, motivating and always on time. Best coach I have had.",
+        "author": {
+          "id": "6adb49c58e120d4d6239a142",
+          "name": "Sophia M.",
+          "avatarUrl": "https://i.pravatar.cc/300?img=16"
+        },
+        "createdAt": "2026-10-11T18:21:04.247Z",
+        "updatedAt": "2026-10-11T18:21:04.247Z"
+      }
+    ],
+    "page": 1,
+    "pageSize": 3,
+    "total": 10,
+    "summary": {
+      "average": 5,
+      "count": 10,
+      "distribution": {
+        "1": 0,
+        "2": 0,
+        "3": 0,
+        "4": 0,
+        "5": 10
+      }
+    }
+  },
+  "myReview": {
+    "review": null,
+    "canCreate": true,
+    "editableUntil": null
+  },
+  "myReviewCreated": {
+    "review": {
+      "id": "6adb49ce03a3a0caa555f261",
+      "rating": 5,
+      "text": "Great technique cues, I finally deadlift without back pain.",
+      "author": {
+        "id": "6adb49c48e120d4d6239a13c",
+        "name": "Jamie L.",
+        "avatarUrl": "https://i.pravatar.cc/300?img=32"
+      },
+      "createdAt": "2026-10-23T11:49:34.512Z",
+      "updatedAt": "2026-10-23T11:49:34.512Z"
+    },
+    "canCreate": false,
+    "editableUntil": "2026-10-24T11:49:34.512Z"
   },
   "slots": {
     "items": [
       {
-        "startAt": "2026-10-28T11:00:00.000Z",
-        "endAt": "2026-10-28T12:00:00.000Z"
+        "startAt": "2026-10-30T11:00:00.000Z",
+        "endAt": "2026-10-30T12:00:00.000Z"
       },
       {
-        "startAt": "2026-10-28T11:30:00.000Z",
-        "endAt": "2026-10-28T12:30:00.000Z"
+        "startAt": "2026-10-30T11:30:00.000Z",
+        "endAt": "2026-10-30T12:30:00.000Z"
       }
     ]
   },
   "groupSessions": {
     "items": [
       {
-        "id": "6ad8f8f9ae15ad411e7f0bb9",
-        "coachId": "6ad8f8f9ae15ad411e7f0b03",
-        "sessionTypeId": "6ad8f8f9ae15ad411e7f0b08",
+        "id": "6adb49c58e120d4d6239a1bd",
+        "coachId": "6adb49c48e120d4d6239a108",
+        "sessionTypeId": "6adb49c48e120d4d6239a10d",
         "kind": "group",
         "title": "Lunchtime Strength Circuit",
         "startAt": "2026-10-23T17:00:00.000Z",
         "endAt": "2026-10-23T18:00:00.000Z",
         "durationMin": 60,
         "capacity": 8,
-        "participantsCount": 7,
-        "spotsLeft": 1,
+        "participantsCount": 6,
+        "spotsLeft": 2,
         "price": {
           "amountCents": 2500,
           "currency": "USD"
@@ -285,20 +383,26 @@
           "lng": -87.6347
         },
         "status": "scheduled",
-        "cancelReason": null
+        "cancelReason": null,
+        "waitlist": {
+          "count": 0,
+          "myStatus": null,
+          "myPosition": null,
+          "offerExpiresAt": null
+        }
       },
       {
-        "id": "6ad8f8f9ae15ad411e7f0bbc",
-        "coachId": "6ad8f8f9ae15ad411e7f0b03",
-        "sessionTypeId": "6ad8f8f9ae15ad411e7f0b08",
+        "id": "6adb49c58e120d4d6239a1c0",
+        "coachId": "6adb49c48e120d4d6239a108",
+        "sessionTypeId": "6adb49c48e120d4d6239a10d",
         "kind": "group",
         "title": "Lunchtime Strength Circuit",
         "startAt": "2026-10-26T17:00:00.000Z",
         "endAt": "2026-10-26T18:00:00.000Z",
         "durationMin": 60,
         "capacity": 8,
-        "participantsCount": 5,
-        "spotsLeft": 3,
+        "participantsCount": 6,
+        "spotsLeft": 2,
         "price": {
           "amountCents": 2500,
           "currency": "USD"
@@ -313,12 +417,18 @@
           "lng": -87.6347
         },
         "status": "scheduled",
-        "cancelReason": null
+        "cancelReason": null,
+        "waitlist": {
+          "count": 0,
+          "myStatus": null,
+          "myPosition": null,
+          "offerExpiresAt": null
+        }
       }
     ]
   },
   "bookingPending": {
-    "id": "6ad8f903ad2a35d9171d6385",
+    "id": "6adb49ce03a3a0caa555f265",
     "status": "pending_payment",
     "isTrial": false,
     "price": {
@@ -329,19 +439,23 @@
       "status": "unpaid",
       "method": "mock",
       "paidAt": null,
+      "clientPackageId": null,
       "refundedAt": null
     },
-    "expiresAt": "2026-10-21T17:55:19.089Z",
-    "startAt": "2026-10-28T11:00:00.000Z",
-    "endAt": "2026-10-28T12:00:00.000Z",
+    "expiresAt": "2026-10-23T12:04:34.588Z",
+    "startAt": "2026-10-30T11:00:00.000Z",
+    "endAt": "2026-10-30T12:00:00.000Z",
     "seriesId": null,
     "cancellable": true,
-    "cancelDeadline": "2026-10-27T11:00:00.000Z",
+    "reschedulable": true,
+    "rescheduledAt": null,
+    "cancelDeadline": "2026-10-29T11:00:00.000Z",
     "cancelledAt": null,
     "cancelledBy": null,
     "cancelReason": null,
     "session": {
-      "id": "6ad8f903ad2a35d9171d6382",
+      "id": "6adb49ce03a3a0caa555f262",
+      "sessionTypeId": "6adb49c48e120d4d6239a10b",
       "title": "1:1 Strength Session",
       "kind": "individual",
       "location": {
@@ -357,19 +471,19 @@
       "participantsCount": 1
     },
     "coach": {
-      "id": "6ad8f8f9ae15ad411e7f0b03",
+      "id": "6adb49c48e120d4d6239a108",
       "firstName": "Alex",
       "lastName": "Carter",
       "avatarUrl": "https://i.pravatar.cc/300?img=12"
     },
     "client": {
-      "id": "6ad8f8f9ae15ad411e7f0b37",
+      "id": "6adb49c48e120d4d6239a13c",
       "firstName": "Jamie",
       "lastName": "Lee",
       "avatarUrl": "https://i.pravatar.cc/300?img=32"
     },
     "notesCount": 0,
-    "createdAt": "2026-10-21T17:40:19.090Z"
+    "createdAt": "2026-10-23T11:49:34.589Z"
   },
   "errorSlotUnavailable": {
     "error": {
@@ -384,7 +498,7 @@
     }
   },
   "bookingConfirmed": {
-    "id": "6ad8f903ad2a35d9171d6385",
+    "id": "6adb49ce03a3a0caa555f265",
     "status": "confirmed",
     "isTrial": false,
     "price": {
@@ -394,20 +508,24 @@
     "payment": {
       "status": "paid",
       "method": "mock",
-      "paidAt": "2026-10-21T17:40:19.124Z",
+      "paidAt": "2026-10-23T11:49:34.624Z",
+      "clientPackageId": null,
       "refundedAt": null
     },
     "expiresAt": null,
-    "startAt": "2026-10-28T11:00:00.000Z",
-    "endAt": "2026-10-28T12:00:00.000Z",
+    "startAt": "2026-10-30T11:00:00.000Z",
+    "endAt": "2026-10-30T12:00:00.000Z",
     "seriesId": null,
     "cancellable": true,
-    "cancelDeadline": "2026-10-27T11:00:00.000Z",
+    "reschedulable": true,
+    "rescheduledAt": null,
+    "cancelDeadline": "2026-10-29T11:00:00.000Z",
     "cancelledAt": null,
     "cancelledBy": null,
     "cancelReason": null,
     "session": {
-      "id": "6ad8f903ad2a35d9171d6382",
+      "id": "6adb49ce03a3a0caa555f262",
+      "sessionTypeId": "6adb49c48e120d4d6239a10b",
       "title": "1:1 Strength Session",
       "kind": "individual",
       "location": {
@@ -423,24 +541,379 @@
       "participantsCount": 1
     },
     "coach": {
-      "id": "6ad8f8f9ae15ad411e7f0b03",
+      "id": "6adb49c48e120d4d6239a108",
       "firstName": "Alex",
       "lastName": "Carter",
       "avatarUrl": "https://i.pravatar.cc/300?img=12"
     },
     "client": {
-      "id": "6ad8f8f9ae15ad411e7f0b37",
+      "id": "6adb49c48e120d4d6239a13c",
       "firstName": "Jamie",
       "lastName": "Lee",
       "avatarUrl": "https://i.pravatar.cc/300?img=32"
     },
     "notesCount": 0,
-    "createdAt": "2026-10-21T17:40:19.090Z"
+    "createdAt": "2026-10-23T11:49:34.589Z"
+  },
+  "bookingRescheduled": {
+    "id": "6adb49ce03a3a0caa555f265",
+    "status": "confirmed",
+    "isTrial": false,
+    "price": {
+      "amountCents": 8500,
+      "currency": "USD"
+    },
+    "payment": {
+      "status": "paid",
+      "method": "mock",
+      "paidAt": "2026-10-23T11:49:34.624Z",
+      "clientPackageId": null,
+      "refundedAt": null
+    },
+    "expiresAt": null,
+    "startAt": "2026-10-31T16:00:00.000Z",
+    "endAt": "2026-10-31T17:00:00.000Z",
+    "seriesId": null,
+    "cancellable": true,
+    "reschedulable": true,
+    "rescheduledAt": "2026-10-23T11:49:34.650Z",
+    "cancelDeadline": "2026-10-30T16:00:00.000Z",
+    "cancelledAt": null,
+    "cancelledBy": null,
+    "cancelReason": null,
+    "session": {
+      "id": "6adb49ce03a3a0caa555f262",
+      "sessionTypeId": "6adb49c48e120d4d6239a10b",
+      "title": "1:1 Strength Session",
+      "kind": "individual",
+      "location": {
+        "name": "Iron Loop Gym",
+        "address": "216 W Ohio St, Chicago, IL 60654",
+        "city": "Chicago",
+        "state": "IL",
+        "country": "US",
+        "lat": 41.8925,
+        "lng": -87.6347
+      },
+      "capacity": 1,
+      "participantsCount": 1
+    },
+    "coach": {
+      "id": "6adb49c48e120d4d6239a108",
+      "firstName": "Alex",
+      "lastName": "Carter",
+      "avatarUrl": "https://i.pravatar.cc/300?img=12"
+    },
+    "client": {
+      "id": "6adb49c48e120d4d6239a13c",
+      "firstName": "Jamie",
+      "lastName": "Lee",
+      "avatarUrl": "https://i.pravatar.cc/300?img=32"
+    },
+    "notesCount": 0,
+    "createdAt": "2026-10-23T11:49:34.589Z"
+  },
+  "progress": {
+    "totals": {
+      "completed": 21,
+      "thisMonth": 9,
+      "coaches": 3
+    },
+    "goal": {
+      "trainingsPerWeek": 3
+    },
+    "thisWeek": {
+      "weekStart": "2026-10-19",
+      "completed": 2,
+      "planned": 2
+    },
+    "streakWeeks": 3,
+    "weekly": [
+      {
+        "weekStart": "2026-08-03",
+        "completed": 0
+      },
+      {
+        "weekStart": "2026-08-10",
+        "completed": 0
+      }
+    ]
+  },
+  "measurements": {
+    "items": [
+      {
+        "id": "6adb49cb8e120d4d6239af28",
+        "type": "waist",
+        "value": 33.8,
+        "unit": "in",
+        "measuredAt": "2026-10-20",
+        "note": null,
+        "createdAt": "2026-10-23T11:49:31.480Z"
+      },
+      {
+        "id": "6adb49cb8e120d4d6239af27",
+        "type": "weight",
+        "value": 181.9,
+        "unit": "lb",
+        "measuredAt": "2026-10-20",
+        "note": null,
+        "createdAt": "2026-10-23T11:49:31.479Z"
+      }
+    ]
+  },
+  "measurement": {
+    "id": "6adb49ce03a3a0caa555f268",
+    "type": "weight",
+    "value": 181.6,
+    "unit": "lb",
+    "measuredAt": "2026-10-23",
+    "note": null,
+    "createdAt": "2026-10-23T11:49:34.684Z"
+  },
+  "coachClientProgress": {
+    "totals": {
+      "completed": 4,
+      "thisMonth": 4,
+      "coaches": 1
+    },
+    "goal": {
+      "trainingsPerWeek": 3
+    },
+    "thisWeek": {
+      "weekStart": "2026-10-19",
+      "completed": 2,
+      "planned": 2
+    },
+    "streakWeeks": 3,
+    "weekly": [
+      {
+        "weekStart": "2026-08-31",
+        "completed": 0
+      },
+      {
+        "weekStart": "2026-09-07",
+        "completed": 0
+      }
+    ],
+    "measurements": {
+      "latest": {
+        "weight": {
+          "id": "6adb49ce03a3a0caa555f268",
+          "type": "weight",
+          "value": 181.6,
+          "unit": "lb",
+          "measuredAt": "2026-10-23",
+          "note": null,
+          "createdAt": "2026-10-23T11:49:34.684Z"
+        },
+        "body_fat": null,
+        "waist": {
+          "id": "6adb49cb8e120d4d6239af28",
+          "type": "waist",
+          "value": 33.8,
+          "unit": "in",
+          "measuredAt": "2026-10-20",
+          "note": null,
+          "createdAt": "2026-10-23T11:49:31.480Z"
+        }
+      }
+    }
+  },
+  "favorites": {
+    "items": [
+      {
+        "id": "6adb49c48e120d4d6239a108",
+        "firstName": "Alex",
+        "lastName": "Carter",
+        "avatarUrl": "https://i.pravatar.cc/300?img=12",
+        "headline": "Strength & conditioning coach for busy professionals",
+        "specializations": ["strength", "hiit", "mobility"],
+        "experienceYears": 9,
+        "rating": {
+          "average": 5,
+          "count": 11
+        },
+        "homeArea": {
+          "city": "Chicago",
+          "state": "IL",
+          "country": "US",
+          "timezone": "America/Chicago"
+        },
+        "priceFrom": {
+          "amountCents": 2500,
+          "currency": "USD"
+        },
+        "kinds": ["group", "individual"],
+        "isFavorite": true
+      },
+      {
+        "id": "6adb49c48e120d4d6239a10e",
+        "firstName": "Maya",
+        "lastName": "Patel",
+        "avatarUrl": "https://i.pravatar.cc/300?img=47",
+        "headline": "Vinyasa & mobility yoga, on the lakefront and in your living room",
+        "specializations": ["yoga", "mobility"],
+        "experienceYears": 7,
+        "rating": {
+          "average": 5,
+          "count": 11
+        },
+        "homeArea": {
+          "city": "Chicago",
+          "state": "IL",
+          "country": "US",
+          "timezone": "America/Chicago"
+        },
+        "priceFrom": {
+          "amountCents": 1800,
+          "currency": "USD"
+        },
+        "kinds": ["group", "individual"],
+        "isFavorite": true
+      }
+    ]
+  },
+  "myPackages": {
+    "items": [
+      {
+        "id": "6adb49cb8e120d4d6239af3b",
+        "packageId": "6adb49cb8e120d4d6239af29",
+        "title": "10 sessions",
+        "coach": {
+          "id": "6adb49c48e120d4d6239a108",
+          "firstName": "Alex",
+          "lastName": "Carter",
+          "avatarUrl": "https://i.pravatar.cc/300?img=12"
+        },
+        "creditsTotal": 10,
+        "creditsLeft": 7,
+        "price": {
+          "amountCents": 76500,
+          "currency": "USD"
+        },
+        "purchasedAt": "2026-10-03T11:49:24.145Z",
+        "expiresAt": "2027-01-01T11:49:24.145Z",
+        "expired": false
+      }
+    ],
+    "creditsAvailable": 7
+  },
+  "coachPackages": {
+    "items": [
+      {
+        "id": "6adb49cb8e120d4d6239af2a",
+        "title": "5 sessions",
+        "credits": 5,
+        "price": {
+          "amountCents": 40500,
+          "currency": "USD"
+        },
+        "validityDays": 60,
+        "isActive": true,
+        "pricePerCredit": {
+          "amountCents": 8100,
+          "currency": "USD"
+        }
+      },
+      {
+        "id": "6adb49cb8e120d4d6239af29",
+        "title": "10 sessions",
+        "credits": 10,
+        "price": {
+          "amountCents": 76500,
+          "currency": "USD"
+        },
+        "validityDays": 90,
+        "isActive": true,
+        "pricePerCredit": {
+          "amountCents": 7650,
+          "currency": "USD"
+        }
+      }
+    ]
+  },
+  "clientPackage": {
+    "id": "6adb49ce03a3a0caa555f269",
+    "packageId": "6adb49cb8e120d4d6239af2a",
+    "title": "5 sessions",
+    "coach": {
+      "id": "6adb49c48e120d4d6239a108",
+      "firstName": "Alex",
+      "lastName": "Carter",
+      "avatarUrl": "https://i.pravatar.cc/300?img=12"
+    },
+    "creditsTotal": 5,
+    "creditsLeft": 5,
+    "price": {
+      "amountCents": 40500,
+      "currency": "USD"
+    },
+    "purchasedAt": "2026-10-23T11:49:34.770Z",
+    "expiresAt": "2026-12-22T11:49:34.770Z",
+    "expired": false
+  },
+  "bookingWithCredits": {
+    "id": "6adb49ce03a3a0caa555f26d",
+    "status": "confirmed",
+    "isTrial": false,
+    "price": {
+      "amountCents": 8500,
+      "currency": "USD"
+    },
+    "payment": {
+      "status": "paid",
+      "method": "credits",
+      "paidAt": "2026-10-23T11:49:34.788Z",
+      "clientPackageId": "6adb49ce03a3a0caa555f269",
+      "refundedAt": null
+    },
+    "expiresAt": null,
+    "startAt": "2026-10-30T11:30:00.000Z",
+    "endAt": "2026-10-30T12:30:00.000Z",
+    "seriesId": null,
+    "cancellable": true,
+    "reschedulable": true,
+    "rescheduledAt": null,
+    "cancelDeadline": "2026-10-29T11:30:00.000Z",
+    "cancelledAt": null,
+    "cancelledBy": null,
+    "cancelReason": null,
+    "session": {
+      "id": "6adb49ce03a3a0caa555f26a",
+      "sessionTypeId": "6adb49c48e120d4d6239a10b",
+      "title": "1:1 Strength Session",
+      "kind": "individual",
+      "location": {
+        "name": "Iron Loop Gym",
+        "address": "216 W Ohio St, Chicago, IL 60654",
+        "city": "Chicago",
+        "state": "IL",
+        "country": "US",
+        "lat": 41.8925,
+        "lng": -87.6347
+      },
+      "capacity": 1,
+      "participantsCount": 1
+    },
+    "coach": {
+      "id": "6adb49c48e120d4d6239a108",
+      "firstName": "Alex",
+      "lastName": "Carter",
+      "avatarUrl": "https://i.pravatar.cc/300?img=12"
+    },
+    "client": {
+      "id": "6adb49c48e120d4d6239a13c",
+      "firstName": "Jamie",
+      "lastName": "Lee",
+      "avatarUrl": "https://i.pravatar.cc/300?img=32"
+    },
+    "notesCount": 0,
+    "createdAt": "2026-10-23T11:49:34.789Z"
   },
   "calendarEvent": {
     "title": "1:1 Strength Session with Alex Carter",
-    "startAt": "2026-10-28T11:00:00.000Z",
-    "endAt": "2026-10-28T12:00:00.000Z",
+    "startAt": "2026-10-31T16:00:00.000Z",
+    "endAt": "2026-10-31T17:00:00.000Z",
     "timezone": "America/Chicago",
     "location": {
       "name": "Iron Loop Gym",
@@ -448,220 +921,62 @@
       "lat": 41.8925,
       "lng": -87.6347
     },
-    "notes": "FitBook training with Alex Carter.\nFree cancellation up to 24h before the start.\nBooking: 6ad8f903ad2a35d9171d6385"
+    "notes": "FitBook training with Alex Carter.\nFree cancellation up to 24h before the start.\nBooking: 6adb49ce03a3a0caa555f265"
   },
   "note": {
-    "id": "6ad8f903ad2a35d9171d6386",
-    "bookingId": "6ad8f903ad2a35d9171d6385",
+    "id": "6adb49ce03a3a0caa555f26e",
+    "bookingId": "6adb49ce03a3a0caa555f265",
     "phase": "before",
     "text": "Please focus on hip mobility today.",
     "author": {
-      "id": "6ad8f8f9ae15ad411e7f0b37",
+      "id": "6adb49c48e120d4d6239a13c",
       "role": "client",
       "firstName": "Jamie",
       "lastName": "Lee"
     },
     "lastEditedBy": {
-      "id": "6ad8f8f9ae15ad411e7f0b37",
+      "id": "6adb49c48e120d4d6239a13c",
       "role": "client"
     },
-    "createdAt": "2026-10-21T17:40:19.146Z",
-    "updatedAt": "2026-10-21T17:40:19.146Z"
+    "createdAt": "2026-10-23T11:49:34.808Z",
+    "updatedAt": "2026-10-23T11:49:34.808Z"
   },
   "seriesPreview": {
     "items": [
       {
-        "date": "2026-10-29",
-        "startAt": "2026-10-29T23:00:00.000Z",
-        "endAt": "2026-10-30T00:00:00.000Z",
+        "date": "2026-10-31",
+        "startAt": "2026-10-31T23:00:00.000Z",
+        "endAt": "2026-11-01T00:00:00.000Z",
         "available": false,
         "reason": "EXCEPTION"
       },
       {
-        "date": "2026-11-05",
-        "startAt": "2026-11-06T00:00:00.000Z",
-        "endAt": "2026-11-06T01:00:00.000Z",
-        "available": true
+        "date": "2026-11-07",
+        "startAt": "2026-11-08T00:00:00.000Z",
+        "endAt": "2026-11-08T01:00:00.000Z",
+        "available": false,
+        "reason": "UNAVAILABLE"
       }
     ]
   },
   "seriesResult": {
-    "seriesId": "6ad8f903ad2a35d9171d6387",
-    "bookings": [
-      {
-        "id": "6ad8f903ad2a35d9171d638b",
-        "status": "pending_payment",
-        "isTrial": false,
-        "price": {
-          "amountCents": 8500,
-          "currency": "USD"
-        },
-        "payment": {
-          "status": "unpaid",
-          "method": "mock",
-          "paidAt": null,
-          "refundedAt": null
-        },
-        "expiresAt": "2026-10-21T17:55:19.262Z",
-        "startAt": "2026-11-06T00:00:00.000Z",
-        "endAt": "2026-11-06T01:00:00.000Z",
-        "seriesId": "6ad8f903ad2a35d9171d6387",
-        "cancellable": true,
-        "cancelDeadline": "2026-11-05T00:00:00.000Z",
-        "cancelledAt": null,
-        "cancelledBy": null,
-        "cancelReason": null,
-        "session": {
-          "id": "6ad8f903ad2a35d9171d6388",
-          "title": "1:1 Strength Session",
-          "kind": "individual",
-          "location": {
-            "name": "Iron Loop Gym",
-            "address": "216 W Ohio St, Chicago, IL 60654",
-            "city": "Chicago",
-            "state": "IL",
-            "country": "US",
-            "lat": 41.8925,
-            "lng": -87.6347
-          },
-          "capacity": 1,
-          "participantsCount": 1
-        },
-        "coach": {
-          "id": "6ad8f8f9ae15ad411e7f0b03",
-          "firstName": "Alex",
-          "lastName": "Carter",
-          "avatarUrl": "https://i.pravatar.cc/300?img=12"
-        },
-        "client": {
-          "id": "6ad8f8f9ae15ad411e7f0b37",
-          "firstName": "Jamie",
-          "lastName": "Lee",
-          "avatarUrl": "https://i.pravatar.cc/300?img=32"
-        },
-        "notesCount": 0,
-        "createdAt": "2026-10-21T17:40:19.263Z"
-      },
-      {
-        "id": "6ad8f903ad2a35d9171d638f",
-        "status": "pending_payment",
-        "isTrial": false,
-        "price": {
-          "amountCents": 8500,
-          "currency": "USD"
-        },
-        "payment": {
-          "status": "unpaid",
-          "method": "mock",
-          "paidAt": null,
-          "refundedAt": null
-        },
-        "expiresAt": "2026-10-21T17:55:19.280Z",
-        "startAt": "2026-11-13T00:00:00.000Z",
-        "endAt": "2026-11-13T01:00:00.000Z",
-        "seriesId": "6ad8f903ad2a35d9171d6387",
-        "cancellable": true,
-        "cancelDeadline": "2026-11-12T00:00:00.000Z",
-        "cancelledAt": null,
-        "cancelledBy": null,
-        "cancelReason": null,
-        "session": {
-          "id": "6ad8f903ad2a35d9171d638c",
-          "title": "1:1 Strength Session",
-          "kind": "individual",
-          "location": {
-            "name": "Iron Loop Gym",
-            "address": "216 W Ohio St, Chicago, IL 60654",
-            "city": "Chicago",
-            "state": "IL",
-            "country": "US",
-            "lat": 41.8925,
-            "lng": -87.6347
-          },
-          "capacity": 1,
-          "participantsCount": 1
-        },
-        "coach": {
-          "id": "6ad8f8f9ae15ad411e7f0b03",
-          "firstName": "Alex",
-          "lastName": "Carter",
-          "avatarUrl": "https://i.pravatar.cc/300?img=12"
-        },
-        "client": {
-          "id": "6ad8f8f9ae15ad411e7f0b37",
-          "firstName": "Jamie",
-          "lastName": "Lee",
-          "avatarUrl": "https://i.pravatar.cc/300?img=32"
-        },
-        "notesCount": 0,
-        "createdAt": "2026-10-21T17:40:19.281Z"
-      }
-    ],
+    "seriesId": "6adb49ce03a3a0caa555f26f",
+    "bookings": [],
     "skipped": [
       {
-        "date": "2026-10-29",
+        "date": "2026-10-31",
         "reason": "EXCEPTION"
+      },
+      {
+        "date": "2026-11-07",
+        "reason": "UNAVAILABLE"
       }
     ]
   },
   "bookingList": {
     "items": [
       {
-        "id": "6ad8f8f9ae15ad411e7f0b62",
-        "status": "confirmed",
-        "isTrial": false,
-        "price": {
-          "amountCents": 8500,
-          "currency": "USD"
-        },
-        "payment": {
-          "status": "paid",
-          "method": "mock",
-          "paidAt": "2026-10-14T12:00:00.000Z",
-          "refundedAt": null
-        },
-        "expiresAt": null,
-        "startAt": "2026-10-22T12:00:00.000Z",
-        "endAt": "2026-10-22T13:00:00.000Z",
-        "seriesId": "6ad8f8f9ae15ad411e7f0b52",
-        "cancellable": false,
-        "cancelDeadline": "2026-10-21T12:00:00.000Z",
-        "cancelledAt": null,
-        "cancelledBy": null,
-        "cancelReason": null,
-        "session": {
-          "id": "6ad8f8f9ae15ad411e7f0b5f",
-          "title": "1:1 Strength Session",
-          "kind": "individual",
-          "location": {
-            "name": "Iron Loop Gym",
-            "address": "216 W Ohio St, Chicago, IL 60654",
-            "city": "Chicago",
-            "state": "IL",
-            "country": "US",
-            "lat": 41.8925,
-            "lng": -87.6347
-          },
-          "capacity": 1,
-          "participantsCount": 0
-        },
-        "coach": {
-          "id": "6ad8f8f9ae15ad411e7f0b03",
-          "firstName": "Alex",
-          "lastName": "Carter",
-          "avatarUrl": "https://i.pravatar.cc/300?img=12"
-        },
-        "client": {
-          "id": "6ad8f8f9ae15ad411e7f0b37",
-          "firstName": "Jamie",
-          "lastName": "Lee",
-          "avatarUrl": "https://i.pravatar.cc/300?img=32"
-        },
-        "notesCount": 1,
-        "createdAt": "2026-10-21T17:40:09.304Z"
-      },
-      {
-        "id": "6ad8f8f9ae15ad411e7f0cfe",
+        "id": "6adb49c58e120d4d6239a306",
         "status": "confirmed",
         "isTrial": false,
         "price": {
@@ -672,19 +987,23 @@
           "status": "paid",
           "method": "mock",
           "paidAt": "2026-10-15T17:00:00.000Z",
+          "clientPackageId": null,
           "refundedAt": null
         },
         "expiresAt": null,
         "startAt": "2026-10-23T17:00:00.000Z",
         "endAt": "2026-10-23T18:00:00.000Z",
         "seriesId": null,
-        "cancellable": true,
+        "cancellable": false,
+        "reschedulable": false,
+        "rescheduledAt": null,
         "cancelDeadline": "2026-10-22T17:00:00.000Z",
         "cancelledAt": null,
         "cancelledBy": null,
         "cancelReason": null,
         "session": {
-          "id": "6ad8f8f9ae15ad411e7f0bb9",
+          "id": "6adb49c58e120d4d6239a1bd",
+          "sessionTypeId": "6adb49c48e120d4d6239a10d",
           "title": "Lunchtime Strength Circuit",
           "kind": "group",
           "location": {
@@ -697,67 +1016,126 @@
             "lng": -87.6347
           },
           "capacity": 8,
-          "participantsCount": 7
+          "participantsCount": 6
         },
         "coach": {
-          "id": "6ad8f8f9ae15ad411e7f0b03",
+          "id": "6adb49c48e120d4d6239a108",
           "firstName": "Alex",
           "lastName": "Carter",
           "avatarUrl": "https://i.pravatar.cc/300?img=12"
         },
         "client": {
-          "id": "6ad8f8f9ae15ad411e7f0b37",
+          "id": "6adb49c48e120d4d6239a13c",
           "firstName": "Jamie",
           "lastName": "Lee",
           "avatarUrl": "https://i.pravatar.cc/300?img=32"
         },
         "notesCount": 0,
-        "createdAt": "2026-10-21T17:40:09.820Z"
+        "createdAt": "2026-10-23T11:49:25.588Z"
+      },
+      {
+        "id": "6adb49c58e120d4d6239a308",
+        "status": "confirmed",
+        "isTrial": false,
+        "price": {
+          "amountCents": 1800,
+          "currency": "USD"
+        },
+        "payment": {
+          "status": "paid",
+          "method": "mock",
+          "paidAt": "2026-10-14T12:00:00.000Z",
+          "clientPackageId": null,
+          "refundedAt": null
+        },
+        "expiresAt": null,
+        "startAt": "2026-10-24T12:00:00.000Z",
+        "endAt": "2026-10-24T13:00:00.000Z",
+        "seriesId": null,
+        "cancellable": true,
+        "reschedulable": true,
+        "rescheduledAt": null,
+        "cancelDeadline": "2026-10-24T00:00:00.000Z",
+        "cancelledAt": null,
+        "cancelledBy": null,
+        "cancelReason": null,
+        "session": {
+          "id": "6adb49c58e120d4d6239a1ea",
+          "sessionTypeId": "6adb49c48e120d4d6239a112",
+          "title": "Sunrise Beach Yoga",
+          "kind": "group",
+          "location": {
+            "name": "North Avenue Beach",
+            "address": "1600 N Lake Shore Dr, Chicago, IL 60613",
+            "city": "Chicago",
+            "state": "IL",
+            "country": "US",
+            "lat": 41.9118,
+            "lng": -87.6262,
+            "comment": "Next to lifeguard tower 4"
+          },
+          "capacity": 15,
+          "participantsCount": 15
+        },
+        "coach": {
+          "id": "6adb49c48e120d4d6239a10e",
+          "firstName": "Maya",
+          "lastName": "Patel",
+          "avatarUrl": "https://i.pravatar.cc/300?img=47"
+        },
+        "client": {
+          "id": "6adb49c48e120d4d6239a13c",
+          "firstName": "Jamie",
+          "lastName": "Lee",
+          "avatarUrl": "https://i.pravatar.cc/300?img=32"
+        },
+        "notesCount": 0,
+        "createdAt": "2026-10-23T11:49:25.596Z"
       }
     ],
     "page": 1,
     "pageSize": 5,
-    "total": 16
+    "total": 14
   },
   "notes": {
     "before": [
       {
-        "id": "6ad8f8f9ae15ad411e7f0b87",
-        "bookingId": "6ad8f8f9ae15ad411e7f0b5e",
+        "id": "6adb49c58e120d4d6239a18e",
+        "bookingId": "6adb49c58e120d4d6239a167",
         "phase": "before",
-        "text": "Can we work on my squat depth today?",
+        "text": "Running a 10K on Sunday - nothing too heavy on the legs please.",
         "author": {
-          "id": "6ad8f8f9ae15ad411e7f0b37",
+          "id": "6adb49c48e120d4d6239a13c",
           "role": "client",
           "firstName": "Jamie",
           "lastName": "Lee"
         },
         "lastEditedBy": {
-          "id": "6ad8f8f9ae15ad411e7f0b37",
+          "id": "6adb49c48e120d4d6239a13c",
           "role": "client"
         },
-        "createdAt": "2026-10-19T16:00:00.000Z",
-        "updatedAt": "2026-10-19T16:00:00.000Z"
+        "createdAt": "2026-10-21T16:00:00.000Z",
+        "updatedAt": "2026-10-21T16:00:00.000Z"
       }
     ],
     "after": [
       {
-        "id": "6ad8f8f9ae15ad411e7f0b88",
-        "bookingId": "6ad8f8f9ae15ad411e7f0b5e",
+        "id": "6adb49c58e120d4d6239a18f",
+        "bookingId": "6adb49c58e120d4d6239a167",
         "phase": "after",
-        "text": "Good effort. Remember: shoulders down and back during presses.",
+        "text": "You hit a new personal best today. Rest well and hydrate.",
         "author": {
-          "id": "6ad8f8f9ae15ad411e7f0b03",
+          "id": "6adb49c48e120d4d6239a108",
           "role": "coach",
           "firstName": "Alex",
           "lastName": "Carter"
         },
         "lastEditedBy": {
-          "id": "6ad8f8f9ae15ad411e7f0b03",
+          "id": "6adb49c48e120d4d6239a108",
           "role": "coach"
         },
-        "createdAt": "2026-10-20T14:00:00.000Z",
-        "updatedAt": "2026-10-20T14:00:00.000Z"
+        "createdAt": "2026-10-22T14:00:00.000Z",
+        "updatedAt": "2026-10-22T14:00:00.000Z"
       }
     ]
   },
@@ -767,12 +1145,12 @@
       "message": "It is too late to cancel this training.",
       "details": {
         "freeCancelHours": 24,
-        "deadline": "2026-10-21T12:00:00.000Z"
+        "deadline": "2026-10-22T17:00:00.000Z"
       }
     }
   },
   "bookingCancelled": {
-    "id": "6ad8f903ad2a35d9171d6385",
+    "id": "6adb49ce03a3a0caa555f265",
     "status": "cancelled",
     "isTrial": false,
     "price": {
@@ -782,20 +1160,24 @@
     "payment": {
       "status": "refunded",
       "method": "mock",
-      "paidAt": "2026-10-21T17:40:19.124Z",
-      "refundedAt": "2026-10-21T17:40:19.367Z"
+      "paidAt": "2026-10-23T11:49:34.624Z",
+      "clientPackageId": null,
+      "refundedAt": "2026-10-23T11:49:34.945Z"
     },
     "expiresAt": null,
-    "startAt": "2026-10-28T11:00:00.000Z",
-    "endAt": "2026-10-28T12:00:00.000Z",
+    "startAt": "2026-10-31T16:00:00.000Z",
+    "endAt": "2026-10-31T17:00:00.000Z",
     "seriesId": null,
     "cancellable": false,
+    "reschedulable": false,
+    "rescheduledAt": "2026-10-23T11:49:34.650Z",
     "cancelDeadline": null,
-    "cancelledAt": "2026-10-21T17:40:19.367Z",
+    "cancelledAt": "2026-10-23T11:49:34.945Z",
     "cancelledBy": "client",
     "cancelReason": "Schedule change",
     "session": {
-      "id": "6ad8f903ad2a35d9171d6382",
+      "id": "6adb49ce03a3a0caa555f262",
+      "sessionTypeId": "6adb49c48e120d4d6239a10b",
       "title": "1:1 Strength Session",
       "kind": "individual",
       "location": {
@@ -811,94 +1193,94 @@
       "participantsCount": 1
     },
     "coach": {
-      "id": "6ad8f8f9ae15ad411e7f0b03",
+      "id": "6adb49c48e120d4d6239a108",
       "firstName": "Alex",
       "lastName": "Carter",
       "avatarUrl": "https://i.pravatar.cc/300?img=12"
     },
     "client": {
-      "id": "6ad8f8f9ae15ad411e7f0b37",
+      "id": "6adb49c48e120d4d6239a13c",
       "firstName": "Jamie",
       "lastName": "Lee",
       "avatarUrl": "https://i.pravatar.cc/300?img=32"
     },
     "notesCount": 1,
-    "createdAt": "2026-10-21T17:40:19.090Z"
+    "createdAt": "2026-10-23T11:49:34.589Z"
   },
   "conversations": {
     "items": [
       {
-        "id": "6ad8f900ae15ad411e7f1873",
-        "coachId": "6ad8f8f9ae15ad411e7f0b13",
-        "clientId": "6ad8f8f9ae15ad411e7f0b37",
+        "id": "6adb49cb8e120d4d6239afbc",
+        "coachId": "6adb49c48e120d4d6239a118",
+        "clientId": "6adb49c48e120d4d6239a13c",
         "participant": {
-          "id": "6ad8f8f9ae15ad411e7f0b13",
+          "id": "6adb49c48e120d4d6239a118",
           "firstName": "Sofia",
           "lastName": "Alvarez",
           "avatarUrl": "https://i.pravatar.cc/300?img=44"
         },
         "lastMessage": {
           "text": "I will add it to our notes after the session.",
-          "senderId": "6ad8f8f9ae15ad411e7f0b13",
-          "createdAt": "2026-10-17T23:24:08.255Z"
+          "senderId": "6adb49c48e120d4d6239a118",
+          "createdAt": "2026-10-19T17:35:24.145Z"
         },
         "unreadCount": 1,
-        "lastActivityAt": "2026-10-17T23:24:08.255Z"
+        "lastActivityAt": "2026-10-19T17:35:24.145Z"
       },
       {
-        "id": "6ad8f8ffae15ad411e7f185e",
-        "coachId": "6ad8f8f9ae15ad411e7f0b03",
-        "clientId": "6ad8f8f9ae15ad411e7f0b37",
+        "id": "6adb49cb8e120d4d6239afa7",
+        "coachId": "6adb49c48e120d4d6239a108",
+        "clientId": "6adb49c48e120d4d6239a13c",
         "participant": {
-          "id": "6ad8f8f9ae15ad411e7f0b03",
+          "id": "6adb49c48e120d4d6239a108",
           "firstName": "Alex",
           "lastName": "Carter",
           "avatarUrl": "https://i.pravatar.cc/300?img=12"
         },
         "lastMessage": {
           "text": "Got it, see you at 6.",
-          "senderId": "6ad8f8f9ae15ad411e7f0b03",
-          "createdAt": "2026-10-09T07:28:08.255Z"
+          "senderId": "6adb49c48e120d4d6239a108",
+          "createdAt": "2026-10-10T23:43:24.145Z"
         },
         "unreadCount": 1,
-        "lastActivityAt": "2026-10-09T07:28:08.255Z"
+        "lastActivityAt": "2026-10-10T23:43:24.145Z"
       }
     ]
   },
   "messages": {
     "items": [
       {
-        "id": "6ad8f900ae15ad411e7f1879",
-        "conversationId": "6ad8f900ae15ad411e7f1873",
-        "senderId": "6ad8f8f9ae15ad411e7f0b13",
+        "id": "6adb49cb8e120d4d6239afc2",
+        "conversationId": "6adb49cb8e120d4d6239afbc",
+        "senderId": "6adb49c48e120d4d6239a118",
         "senderRole": "coach",
         "text": "I will add it to our notes after the session.",
-        "createdAt": "2026-10-17T23:24:08.255Z",
+        "createdAt": "2026-10-19T17:35:24.145Z",
         "readAt": null
       },
       {
-        "id": "6ad8f900ae15ad411e7f1878",
-        "conversationId": "6ad8f900ae15ad411e7f1873",
-        "senderId": "6ad8f8f9ae15ad411e7f0b37",
+        "id": "6adb49cb8e120d4d6239afc1",
+        "conversationId": "6adb49cb8e120d4d6239afbc",
+        "senderId": "6adb49c48e120d4d6239a13c",
         "senderRole": "client",
         "text": "Can you also send me a stretching routine?",
-        "createdAt": "2026-10-17T22:55:08.255Z",
-        "readAt": "2026-10-17T23:00:08.255Z"
+        "createdAt": "2026-10-19T16:23:24.145Z",
+        "readAt": "2026-10-19T16:28:24.145Z"
       }
     ],
-    "nextCursor": "6ad8f900ae15ad411e7f1877"
+    "nextCursor": "6adb49cb8e120d4d6239afc0"
   },
   "message": {
-    "id": "6ad8f903ad2a35d9171d6390",
-    "conversationId": "6ad8f900ae15ad411e7f1873",
-    "senderId": "6ad8f8f9ae15ad411e7f0b37",
+    "id": "6adb49ce03a3a0caa555f270",
+    "conversationId": "6adb49cb8e120d4d6239afbc",
+    "senderId": "6adb49c48e120d4d6239a13c",
     "senderRole": "client",
     "text": "See you tomorrow!",
-    "createdAt": "2026-10-21T17:40:19.404Z",
+    "createdAt": "2026-10-23T11:49:34.989Z",
     "readAt": null
   },
   "coachProfile": {
-    "userId": "6ad8f8f9ae15ad411e7f0b03",
+    "userId": "6adb49c48e120d4d6239a108",
     "headline": "Strength & conditioning coach for busy professionals",
     "bio": "I help people with full calendars get strong, move without pain and actually enjoy training. Every program starts with a movement assessment, then we build simple, progressive sessions around your schedule.\n\nBefore coaching full time I competed in powerlifting and worked with a Division I track team, so I care a lot about technique and smart progression.",
     "specializations": ["strength", "hiit", "mobility"],
@@ -934,8 +1316,8 @@
       "freeCancelHours": 24
     },
     "rating": {
-      "average": 4.9,
-      "count": 142
+      "average": 5,
+      "count": 11
     },
     "isPublished": true,
     "completeness": {
@@ -946,8 +1328,8 @@
   "sessionTypes": {
     "items": [
       {
-        "id": "6ad8f8f9ae15ad411e7f0b06",
-        "coachId": "6ad8f8f9ae15ad411e7f0b03",
+        "id": "6adb49c48e120d4d6239a10b",
+        "coachId": "6adb49c48e120d4d6239a108",
         "title": "1:1 Strength Session",
         "kind": "individual",
         "durationMin": 60,
@@ -961,8 +1343,8 @@
         "isActive": true
       },
       {
-        "id": "6ad8f8f9ae15ad411e7f0b07",
-        "coachId": "6ad8f8f9ae15ad411e7f0b03",
+        "id": "6adb49c48e120d4d6239a10c",
+        "coachId": "6adb49c48e120d4d6239a108",
         "title": "1:1 Strength + Mobility (90 min)",
         "kind": "individual",
         "durationMin": 90,
@@ -993,7 +1375,7 @@
     ],
     "exceptions": [
       {
-        "date": "2026-10-29",
+        "date": "2026-10-31",
         "start": "16:00",
         "end": "20:00",
         "reason": "Physio appointment"
@@ -1004,19 +1386,19 @@
     "items": [
       {
         "session": {
-          "id": "6ad8f8f9ae15ad411e7f0b5f",
-          "coachId": "6ad8f8f9ae15ad411e7f0b03",
-          "sessionTypeId": "6ad8f8f9ae15ad411e7f0b06",
-          "kind": "individual",
-          "title": "1:1 Strength Session",
-          "startAt": "2026-10-22T12:00:00.000Z",
-          "endAt": "2026-10-22T13:00:00.000Z",
+          "id": "6adb49c58e120d4d6239a1bd",
+          "coachId": "6adb49c48e120d4d6239a108",
+          "sessionTypeId": "6adb49c48e120d4d6239a10d",
+          "kind": "group",
+          "title": "Lunchtime Strength Circuit",
+          "startAt": "2026-10-23T17:00:00.000Z",
+          "endAt": "2026-10-23T18:00:00.000Z",
           "durationMin": 60,
-          "capacity": 1,
-          "participantsCount": 0,
-          "spotsLeft": 1,
+          "capacity": 8,
+          "participantsCount": 6,
+          "spotsLeft": 2,
           "price": {
-            "amountCents": 8500,
+            "amountCents": 2500,
             "currency": "USD"
           },
           "location": {
@@ -1033,28 +1415,40 @@
         },
         "participants": [
           {
-            "bookingId": "6ad8f8f9ae15ad411e7f0b62",
+            "bookingId": "6adb49c58e120d4d6239a306",
             "status": "confirmed",
             "isTrial": false,
             "client": {
-              "id": "6ad8f8f9ae15ad411e7f0b37",
+              "id": "6adb49c48e120d4d6239a13c",
               "firstName": "Jamie",
               "lastName": "Lee",
               "avatarUrl": "https://i.pravatar.cc/300?img=32"
             },
-            "notesCount": 1
+            "notesCount": 0
+          },
+          {
+            "bookingId": "6adb49c68e120d4d6239a392",
+            "status": "confirmed",
+            "isTrial": false,
+            "client": {
+              "id": "6adb49c58e120d4d6239a142",
+              "firstName": "Sophia",
+              "lastName": "Martinez",
+              "avatarUrl": "https://i.pravatar.cc/300?img=16"
+            },
+            "notesCount": 0
           }
         ]
       },
       {
         "session": {
-          "id": "6ad8f8feae15ad411e7f12c8",
-          "coachId": "6ad8f8f9ae15ad411e7f0b03",
-          "sessionTypeId": "6ad8f8f9ae15ad411e7f0b06",
+          "id": "6adb49c98e120d4d6239a8ea",
+          "coachId": "6adb49c48e120d4d6239a108",
+          "sessionTypeId": "6adb49c48e120d4d6239a10b",
           "kind": "individual",
           "title": "1:1 Strength Session",
-          "startAt": "2026-10-22T22:00:00.000Z",
-          "endAt": "2026-10-22T23:00:00.000Z",
+          "startAt": "2026-10-24T15:00:00.000Z",
+          "endAt": "2026-10-24T16:00:00.000Z",
           "durationMin": 60,
           "capacity": 1,
           "participantsCount": 0,
@@ -1077,14 +1471,14 @@
         },
         "participants": [
           {
-            "bookingId": "6ad8f8feae15ad411e7f12cb",
+            "bookingId": "6adb49c98e120d4d6239a8ed",
             "status": "confirmed",
             "isTrial": false,
             "client": {
-              "id": "6ad8f8f9ae15ad411e7f0b43",
-              "firstName": "Grace",
-              "lastName": "Harris",
-              "avatarUrl": "https://i.pravatar.cc/300?img=24"
+              "id": "6adb49c58e120d4d6239a141",
+              "firstName": "Noah",
+              "lastName": "Wilson",
+              "avatarUrl": "https://i.pravatar.cc/300?img=14"
             },
             "notesCount": 0
           }
@@ -1095,20 +1489,20 @@
   "coachClients": {
     "items": [
       {
-        "id": "6ad8f8f9ae15ad411e7f0b37",
+        "id": "6adb49c48e120d4d6239a13c",
         "firstName": "Jamie",
         "lastName": "Lee",
         "avatarUrl": "https://i.pravatar.cc/300?img=32",
-        "totalBookings": 15,
+        "totalBookings": 14,
         "lastBookingAt": "2026-11-19T13:00:00.000Z"
       },
       {
-        "id": "6ad8f8f9ae15ad411e7f0b41",
-        "firstName": "Chloe",
-        "lastName": "Jackson",
-        "avatarUrl": "https://i.pravatar.cc/300?img=23",
-        "totalBookings": 13,
-        "lastBookingAt": "2026-11-11T14:00:00.000Z"
+        "id": "6adb49c58e120d4d6239a140",
+        "firstName": "Mia",
+        "lastName": "Garcia",
+        "avatarUrl": "https://i.pravatar.cc/300?img=9",
+        "totalBookings": 12,
+        "lastBookingAt": "2026-11-06T18:00:00.000Z"
       }
     ]
   },
