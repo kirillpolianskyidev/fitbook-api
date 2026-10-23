@@ -72,6 +72,7 @@ export const CoachCardSchema = z
     homeArea: HomeAreaSchema,
     priceFrom: MoneySchema.nullable(),
     kinds: z.array(SessionKindSchema),
+    isFavorite: z.boolean().meta({description: 'In my favorites (always false for coaches)'}),
   })
   .meta({id: 'CoachCard'});
 
@@ -92,6 +93,7 @@ export const CoachListQuery = z.object({
   city: z.string().trim().max(80).optional(),
   state: z.string().trim().length(2).toUpperCase().optional(),
   kind: SessionKindSchema.optional(),
+  favorites: z.stringbool().optional().meta({description: 'true: only my favorite coaches'}),
   page: z.coerce.number().int().min(1).default(1),
   pageSize: z.coerce.number().int().min(1).max(50).default(20),
 });

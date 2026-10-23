@@ -390,6 +390,12 @@ client's `POST /bookings` turns the hold into the seat; others get `SESSION_FULL
 `heldCount` on the session). Expired / left offers pass on; started or cancelled sessions expire all entries. The state
 is updated on writes, lazily on reads and by a job every minute. Socket.IO `waitlist:offered { entry }`.
 
+### Favorites
+
+`favorites { clientId, coachId, createdAt }` unique `(clientId, coachId)`. `PUT|DELETE /me/favorites/:coachId`
+(idempotent, 204; PUT needs a published coach), `GET /me/favorites` (newest first). `isFavorite` on every coach card
+/ profile for clients; `GET /coaches?favorites=true` filter. Bookings expose `session.sessionTypeId` for "Book again".
+
 ### Reviews
 
 `reviews { coachId, clientId, rating 1..5, text|null, createdAt, updatedAt }`, unique `(coachId, clientId)`. Creating

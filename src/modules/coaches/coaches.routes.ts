@@ -33,7 +33,7 @@ route({
   params: IdParams,
   response: CoachDetailsSchema,
   errors: ['NOT_FOUND'],
-  handler: ({params}) => service.getCoachDetails(params.id),
+  handler: ({user, params}) => service.getCoachDetails(params.id, user),
 });
 
 route({

@@ -26,6 +26,7 @@ import {
   ReviewModel,
   ClientPackageModel,
   PackageModel,
+  FavoriteModel,
 } from '../models/index.js';
 import {refreshCoachRating} from '../modules/reviews/reviews.service.js';
 import {createLockedSession} from '../modules/sessions/sessions.service.js';
@@ -625,6 +626,10 @@ async function main() {
     purchase.creditsLeft = 10 - paidWithCredits.length;
     await purchase.save();
   }
+
+  // --- Favorites: Jamie's two regular coaches ---------------------------------------------------
+  await FavoriteModel.create({clientId: jamie._id, coachId: maya.user._id});
+  await FavoriteModel.create({clientId: jamie._id, coachId: alex.user._id});
 
   // --- Reviews: one per client who completed a training with the coach (most of them) ------------
   const completed = await BookingModel.find({status: 'completed'})

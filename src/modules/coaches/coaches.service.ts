@@ -2,10 +2,11 @@ import type {Types} from 'mongoose';
 import type {z} from 'zod';
 
 import {toLocationDto} from '../../lib/dto.js';
-import {AppError} from '../../lib/errors.js';
+import {AppError, isDuplicateKeyError} from '../../lib/errors.js';
 import type {HomeArea, Location} from '../../lib/schemas.js';
 import {AvailabilityModel} from '../../models/availability.js';
 import {CoachProfileModel, type CoachProfileDoc} from '../../models/coachProfile.js';
+import {FavoriteModel} from '../../models/favorite.js';
 import {SessionTypeModel} from '../../models/sessionType.js';
 import {TrainingSessionModel} from '../../models/trainingSession.js';
 import {UserModel, type UserDoc} from '../../models/user.js';
@@ -111,7 +112,14 @@ type UserLean = {
   homeArea?: HomeArea | null;
 };
 
-function toCoachCard(profile: CoachProfileDoc, user: UserLean): CoachCard {
+/** Ids of the viewer's favorite coaches (clients only). */
+export async function favoriteCoachIds(viewer: UserDoc) {
+  if (viewer.role !== 'client') return new Set<string>();
+  const favorites = await FavoriteModel.find({clientId: viewer._id}).select('coachId').lean();
+  return new Set(favorites.map(f => f.coachId.toString()));
+}
+
+function toCoachCard(profile: CoachProfileDoc, user: UserLean, isFavorite = false): CoachCard {
   return {
     id: user._id.toString(),
     firstName: user.firstName,
@@ -132,6 +140,7 @@ function toCoachCard(profile: CoachProfileDoc, user: UserLean): CoachCard {
         ? null
         : {amountCents: profile.priceFromCents, currency: 'USD'},
     kinds: profile.kinds as ('individual' | 'group')[],
+    isFavorite,
   };
 }
 
@@ -143,6 +152,8 @@ const escapeRegex = (value: string) => value.replace(/[.*+?^${}()|[\]\\]/g, '\\$
  */
 export async function listCoaches(viewer: UserDoc, query: z.infer<typeof CoachListQuery>) {
   const filter: Record<string, unknown> = {isPublished: true};
+  const favorites = await favoriteCoachIds(viewer);
+  if (query.favorites) filter.userId = {$in: [...favorites]};
   if (query.specialization) filter.specializations = query.specialization;
   if (query.state) filter.state = query.state;
   if (query.city) filter.city = new RegExp(`^${escapeRegex(query.city)}$`, 'i');
@@ -197,7 +208,9 @@ export async function listCoaches(viewer: UserDoc, query: z.infer<typeof CoachLi
   const items = profiles
     .map(profile => {
       const user = byId.get(profile.userId.toString());
-      return user?.homeArea ? toCoachCard(profile, user) : null;
+      return user?.homeArea
+        ? toCoachCard(profile, user, favorites.has(profile.userId.toString()))
+        : null;
     })
     .filter((card): card is CoachCard => card !== null);
   return {items, page: query.page, pageSize: query.pageSize, total};
@@ -214,14 +227,54 @@ async function getPublishedCoach(coachId: string) {
   return {profile, user: user as unknown as UserLean};
 }
 
-export async function getCoachDetails(coachId: string) {
+/** Favorite coaches of the client (published ones), most recently added first. */
+export async function listFavoriteCoaches(client: UserDoc) {
+  const favorites = await FavoriteModel.find({clientId: client._id})
+    .sort({createdAt: -1, _id: -1})
+    .lean();
+  const ids = favorites.map(f => f.coachId);
+  const [profiles, users] = await Promise.all([
+    CoachProfileModel.find({userId: {$in: ids}, isPublished: true}),
+    UserModel.find({_id: {$in: ids}, role: 'coach'}).lean(),
+  ]);
+  const profileById = new Map(profiles.map(p => [p.userId.toString(), p]));
+  const userById = new Map(users.map(u => [u._id.toString(), u as unknown as UserLean]));
+  const items: CoachCard[] = [];
+  for (const id of ids) {
+    const profile = profileById.get(id.toString());
+    const user = userById.get(id.toString());
+    if (profile && user?.homeArea) items.push(toCoachCard(profile, user, true));
+  }
+  return {items};
+}
+
+/** Adds a favorite (idempotent). Only published coaches. */
+export async function addFavorite(client: UserDoc, coachId: string) {
+  await getPublishedCoach(coachId);
+  try {
+    await FavoriteModel.updateOne(
+      {clientId: client._id, coachId},
+      {$setOnInsert: {clientId: client._id, coachId}},
+      {upsert: true},
+    );
+  } catch (error) {
+    if (!isDuplicateKeyError(error)) throw error; // a parallel PUT inserted it
+  }
+}
+
+export async function removeFavorite(client: UserDoc, coachId: string) {
+  await FavoriteModel.deleteOne({clientId: client._id, coachId});
+}
+
+export async function getCoachDetails(coachId: string, viewer: UserDoc) {
   const {profile, user} = await getPublishedCoach(coachId);
   const [types, packages] = await Promise.all([
     SessionTypeModel.find({coachId, isActive: true}).sort({kind: 1, 'price.amountCents': 1}),
     listActivePackages(coachId),
   ]);
+  const favorites = await favoriteCoachIds(viewer);
   return {
-    ...toCoachCard(profile, user),
+    ...toCoachCard(profile, user, favorites.has(coachId)),
     bio: profile.bio ?? '',
     certifications: certificationsOf(profile),
     highlights: profile.highlights,

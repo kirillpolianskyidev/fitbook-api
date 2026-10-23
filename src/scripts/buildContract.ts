@@ -238,7 +238,19 @@ ${example('bookingWithCredits', 'Example: POST /bookings with useCredits')}
 - \`GET /me/waitlist\` -> \`{ items }\` with \`waiting\` and \`offered\` entries (offers first). Socket.IO
   \`waitlist:offered { entry }\` is sent to the client who got an offer (show an in-app notification).
 
-## 4c. Reviews
+## 4c. Favorites and "Book again"
+
+- \`PUT /me/favorites/:coachId\` / \`DELETE /me/favorites/:coachId\` (both 204, idempotent; unknown or unpublished
+  coach -> \`NOT_FOUND\`). \`GET /me/favorites\` -> \`{ items: CoachCard[] }\`, most recently added first.
+- Every coach object (\`GET /coaches\` items, \`GET /coaches/:id\`, favorites) has \`isFavorite\` (false for
+  coaches). Catalog filter: \`GET /coaches?favorites=true\` (same paging).
+- "Book again": a past booking has \`coach.id\` and \`session.sessionTypeId\` -> open the slots of that type
+  (\`GET /coaches/:id/slots?sessionTypeId\`). If the type was deactivated the slots call returns
+  \`SESSION_TYPE_INACTIVE\` / \`NOT_FOUND\`.
+
+${example('favorites', 'Example: GET /me/favorites')}
+
+## 4d. Reviews
 
 - One review per client per coach (\`rating\` 1-5, optional \`text\` up to 1000 characters; empty -> \`null\`).
   \`GET /coaches/:id/my-review\` -> \`{ review, canCreate, editableUntil }\`: show "Write a review" when

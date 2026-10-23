@@ -267,6 +267,8 @@ async function main() {
     200,
     'bookingRescheduled',
   );
+  await step('my favorites', () => api().get(`${v1}/me/favorites`).set(client), 200, 'favorites');
+  await step('add favorite', () => api().put(`${v1}/me/favorites/${coachId}`).set(client), 204);
   await step('my packages', () => api().get(`${v1}/me/packages`).set(client), 200, 'myPackages');
   await step(
     'coach packages',
