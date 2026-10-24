@@ -5,6 +5,7 @@ import {
   CancellationPolicySchema,
   CoachCardSchema,
   CoachDetailsSchema,
+  CoachFiltersSchema,
   CoachListQuery,
   CoachProfileSchema,
   PublishBody,
@@ -22,6 +23,16 @@ route({
   query: CoachListQuery,
   response: pageOf(CoachCardSchema),
   handler: ({user, query}) => service.listCoaches(user, query),
+});
+
+route({
+  method: 'get',
+  path: '/coaches/filters',
+  tags: ['Coaches'],
+  summary: 'Values for the catalog filters: languages of published coaches and the price range',
+  auth: 'user',
+  response: CoachFiltersSchema,
+  handler: () => service.catalogFilters(),
 });
 
 route({

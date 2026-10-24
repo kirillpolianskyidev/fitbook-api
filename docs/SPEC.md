@@ -440,6 +440,14 @@ taken dates stay; the pattern is updated; none movable -> `RESCHEDULE_WINDOW_PAS
 (from `extendFrom` = Monday after the last training; `canExtend` = active type and upcoming bookings or last training
 ended <= 14 days ago, else `SERIES_NOT_EXTENDABLE`). `bookingSeries.format` stores the format.
 
+### Catalog filters
+
+`GET /coaches`: `priceMin/priceMax` (an active type in range), `timeOfDay` (free time in the next 14 days in the
+viewer's zone), `trial`, `language`, `sort` (recommended | rating | price_asc | price_desc | next_available). Free
+times (individual slots of active types, group sessions with places) are cached per coach for 5 minutes and
+invalidated on every slot / seat / working-hours / training-type change. `nextAvailableAt`, `languages` on coach
+cards; `GET /coaches/filters`.
+
 ### Completion
 
 Job every 10 minutes: sessions whose `endAt < now` -> `completed`; their `confirmed` bookings -> `completed`.

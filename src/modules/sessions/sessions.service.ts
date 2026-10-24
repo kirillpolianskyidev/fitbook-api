@@ -1,5 +1,6 @@
 import type {Types} from 'mongoose';
 
+import {invalidateAvailability} from '../../lib/availabilityCache.js';
 import {toLocationDto, toMoneyDto} from '../../lib/dto.js';
 import {AppError, isDuplicateKeyError} from '../../lib/errors.js';
 import {BOOKING_LEAD_MINUTES, computeSlots} from '../../lib/slots.js';
@@ -109,6 +110,7 @@ export async function lockSession(session: TrainingSessionDoc) {
     slotStart,
     sessionId: session._id,
   }));
+  invalidateAvailability(session.coachId);
   try {
     await SlotLockModel.insertMany(docs, {ordered: true});
   } catch (error) {
@@ -126,16 +128,26 @@ export async function syncSeatCounts(sessionId: Types.ObjectId) {
     SeatLockModel.countDocuments({sessionId, hold: {$ne: true}}),
     SeatLockModel.countDocuments({sessionId, hold: true}),
   ]);
-  await TrainingSessionModel.updateOne({_id: sessionId}, {$set: {participantsCount, heldCount}});
+  const session = await TrainingSessionModel.findOneAndUpdate(
+    {_id: sessionId},
+    {$set: {participantsCount, heldCount}},
+    {projection: {coachId: 1}},
+  );
+  invalidateAvailability(session?.coachId);
 }
 
-export const unlockSession = (sessionId: Types.ObjectId) => SlotLockModel.deleteMany({sessionId});
+export async function unlockSession(sessionId: Types.ObjectId) {
+  const lock = await SlotLockModel.findOne({sessionId}).select('coachId').lean();
+  await SlotLockModel.deleteMany({sessionId});
+  invalidateAvailability(lock?.coachId);
+}
 
 /**
  * Moves an individual session to a new time. Blocks the session already holds are kept, new ones are inserted
  * (unique index -> SLOT_UNAVAILABLE, rolled back), and blocks it no longer needs are released.
  */
 export async function moveLockedSession(session: TrainingSessionDoc, startAt: Date, endAt: Date) {
+  invalidateAvailability(session.coachId);
   const held = new Set(slotBlocks(session.startAt, session.endAt).map(d => d.getTime()));
   const wanted = slotBlocks(startAt, endAt);
   const added = wanted.filter(d => !held.has(d.getTime()));

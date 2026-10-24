@@ -1,5 +1,6 @@
 import type {Types} from 'mongoose';
 
+import {invalidateAvailability} from '../../lib/availabilityCache.js';
 import {toLocationDto, toMoneyDto} from '../../lib/dto.js';
 import {AppError} from '../../lib/errors.js';
 import type {Location, Money} from '../../lib/schemas.js';
@@ -43,6 +44,7 @@ export async function refreshCoachCatalogFields(coachId: Types.ObjectId | string
   const kinds = [...new Set(types.map(t => t.kind))].sort();
   const formats = offeredFormats(types.map(t => t.format));
   await CoachProfileModel.updateOne({userId: coachId}, {priceFromCents, kinds, formats});
+  invalidateAvailability(coachId);
 }
 
 /** online / both need online trainings turned on in the profile. */

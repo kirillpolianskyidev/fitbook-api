@@ -88,6 +88,11 @@ export const CoachCardSchema = z
     homeArea: HomeAreaSchema,
     priceFrom: MoneySchema.nullable(),
     kinds: z.array(SessionKindSchema),
+    languages: z.array(z.string()),
+    nextAvailableAt: z.string().nullable().meta({
+      description:
+        'Earliest free time in the next 14 days: individual slot (any active type), or a free group place for coaches with only group types',
+    }),
     formats: z.array(TrainingFormatSchema).meta({
       description: 'Formats the coach offers (from active training types; "both" gives both)',
     }),
@@ -113,7 +118,45 @@ export const CoachListQuery = z.object({
   state: z.string().trim().length(2).toUpperCase().optional(),
   kind: SessionKindSchema.optional(),
   format: TrainingFormatSchema.optional().meta({description: 'Coaches offering this format'}),
+  priceMin: z.coerce
+    .number()
+    .int()
+    .min(0)
+    .optional()
+    .meta({description: 'Cents: an active type costs at least this'}),
+  priceMax: z.coerce
+    .number()
+    .int()
+    .min(0)
+    .optional()
+    .meta({description: 'Cents: an active type costs at most this'}),
+  timeOfDay: z
+    .string()
+    .regex(
+      /^(morning|afternoon|evening)(,(morning|afternoon|evening))*$/,
+      'morning, afternoon, evening',
+    )
+    .optional()
+    .meta({
+      description:
+        "Comma list. Free time in the next 14 days in the viewer's time zone: morning 05-12, afternoon 12-17, evening 17-23",
+    }),
+  trial: z
+    .stringbool()
+    .optional()
+    .meta({description: 'true: coaches with an active individual type'}),
+  language: z.string().trim().min(1).max(40).optional().meta({description: 'Case-insensitive'}),
+  sort: z
+    .enum(['recommended', 'rating', 'price_asc', 'price_desc', 'next_available'])
+    .default('recommended'),
   favorites: z.stringbool().optional().meta({description: 'true: only my favorite coaches'}),
   page: z.coerce.number().int().min(1).default(1),
   pageSize: z.coerce.number().int().min(1).max(50).default(20),
 });
+
+export const CoachFiltersSchema = z
+  .object({
+    languages: z.array(z.string()),
+    price: z.object({min: MoneySchema.nullable(), max: MoneySchema.nullable()}),
+  })
+  .meta({id: 'CoachFilters'});

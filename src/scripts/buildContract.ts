@@ -221,6 +221,21 @@ or \`system\`), or \`no_show\` (the coach marked that the client did not come; s
 ${example('bookingPending', 'Example: new booking (pending payment)')}
 ${example('seriesPreview', 'Example: series preview')}
 
+## 3a. Catalog: filters, sorting, next available
+
+- \`GET /coaches\` filters (all combine): \`search\`, \`specialization\`, \`kind\`, \`state\`, \`city\`, \`favorites\`,
+  \`format\`, \`priceMin\` / \`priceMax\` (cents: an active type in the range), \`timeOfDay=morning,afternoon,evening\`
+  (free individual slot or group place in the next 14 days starting in that part of the day in the viewer's time
+  zone: morning 05:00-11:59, afternoon 12:00-16:59, evening 17:00-22:59), \`trial=true\` (has an active individual
+  type), \`language\` (case-insensitive). \`sort\`: \`recommended\` (default: my state first, then rating),
+  \`rating\`, \`price_asc\`, \`price_desc\` (by \`priceFrom\`), \`next_available\` (\`null\` last). \`total\` counts
+  the filtered coaches; paging follows the sort.
+- Coach objects (catalog, profile, favorites) have \`nextAvailableAt\` (earliest free individual slot in the next 14
+  days; for group-only coaches the earliest free group place; \`null\` if none) and \`languages\`.
+- \`GET /coaches/filters\` -> \`{ languages, price { min, max } }\` for the filter screen.
+
+${example('coachFilters', 'Example: GET /coaches/filters')}
+
 ## 3b. Online trainings
 
 - Coach profile: \`online { enabled, meetingUrl }\` (\`PUT /coach/profile\`; enabling needs an https

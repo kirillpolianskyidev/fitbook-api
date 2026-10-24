@@ -559,6 +559,19 @@
               "$ref": "#/components/schemas/SessionKind"
             }
           },
+          "languages": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "nextAvailableAt": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Earliest free time in the next 14 days: individual slot (any active type), or a free group place for coaches with only group types"
+          },
           "formats": {
             "type": "array",
             "items": {
@@ -583,6 +596,8 @@
           "homeArea",
           "priceFrom",
           "kinds",
+          "languages",
+          "nextAvailableAt",
           "formats",
           "isFavorite"
         ]
@@ -654,6 +669,36 @@
           "online"
         ]
       },
+      "CoachFilters": {
+        "type": "object",
+        "properties": {
+          "languages": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "price": {
+            "type": "object",
+            "properties": {
+              "min": {
+                "$ref": "#/components/schemas/Money"
+              },
+              "max": {
+                "$ref": "#/components/schemas/Money"
+              }
+            },
+            "required": [
+              "min",
+              "max"
+            ]
+          }
+        },
+        "required": [
+          "languages",
+          "price"
+        ]
+      },
       "CoachDetails": {
         "type": "object",
         "properties": {
@@ -699,6 +744,19 @@
               "$ref": "#/components/schemas/SessionKind"
             }
           },
+          "languages": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "nextAvailableAt": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Earliest free time in the next 14 days: individual slot (any active type), or a free group place for coaches with only group types"
+          },
           "formats": {
             "type": "array",
             "items": {
@@ -720,12 +778,6 @@
             }
           },
           "highlights": {
-            "type": "array",
-            "items": {
-              "type": "string"
-            }
-          },
-          "languages": {
             "type": "array",
             "items": {
               "type": "string"
@@ -763,12 +815,13 @@
           "homeArea",
           "priceFrom",
           "kinds",
+          "languages",
+          "nextAvailableAt",
           "formats",
           "isFavorite",
           "bio",
           "certifications",
           "highlights",
-          "languages",
           "defaultLocation",
           "cancellationPolicy",
           "sessionTypes",
@@ -4713,6 +4766,83 @@
           },
           {
             "schema": {
+              "type": [
+                "integer",
+                "null"
+              ],
+              "minimum": 0,
+              "description": "Cents: an active type costs at least this"
+            },
+            "required": false,
+            "description": "Cents: an active type costs at least this",
+            "name": "priceMin",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": [
+                "integer",
+                "null"
+              ],
+              "minimum": 0,
+              "description": "Cents: an active type costs at most this"
+            },
+            "required": false,
+            "description": "Cents: an active type costs at most this",
+            "name": "priceMax",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "pattern": "^(morning|afternoon|evening)(,(morning|afternoon|evening))*$",
+              "description": "Comma list. Free time in the next 14 days in the viewer's time zone: morning 05-12, afternoon 12-17, evening 17-23"
+            },
+            "required": false,
+            "description": "Comma list. Free time in the next 14 days in the viewer's time zone: morning 05-12, afternoon 12-17, evening 17-23",
+            "name": "timeOfDay",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "description": "true: coaches with an active individual type"
+            },
+            "required": false,
+            "description": "true: coaches with an active individual type",
+            "name": "trial",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 40,
+              "description": "Case-insensitive"
+            },
+            "required": false,
+            "description": "Case-insensitive",
+            "name": "language",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "enum": [
+                "recommended",
+                "rating",
+                "price_asc",
+                "price_desc",
+                "next_available"
+              ],
+              "default": "recommended"
+            },
+            "required": false,
+            "name": "sort",
+            "in": "query"
+          },
+          {
+            "schema": {
               "type": "string",
               "description": "true: only my favorite coaches"
             },
@@ -4773,6 +4903,52 @@
                     "pageSize",
                     "total"
                   ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "VALIDATION_ERROR",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED, TOKEN_EXPIRED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/coaches/filters": {
+      "get": {
+        "tags": [
+          "Coaches"
+        ],
+        "summary": "Values for the catalog filters: languages of published coaches and the price range",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "x-auth": "user",
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CoachFilters"
                 }
               }
             }

@@ -155,6 +155,17 @@ async function main() {
     () => api().get(`${v1}/coaches?specialization=yoga`).set(client),
     200,
   );
+  await step(
+    'catalog filters values',
+    () => api().get(`${v1}/coaches/filters`).set(client),
+    200,
+    'coachFilters',
+  );
+  await step(
+    'catalog: morning, next available first',
+    () => api().get(`${v1}/coaches?timeOfDay=morning&sort=next_available&pageSize=3`).set(client),
+    200,
+  );
   const details = await step(
     'coach details',
     () => api().get(`${v1}/coaches/${coachId}`).set(client),
