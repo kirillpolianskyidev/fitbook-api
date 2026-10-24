@@ -10,11 +10,18 @@ const bookingSchema = new Schema(
     seriesId: {type: Schema.Types.ObjectId, ref: 'BookingSeries', default: null},
     status: {
       type: String,
-      enum: ['pending_payment', 'confirmed', 'cancelled', 'completed'],
+      enum: ['pending_payment', 'confirmed', 'cancelled', 'completed', 'no_show'],
       required: true,
     },
     isTrial: {type: Boolean, default: false},
+    // What the client pays (after a promo discount).
     price: {type: moneySchema, required: true},
+    // Price before the promo discount (null = same as price; bookings made before promo codes).
+    listPrice: {type: moneySchema, default: null},
+    promo: {
+      type: new Schema({code: String, discountCents: Number}, {_id: false}),
+      default: null,
+    },
     payment: {
       type: new Schema(
         {
@@ -40,6 +47,11 @@ const bookingSchema = new Schema(
     cancelledAt: Date,
     cancelledBy: {type: String, enum: ['coach', 'client', 'system']},
     cancelReason: String,
+    // Set by the coach when the client did not come (status no_show).
+    noShow: {
+      type: new Schema({markedAt: Date, refunded: Boolean}, {_id: false}),
+      default: null,
+    },
     // Last time the client moved the booking to another time / group session.
     rescheduledAt: {type: Date, default: null},
     // `${sessionId}:${clientId}` while the booking is active; removed ($unset) when cancelled,

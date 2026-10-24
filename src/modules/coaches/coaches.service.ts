@@ -10,7 +10,10 @@ import {FavoriteModel} from '../../models/favorite.js';
 import {SessionTypeModel} from '../../models/sessionType.js';
 import {TrainingSessionModel} from '../../models/trainingSession.js';
 import {UserModel, type UserDoc} from '../../models/user.js';
+import {DateTime} from 'luxon';
+
 import {listActivePackages, toPackageDto} from '../packages/packages.service.js';
+import {coachAvailability, TIME_OF_DAY, type TimeOfDay} from './coachAvailability.js';
 import {findSlots, toSessionDto} from '../sessions/sessions.service.js';
 import {toSessionTypeDto} from '../sessionTypes/sessionTypes.service.js';
 import {refreshWaitlists, waitlistInfo} from '../waitlist/waitlist.service.js';
@@ -32,6 +35,8 @@ export async function profileCompleteness(profile: CoachProfileDoc) {
   if (!profile.headline) missing.push('headline');
   if (!profile.bio || profile.bio.length < 40) missing.push('bio');
   if (!profile.specializations.length) missing.push('specializations');
+  // A place to train: a default location or online trainings.
+  if (!profile.defaultLocation && !profile.online?.enabled) missing.push('defaultLocation');
   const [activeTypes, availability] = await Promise.all([
     SessionTypeModel.countDocuments({coachId: profile.userId, isActive: true}),
     AvailabilityModel.findOne({coachId: profile.userId}).lean(),
@@ -59,6 +64,10 @@ export async function toCoachProfileDto(profile: CoachProfileDoc) {
     highlights: profile.highlights,
     languages: profile.languages,
     defaultLocation: toLocationDto(profile.defaultLocation),
+    online: {
+      enabled: Boolean(profile.online?.enabled),
+      meetingUrl: profile.online?.meetingUrl ?? null,
+    },
     cancellationPolicy: {freeCancelHours: profile.cancellationPolicy?.freeCancelHours ?? 24},
     rating: {average: profile.rating?.average ?? 0, count: profile.rating?.count ?? 0},
     isPublished: profile.isPublished,
@@ -75,7 +84,33 @@ export async function updateMyProfile(
   input: z.infer<typeof UpdateCoachProfileBody>,
 ) {
   const profile = await getOwnProfile(coach);
-  profile.set(input);
+  const {online, ...rest} = input;
+  if (online) {
+    const meetingUrl =
+      online.meetingUrl === undefined
+        ? (profile.online?.meetingUrl ?? null)
+        : online.meetingUrl || null;
+    if (meetingUrl !== null && (!/^https:\/\/\S+$/i.test(meetingUrl) || meetingUrl.length > 500)) {
+      throw new AppError('VALIDATION_ERROR', undefined, {
+        fields: {meetingUrl: 'Must be an https:// link up to 500 characters'},
+      });
+    }
+    if (online.enabled && !meetingUrl) {
+      throw new AppError('VALIDATION_ERROR', undefined, {
+        fields: {meetingUrl: 'A meeting link is required to turn on online trainings'},
+      });
+    }
+    if (!online.enabled && profile.online?.enabled) {
+      const onlineTypes = await SessionTypeModel.exists({
+        coachId: coach._id,
+        isActive: true,
+        format: {$in: ['online', 'both']},
+      });
+      if (onlineTypes) throw new AppError('ONLINE_TYPES_ACTIVE');
+    }
+    profile.set('online', {enabled: online.enabled, meetingUrl});
+  }
+  profile.set(rest);
   await profile.save();
   if (profile.isPublished && !(await profileCompleteness(profile)).complete) {
     profile.isPublished = false;
@@ -119,7 +154,12 @@ export async function favoriteCoachIds(viewer: UserDoc) {
   return new Set(favorites.map(f => f.coachId.toString()));
 }
 
-function toCoachCard(profile: CoachProfileDoc, user: UserLean, isFavorite = false): CoachCard {
+function toCoachCard(
+  profile: CoachProfileDoc,
+  user: UserLean,
+  isFavorite: boolean,
+  nextAvailableAt: Date | null,
+): CoachCard {
   return {
     id: user._id.toString(),
     firstName: user.firstName,
@@ -140,6 +180,18 @@ function toCoachCard(profile: CoachProfileDoc, user: UserLean, isFavorite = fals
         ? null
         : {amountCents: profile.priceFromCents, currency: 'USD'},
     kinds: profile.kinds as ('individual' | 'group')[],
+    languages: profile.languages,
+    location: profile.defaultLocation
+      ? {
+          lat: profile.defaultLocation.lat,
+          lng: profile.defaultLocation.lng,
+          name: profile.defaultLocation.name,
+          city: profile.defaultLocation.city,
+          state: profile.defaultLocation.state,
+        }
+      : null,
+    nextAvailableAt: nextAvailableAt?.toISOString() ?? null,
+    formats: (profile.formats ?? ['in_person']) as ('in_person' | 'online')[],
     isFavorite,
   };
 }
@@ -150,14 +202,74 @@ const escapeRegex = (value: string) => value.replace(/[.*+?^${}()|[\]\\]/g, '\\$
  * Published coaches with filters. Without an explicit state filter, coaches from the viewer's
  * state are listed first, each bucket sorted by rating.
  */
+/** Coach cards for profiles, in order, with favorites and next available time. */
+async function toCoachCards(profiles: CoachProfileDoc[], favorites: Set<string>) {
+  const users = await UserModel.find({_id: {$in: profiles.map(p => p.userId)}}).lean();
+  const byId = new Map(users.map(u => [u._id.toString(), u as unknown as UserLean]));
+  const cards = await Promise.all(
+    profiles.map(async profile => {
+      const user = byId.get(profile.userId.toString());
+      if (!user?.homeArea) return null;
+      const {nextAvailableAt} = await coachAvailability(profile.userId);
+      return toCoachCard(profile, user, favorites.has(profile.userId.toString()), nextAvailableAt);
+    }),
+  );
+  return cards.filter((card): card is CoachCard => card !== null);
+}
+
+/** Does the coach have free time starting in one of these parts of the day (viewer's time zone)? */
+function matchesTimeOfDay(starts: Date[], parts: TimeOfDay[], zone: string) {
+  return starts.some(start => {
+    const local = DateTime.fromJSDate(start, {zone});
+    const minutes = local.hour * 60 + local.minute;
+    return parts.some(part => minutes >= TIME_OF_DAY[part][0] && minutes < TIME_OF_DAY[part][1]);
+  });
+}
+
+const DB_SORTS = {
+  recommended: {'rating.average': -1, 'rating.count': -1, _id: 1},
+  rating: {'rating.average': -1, 'rating.count': -1, _id: 1},
+  price_asc: {priceFromCents: 1, _id: 1},
+  price_desc: {priceFromCents: -1, _id: 1},
+} as const;
+
+/**
+ * Published coaches with filters and sorting. "recommended": coaches from the viewer's state first (unless a
+ * state filter is given), each bucket by rating. Time-of-day filters and "next_available" need the coaches'
+ * free times, so they are evaluated in memory over all matching coaches.
+ */
 export async function listCoaches(viewer: UserDoc, query: z.infer<typeof CoachListQuery>) {
   const filter: Record<string, unknown> = {isPublished: true};
+  const and: Record<string, unknown>[] = [];
   const favorites = await favoriteCoachIds(viewer);
-  if (query.favorites) filter.userId = {$in: [...favorites]};
+  if (query.favorites) and.push({userId: {$in: [...favorites]}});
   if (query.specialization) filter.specializations = query.specialization;
   if (query.state) filter.state = query.state;
   if (query.city) filter.city = new RegExp(`^${escapeRegex(query.city)}$`, 'i');
   if (query.kind) filter.kinds = query.kind;
+  if (query.format) filter.formats = query.format;
+  if (query.bbox) {
+    filter['defaultLocation.lng'] = {$gte: query.bbox.minLng, $lte: query.bbox.maxLng};
+    filter['defaultLocation.lat'] = {$gte: query.bbox.minLat, $lte: query.bbox.maxLat};
+  }
+  if (query.language) filter.languages = new RegExp(`^${escapeRegex(query.language)}$`, 'i');
+  if (query.priceMin !== undefined || query.priceMax !== undefined) {
+    const coachIds = await SessionTypeModel.distinct('coachId', {
+      isActive: true,
+      'price.amountCents': {
+        ...(query.priceMin !== undefined && {$gte: query.priceMin}),
+        ...(query.priceMax !== undefined && {$lte: query.priceMax}),
+      },
+    });
+    and.push({userId: {$in: coachIds}});
+  }
+  if (query.trial) {
+    const coachIds = await SessionTypeModel.distinct('coachId', {
+      isActive: true,
+      kind: 'individual',
+    });
+    and.push({userId: {$in: coachIds}});
+  }
   if (query.search) {
     const pattern = new RegExp(escapeRegex(query.search), 'i');
     const users = await UserModel.find({
@@ -166,16 +278,55 @@ export async function listCoaches(viewer: UserDoc, query: z.infer<typeof CoachLi
     })
       .select('_id')
       .lean();
-    filter.$or = [{headline: pattern}, {userId: {$in: users.map(u => u._id)}}];
+    and.push({$or: [{headline: pattern}, {userId: {$in: users.map(u => u._id)}}]});
+  }
+  if (and.length) filter.$and = and;
+
+  const skip = (query.page - 1) * query.pageSize;
+  const page = (items: CoachCard[], total: number) => ({
+    items,
+    page: query.page,
+    pageSize: query.pageSize,
+    total,
+  });
+
+  // In memory: time-of-day filter and next-available sorting.
+  if (query.timeOfDay || query.sort === 'next_available') {
+    let profiles = await CoachProfileModel.find(filter).sort(DB_SORTS.recommended);
+    const availability = new Map(
+      await Promise.all(
+        profiles.map(async p => [p.userId.toString(), await coachAvailability(p.userId)] as const),
+      ),
+    );
+    if (query.timeOfDay) {
+      const parts = query.timeOfDay.split(',') as TimeOfDay[];
+      const zone = viewer.homeArea?.timezone ?? 'America/Chicago';
+      profiles = profiles.filter(p => {
+        const a = availability.get(p.userId.toString())!;
+        return matchesTimeOfDay([...a.individual, ...a.group], parts, zone);
+      });
+    }
+    if (query.sort === 'next_available') {
+      const at = (p: CoachProfileDoc) =>
+        availability.get(p.userId.toString())!.nextAvailableAt?.getTime() ?? Infinity;
+      profiles.sort((a, b) => at(a) - at(b) || a.id.localeCompare(b.id));
+    } else if (query.sort === 'price_asc' || query.sort === 'price_desc') {
+      const dir = query.sort === 'price_asc' ? 1 : -1;
+      profiles.sort(
+        (a, b) =>
+          dir * ((a.priceFromCents ?? Infinity) - (b.priceFromCents ?? Infinity)) ||
+          a.id.localeCompare(b.id),
+      );
+    }
+    const slice = profiles.slice(skip, skip + query.pageSize);
+    return page(await toCoachCards(slice, favorites), profiles.length);
   }
 
   const viewerState = viewer.homeArea?.state;
-  const sort = {'rating.average': -1 as const, 'rating.count': -1 as const, _id: 1 as const};
-  const skip = (query.page - 1) * query.pageSize;
+  const sort = DB_SORTS[query.sort as keyof typeof DB_SORTS];
   let profiles: CoachProfileDoc[];
   let total: number;
-
-  if (!query.state && viewerState) {
+  if (query.sort === 'recommended' && !query.state && viewerState) {
     const local = {...filter, state: viewerState};
     const other = {...filter, state: {$ne: viewerState}};
     const [localCount, otherCount] = await Promise.all([
@@ -202,18 +353,24 @@ export async function listCoaches(viewer: UserDoc, query: z.infer<typeof CoachLi
       CoachProfileModel.find(filter).sort(sort).skip(skip).limit(query.pageSize),
     ]);
   }
+  return page(await toCoachCards(profiles, favorites), total);
+}
 
-  const users = await UserModel.find({_id: {$in: profiles.map(p => p.userId)}}).lean();
-  const byId = new Map(users.map(u => [u._id.toString(), u as unknown as UserLean]));
-  const items = profiles
-    .map(profile => {
-      const user = byId.get(profile.userId.toString());
-      return user?.homeArea
-        ? toCoachCard(profile, user, favorites.has(profile.userId.toString()))
-        : null;
-    })
-    .filter((card): card is CoachCard => card !== null);
-  return {items, page: query.page, pageSize: query.pageSize, total};
+/** Values for the catalog filter screen. */
+export async function catalogFilters() {
+  const published = await CoachProfileModel.find({isPublished: true})
+    .select('userId languages')
+    .lean();
+  const languages = [...new Set(published.flatMap(p => p.languages ?? []))].sort((a, b) =>
+    a.localeCompare(b),
+  );
+  const [range] = await SessionTypeModel.aggregate<{min: number; max: number}>([
+    {$match: {isActive: true, coachId: {$in: published.map(p => p.userId)}}},
+    {$group: {_id: null, min: {$min: '$price.amountCents'}, max: {$max: '$price.amountCents'}}},
+  ]);
+  const money = (amountCents: number | undefined) =>
+    amountCents === undefined ? null : {amountCents, currency: 'USD' as const};
+  return {languages, price: {min: money(range?.min), max: money(range?.max)}};
 }
 
 async function getPublishedCoach(coachId: string) {
@@ -243,7 +400,10 @@ export async function listFavoriteCoaches(client: UserDoc) {
   for (const id of ids) {
     const profile = profileById.get(id.toString());
     const user = userById.get(id.toString());
-    if (profile && user?.homeArea) items.push(toCoachCard(profile, user, true));
+    if (profile && user?.homeArea) {
+      const {nextAvailableAt} = await coachAvailability(profile.userId);
+      items.push(toCoachCard(profile, user, true, nextAvailableAt));
+    }
   }
   return {items};
 }
@@ -274,7 +434,12 @@ export async function getCoachDetails(coachId: string, viewer: UserDoc) {
   ]);
   const favorites = await favoriteCoachIds(viewer);
   return {
-    ...toCoachCard(profile, user, favorites.has(coachId)),
+    ...toCoachCard(
+      profile,
+      user,
+      favorites.has(coachId),
+      (await coachAvailability(profile.userId)).nextAvailableAt,
+    ),
     bio: profile.bio ?? '',
     certifications: certificationsOf(profile),
     highlights: profile.highlights,

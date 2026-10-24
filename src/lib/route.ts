@@ -179,7 +179,7 @@ export function route<
         }
         responseStatus = next;
       },
-      body: parseOrThrow(config.body, req.body),
+      body: parseOrThrow(config.body, req.body ?? {}),
       query: parseOrThrow(config.query, req.query),
       params: parseOrThrow(config.params, req.params),
       req,

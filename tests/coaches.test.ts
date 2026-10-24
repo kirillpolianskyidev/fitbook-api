@@ -14,6 +14,7 @@ describe('coach profile', () => {
       'headline',
       'bio',
       'specializations',
+      'defaultLocation',
       'sessionTypes',
       'availability',
     ]);

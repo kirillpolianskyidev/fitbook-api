@@ -12,6 +12,7 @@ import {
 } from '../../models/package.js';
 import {UserModel, type UserDoc} from '../../models/user.js';
 import {toUserSummary} from '../users/users.service.js';
+import {discountOf, redeemPromo} from '../promos/promos.service.js';
 import type {CreatePackageBody, UpdatePackageBody} from './packages.schemas.js';
 
 const DAY_MS = 86_400_000;
@@ -95,6 +96,13 @@ async function toClientPackageDtos(purchases: ClientPackageDoc[]) {
       creditsTotal: p.creditsTotal,
       creditsLeft: p.creditsLeft,
       price: toMoneyDto(p.price),
+      listPrice: toMoneyDto(p.listPrice ?? p.price),
+      promo: p.promo?.code
+        ? {
+            code: p.promo.code,
+            discount: {amountCents: p.promo.discountCents ?? 0, currency: 'USD' as const},
+          }
+        : null,
       purchasedAt: p.purchasedAt.toISOString(),
       expiresAt: p.expiresAt.toISOString(),
       expired: p.expiresAt.getTime() <= now,
@@ -103,7 +111,7 @@ async function toClientPackageDtos(purchases: ClientPackageDoc[]) {
 }
 
 /** Mock payment: the package is paid immediately. */
-export async function purchasePackage(client: UserDoc, packageId: string) {
+export async function purchasePackage(client: UserDoc, packageId: string, promoCode?: string) {
   const pkg = await PackageModel.findById(packageId);
   if (!pkg || !(await CoachProfileModel.exists({userId: pkg.coachId, isPublished: true}))) {
     throw new AppError('NOT_FOUND', 'Package not found.');
@@ -111,18 +119,30 @@ export async function purchasePackage(client: UserDoc, packageId: string) {
   if (!pkg.isActive) {
     throw new AppError('PACKAGE_INACTIVE');
   }
+  const redemption = promoCode
+    ? await redeemPromo(client, pkg.coachId, promoCode, 'packages', 'package')
+    : null;
+  const discountCents = redemption ? discountOf(redemption.promo, pkg.price.amountCents) : 0;
   const purchasedAt = new Date();
-  const purchase = await ClientPackageModel.create({
-    clientId: client._id,
-    coachId: pkg.coachId,
-    packageId: pkg._id,
-    title: pkg.title,
-    creditsTotal: pkg.credits,
-    creditsLeft: pkg.credits,
-    price: pkg.price,
-    purchasedAt,
-    expiresAt: new Date(purchasedAt.getTime() + pkg.validityDays * DAY_MS),
-  });
+  let purchase: ClientPackageDoc;
+  try {
+    purchase = await ClientPackageModel.create({
+      clientId: client._id,
+      coachId: pkg.coachId,
+      packageId: pkg._id,
+      title: pkg.title,
+      creditsTotal: pkg.credits,
+      creditsLeft: pkg.credits,
+      price: {amountCents: pkg.price.amountCents - discountCents, currency: 'USD'},
+      listPrice: pkg.price,
+      promo: redemption ? {code: redemption.promo.code, discountCents} : null,
+      purchasedAt,
+      expiresAt: new Date(purchasedAt.getTime() + pkg.validityDays * DAY_MS),
+    });
+  } catch (error) {
+    await redemption?.release();
+    throw error;
+  }
   const [dto] = await toClientPackageDtos([purchase]);
   return dto!;
 }

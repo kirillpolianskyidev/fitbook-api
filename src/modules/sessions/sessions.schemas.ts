@@ -6,6 +6,7 @@ import {
   MoneySchema,
   objectId,
   SessionKindSchema,
+  TrainingFormatSchema,
 } from '../../lib/schemas.js';
 
 export const SessionStatusSchema = z
@@ -18,6 +19,7 @@ export const TrainingSessionSchema = z
     coachId: z.string(),
     sessionTypeId: z.string(),
     kind: SessionKindSchema,
+    format: TrainingFormatSchema,
     title: z.string(),
     startAt: z.string(),
     endAt: z.string(),

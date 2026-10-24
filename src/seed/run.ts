@@ -26,6 +26,8 @@ import {
   ReviewModel,
   ClientPackageModel,
   PackageModel,
+  PromoCodeModel,
+  AssignmentModel,
   FavoriteModel,
   MeasurementModel,
 } from '../models/index.js';
@@ -125,6 +127,7 @@ async function createCoach(seed: SeedCoach, passwordHash: string): Promise<Coach
     highlights: seed.highlights,
     languages: seed.languages,
     defaultLocation: seed.defaultLocation,
+    online: {enabled: Boolean(seed.meetingUrl), meetingUrl: seed.meetingUrl ?? null},
     cancellationPolicy: {freeCancelHours: seed.freeCancelHours},
     rating: seed.rating,
     isPublished: true,
@@ -154,6 +157,7 @@ async function createCoach(seed: SeedCoach, passwordHash: string): Promise<Coach
         coachId: user._id,
         title: t.title,
         kind: t.kind,
+        format: t.format ?? 'in_person',
         durationMin: t.durationMin,
         price: {amountCents: t.priceCents, currency: 'USD'},
         capacity: t.kind === 'individual' ? 1 : t.capacity,
@@ -171,6 +175,7 @@ async function createSession(
   coach: Coach,
   type: SessionTypeDoc,
   startAt: Date,
+  options: {format?: 'in_person' | 'online'} = {},
 ): Promise<TrainingSessionDoc | null> {
   const endAt = addMinutes(startAt, type.durationMin);
   try {
@@ -178,13 +183,17 @@ async function createSession(
       coachId: coach.user._id,
       sessionTypeId: type._id,
       kind: type.kind,
+      format: (options.format ?? type.format) === 'online' ? 'online' : 'in_person',
       title: type.title,
       startAt,
       endAt,
       capacity: type.capacity,
       participantsCount: 0,
       price: type.price,
-      location: type.location ?? coach.seed.defaultLocation,
+      location:
+        (options.format ?? type.format) === 'online'
+          ? null
+          : (type.location ?? coach.seed.defaultLocation),
       status: endAt <= now ? 'completed' : 'scheduled',
     });
   } catch {
@@ -684,6 +693,122 @@ async function main() {
     purchase.creditsLeft = 10 - paidWithCredits.length;
     await purchase.save();
   }
+
+  // --- Jamie: an upcoming online 1:1 with Alex ---------------------------------------------------
+  for (const [dayOffset, time] of [
+    [3, '17:00'],
+    [5, '18:00'],
+    [9, '17:00'],
+  ] as const) {
+    const session = await createSession(
+      alex,
+      alex.types.get('alex-1on1')!,
+      at(chicago, dayOffset, time),
+      {
+        format: 'online',
+      },
+    );
+    if (session && (await addBooking(session, jamie))) break;
+  }
+
+  // --- No-shows (Alex): one training yesterday that can still be marked, one past no-show ---------
+  const alexType = alex.types.get('alex-1on1')!;
+  const markable = clientsIn('IL')[5] ?? clientsIn('IL')[0]!;
+  for (const time of ['17:00', '18:00', '19:00', '20:00', '12:00']) {
+    const startAt = at(chicago, -1, time);
+    if (startAt > addMinutes(now, -120)) continue;
+    const session = await createSession(alex, alexType, startAt);
+    if (session && (await addBooking(session, markable))) break;
+  }
+  const noShowBooking = individualBookings
+    .filter(
+      b =>
+        b.coachId.equals(alex.user._id) &&
+        b.status === 'completed' &&
+        b.startAt < addMinutes(now, -5 * 1440) &&
+        !b.clientId.equals(jamie._id),
+    )
+    .sort((a, b) => +b.startAt - +a.startAt)[0];
+  if (noShowBooking) {
+    noShowBooking.status = 'no_show';
+    noShowBooking.noShow = {markedAt: addMinutes(noShowBooking.endAt, 30), refunded: false};
+    await noShowBooking.save();
+  }
+
+  // --- Promo codes: Alex has a welcome code for new clients and a $10 code for everybody ----------
+  await PromoCodeModel.create([
+    {
+      coachId: alex.user._id,
+      code: 'WELCOME20',
+      discount: {type: 'percent', value: 20},
+      newClientsOnly: true,
+      appliesTo: ['bookings', 'packages'],
+    },
+    {
+      coachId: alex.user._id,
+      code: 'SAVE10',
+      discount: {type: 'amount', value: 1000},
+      appliesTo: ['bookings', 'packages'],
+    },
+  ]);
+
+  // --- Assignments: Jamie's homework from Alex (one in progress, one done) -----------------------
+  const markedAt = (daysAgo: number) => new Date(Date.now() - daysAgo * 86_400_000);
+  const dueIn = (days: number) =>
+    DateTime.now().setZone('America/Chicago').plus({days}).toISODate()!;
+  await AssignmentModel.create([
+    {
+      coachId: alex.user._id,
+      clientId: jamie._id,
+      title: 'Week 3: lower body and core',
+      note: 'Do this twice before our next session. Stop if anything hurts.',
+      dueDate: dueIn(4),
+      exercises: [
+        {
+          name: 'Goblet squat',
+          sets: 3,
+          reps: '10-12',
+          videoUrl: 'https://www.youtube.com/watch?v=MeIiIdhvXT4',
+          result: {status: 'done', note: null, updatedAt: markedAt(1)},
+        },
+        {
+          name: 'Romanian deadlift',
+          sets: 3,
+          reps: '8',
+          note: 'Light dumbbells, flat back',
+          result: {
+            status: 'partial',
+            note: 'Only 2 sets, lower back got tired',
+            updatedAt: markedAt(1),
+          },
+        },
+        {name: 'Plank', sets: 3, duration: '40 sec'},
+        {name: 'Easy walk', duration: '30 min'},
+      ],
+    },
+    {
+      coachId: alex.user._id,
+      clientId: jamie._id,
+      title: 'Week 2: mobility',
+      dueDate: dueIn(-5),
+      exercises: [
+        {
+          name: 'Hip flexor stretch',
+          duration: '2 min',
+          result: {status: 'done', updatedAt: markedAt(7)},
+        },
+        {name: 'Cat-cow', reps: '10', result: {status: 'done', updatedAt: markedAt(7)}},
+        {
+          name: 'Thoracic rotations',
+          sets: 2,
+          reps: '8',
+          result: {status: 'done', updatedAt: markedAt(6)},
+        },
+      ],
+      clientNote: 'Felt much looser after this!',
+      createdAt: markedAt(12),
+    },
+  ]);
 
   // --- Favorites: Jamie's two regular coaches ---------------------------------------------------
   await FavoriteModel.create({clientId: jamie._id, coachId: maya.user._id});

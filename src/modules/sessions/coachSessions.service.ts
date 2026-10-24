@@ -12,6 +12,7 @@ import {TrainingSessionModel, type TrainingSessionDoc} from '../../models/traini
 import {UserModel, type UserDoc} from '../../models/user.js';
 import {cancelBookingInternal} from '../bookings/bookings.service.js';
 import {toUserSummary} from '../users/users.service.js';
+import {noShowFields} from '../bookings/noShow.js';
 import {expireWaitlist} from '../waitlist/waitlist.service.js';
 import {createLockedSession, toSessionDto, unlockSession} from './sessions.service.js';
 
@@ -67,13 +68,16 @@ export async function createGroupSessions(
           coachId: coach._id,
           sessionTypeId: type._id,
           kind: 'group',
+          // Group types are in_person or online; online sessions have no place.
+          format: type.format === 'online' ? 'online' : 'in_person',
           title: type.title,
           startAt,
           endAt: addMinutes(startAt, type.durationMin),
           capacity: type.capacity,
           participantsCount: 0,
           price: type.price,
-          location: type.location ?? profile?.defaultLocation ?? null,
+          location:
+            type.format === 'online' ? null : (type.location ?? profile?.defaultLocation ?? null),
         }),
       );
     } catch (error) {
@@ -117,7 +121,7 @@ export async function cancelGroupSession(coach: UserDoc, sessionId: string, reas
   return toSessionDto(session);
 }
 
-async function scheduleItems(sessions: TrainingSessionDoc[]) {
+async function scheduleItems(sessions: TrainingSessionDoc[], coachId: Types.ObjectId) {
   const ids = sessions.map(s => s._id);
   const bookings = await BookingModel.find({sessionId: {$in: ids}}).sort({createdAt: 1});
   const clients = await UserModel.find({
@@ -139,8 +143,10 @@ async function scheduleItems(sessions: TrainingSessionDoc[]) {
         const client = clientById.get(b.clientId.toString());
         return {
           bookingId: b.id as string,
-          status: b.status as 'pending_payment' | 'confirmed' | 'cancelled' | 'completed',
+          status: b.status as
+            'pending_payment' | 'confirmed' | 'cancelled' | 'completed' | 'no_show',
           isTrial: b.isTrial,
+          ...noShowFields(b, coachId),
           client: client
             ? toUserSummary(client)
             : {id: b.clientId.toString(), firstName: '', lastName: '', avatarUrl: null},
@@ -163,7 +169,7 @@ export async function coachSchedule(
     ...(includeCancelled ? {} : {status: {$ne: 'cancelled'}}),
   }).sort({startAt: 1});
   // Individual sessions without any booking left (e.g. expired) are not shown.
-  const items = await scheduleItems(sessions);
+  const items = await scheduleItems(sessions, coach._id);
   return {
     items: items.filter(item => item.session.kind === 'group' || item.participants.length > 0),
   };
@@ -172,20 +178,21 @@ export async function coachSchedule(
 export async function coachSessionDetails(coach: UserDoc, sessionId: string) {
   const session = await TrainingSessionModel.findOne({_id: sessionId, coachId: coach._id});
   if (!session) throw new AppError('NOT_FOUND', 'Session not found.');
-  const [item] = await scheduleItems([session]);
+  const [item] = await scheduleItems([session], coach._id);
   return item!;
 }
 
 export async function coachClients(coach: UserDoc, search?: string) {
   const bookings = await BookingModel.find({coachId: coach._id, status: {$ne: 'cancelled'}})
-    .select('clientId startAt')
+    .select('clientId startAt status')
     .lean();
   const stats = new Map<string, {total: number; last: Date}>();
   for (const b of bookings) {
     const key = b.clientId.toString();
     const current = stats.get(key);
     stats.set(key, {
-      total: (current?.total ?? 0) + 1,
+      // A no-show is not a training: the client stays in the list but it is not counted.
+      total: (current?.total ?? 0) + (b.status === 'no_show' ? 0 : 1),
       last: current && current.last > b.startAt ? current.last : b.startAt,
     });
   }

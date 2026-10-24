@@ -29,7 +29,13 @@ const clientPackageSchema = new Schema(
     title: {type: String, required: true},
     creditsTotal: {type: Number, required: true},
     creditsLeft: {type: Number, required: true, min: 0},
+    // What the client paid (after a promo discount).
     price: {type: moneySchema, required: true},
+    listPrice: {type: moneySchema, default: null},
+    promo: {
+      type: new Schema({code: String, discountCents: Number}, {_id: false}),
+      default: null,
+    },
     purchasedAt: {type: Date, required: true},
     expiresAt: {type: Date, required: true},
   },

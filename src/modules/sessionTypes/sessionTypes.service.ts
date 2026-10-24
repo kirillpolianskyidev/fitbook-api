@@ -1,5 +1,6 @@
 import type {Types} from 'mongoose';
 
+import {invalidateAvailability} from '../../lib/availabilityCache.js';
 import {toLocationDto, toMoneyDto} from '../../lib/dto.js';
 import {AppError} from '../../lib/errors.js';
 import type {Location, Money} from '../../lib/schemas.js';
@@ -14,6 +15,7 @@ export function toSessionTypeDto(type: SessionTypeDoc): SessionTypeDto {
     coachId: type.coachId.toString(),
     title: type.title,
     kind: type.kind as 'individual' | 'group',
+    format: (type.format ?? 'in_person') as 'in_person' | 'online' | 'both',
     durationMin: type.durationMin,
     price: toMoneyDto(type.price),
     capacity: type.capacity,
@@ -23,12 +25,39 @@ export function toSessionTypeDto(type: SessionTypeDoc): SessionTypeDto {
   };
 }
 
-/** Keeps the catalog's denormalized "price from" and "kinds" in sync with active session types. */
+type Format = 'in_person' | 'online' | 'both';
+
+/** Formats a set of session type formats really offers ("both" counts as both). */
+export function offeredFormats(formats: (string | null | undefined)[]) {
+  const set = new Set<'in_person' | 'online'>();
+  for (const f of formats) {
+    if (f === 'online' || f === 'both') set.add('online');
+    if (!f || f === 'in_person' || f === 'both') set.add('in_person');
+  }
+  return (['in_person', 'online'] as const).filter(f => set.has(f));
+}
+
+/** Keeps the catalog's denormalized "price from", "kinds" and "formats" in sync with active session types. */
 export async function refreshCoachCatalogFields(coachId: Types.ObjectId | string) {
   const types = await SessionTypeModel.find({coachId, isActive: true}).lean();
   const priceFromCents = types.length ? Math.min(...types.map(t => t.price.amountCents)) : null;
   const kinds = [...new Set(types.map(t => t.kind))].sort();
-  await CoachProfileModel.updateOne({userId: coachId}, {priceFromCents, kinds});
+  const formats = offeredFormats(types.map(t => t.format));
+  await CoachProfileModel.updateOne({userId: coachId}, {priceFromCents, kinds, formats});
+  invalidateAvailability(coachId);
+}
+
+/** online / both need online trainings turned on in the profile. */
+async function assertFormatAllowed(coachId: Types.ObjectId, kind: string, format: Format) {
+  if (kind === 'group' && format === 'both') {
+    throw new AppError('VALIDATION_ERROR', undefined, {
+      fields: {format: 'Group trainings are either in_person or online'},
+    });
+  }
+  if (format !== 'in_person') {
+    const profile = await CoachProfileModel.findOne({userId: coachId}).select('online').lean();
+    if (!profile?.online?.enabled) throw new AppError('ONLINE_NOT_ENABLED');
+  }
 }
 
 export const listOwnSessionTypes = (coachId: Types.ObjectId) =>
@@ -39,6 +68,7 @@ export async function createSessionType(
   input: {
     title: string;
     kind: 'individual' | 'group';
+    format?: Format;
     durationMin: number;
     price: Money;
     capacity?: number;
@@ -46,6 +76,7 @@ export async function createSessionType(
     description?: string;
   },
 ) {
+  await assertFormatAllowed(coachId, input.kind, input.format ?? 'in_person');
   const type = await SessionTypeModel.create({
     ...input,
     coachId,
@@ -74,9 +105,15 @@ export async function updateSessionType(
     location: Location | null;
     description: string;
     isActive: boolean;
+    format: Format;
   }>,
 ) {
   const type = await getOwnSessionType(coachId, id);
+  const format = input.format ?? (type.format as Format | undefined) ?? 'in_person';
+  // Changing the format or re-activating an online type needs online to be on.
+  if (input.format !== undefined || input.isActive === true) {
+    await assertFormatAllowed(coachId, type.kind, format);
+  }
   if (input.capacity !== undefined && type.kind === 'individual') {
     throw new AppError('VALIDATION_ERROR', 'Individual trainings always have capacity 1.', {
       fields: {capacity: 'Not allowed for individual trainings'},

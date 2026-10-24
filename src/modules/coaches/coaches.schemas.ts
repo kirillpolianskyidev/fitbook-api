@@ -6,6 +6,7 @@ import {
   MoneySchema,
   SessionKindSchema,
   SpecializationSchema,
+  TrainingFormatSchema,
 } from '../../lib/schemas.js';
 import {PackageSchema} from '../packages/packages.schemas.js';
 import {SessionTypeSchema} from '../sessionTypes/sessionTypes.schemas.js';
@@ -28,6 +29,16 @@ export const CancellationPolicySchema = z
     description: 'Clients may cancel only if at least this many hours remain',
   });
 
+export const OnlineSettingsSchema = z
+  .object({
+    enabled: z.boolean(),
+    meetingUrl: z
+      .string()
+      .nullable()
+      .meta({description: 'Permanent video meeting link (https, up to 500 characters)'}),
+  })
+  .meta({id: 'OnlineSettings'});
+
 export const CoachProfileSchema = z
   .object({
     userId: z.string(),
@@ -39,6 +50,7 @@ export const CoachProfileSchema = z
     highlights: z.array(z.string()),
     languages: z.array(z.string()),
     defaultLocation: LocationSchema.nullable(),
+    online: OnlineSettingsSchema,
     cancellationPolicy: CancellationPolicySchema,
     rating: RatingSchema,
     isPublished: z.boolean(),
@@ -55,6 +67,10 @@ export const UpdateCoachProfileBody = z.object({
   highlights: z.array(z.string().trim().min(1).max(160)).max(8).optional(),
   languages: z.array(z.string().trim().min(2).max(40)).max(8).optional(),
   defaultLocation: LocationSchema.nullable().optional(),
+  online: z
+    .object({enabled: z.boolean(), meetingUrl: z.string().trim().nullable().optional()})
+    .optional()
+    .meta({description: 'Enabling needs a meetingUrl (https)'}),
 });
 
 export const PublishBody = z.object({isPublished: z.boolean()});
@@ -72,6 +88,27 @@ export const CoachCardSchema = z
     homeArea: HomeAreaSchema,
     priceFrom: MoneySchema.nullable(),
     kinds: z.array(SessionKindSchema),
+    languages: z.array(z.string()),
+    location: z
+      .object({
+        lat: z.number(),
+        lng: z.number(),
+        name: z.string(),
+        city: z.string(),
+        state: z.string(),
+      })
+      .nullable()
+      .meta({
+        description:
+          'Public part of the default training location (map); null for online-only coaches',
+      }),
+    nextAvailableAt: z.string().nullable().meta({
+      description:
+        'Earliest free time in the next 14 days: individual slot (any active type), or a free group place for coaches with only group types',
+    }),
+    formats: z.array(TrainingFormatSchema).meta({
+      description: 'Formats the coach offers (from active training types; "both" gives both)',
+    }),
     isFavorite: z.boolean().meta({description: 'In my favorites (always false for coaches)'}),
   })
   .meta({id: 'CoachCard'});
@@ -87,13 +124,87 @@ export const CoachDetailsSchema = CoachCardSchema.extend({
   packages: z.array(PackageSchema).meta({description: 'Active packages of the coach'}),
 }).meta({id: 'CoachDetails'});
 
-export const CoachListQuery = z.object({
-  search: z.string().trim().max(80).optional(),
-  specialization: SpecializationSchema.optional(),
-  city: z.string().trim().max(80).optional(),
-  state: z.string().trim().length(2).toUpperCase().optional(),
-  kind: SessionKindSchema.optional(),
-  favorites: z.stringbool().optional().meta({description: 'true: only my favorite coaches'}),
-  page: z.coerce.number().int().min(1).default(1),
-  pageSize: z.coerce.number().int().min(1).max(50).default(20),
-});
+export const CoachListQuery = z
+  .object({
+    search: z.string().trim().max(80).optional(),
+    specialization: SpecializationSchema.optional(),
+    city: z.string().trim().max(80).optional(),
+    state: z.string().trim().length(2).toUpperCase().optional(),
+    kind: SessionKindSchema.optional(),
+    format: TrainingFormatSchema.optional().meta({description: 'Coaches offering this format'}),
+    priceMin: z.coerce
+      .number()
+      .int()
+      .min(0)
+      .optional()
+      .meta({description: 'Cents: an active type costs at least this'}),
+    priceMax: z.coerce
+      .number()
+      .int()
+      .min(0)
+      .optional()
+      .meta({description: 'Cents: an active type costs at most this'}),
+    timeOfDay: z
+      .string()
+      .regex(
+        /^(morning|afternoon|evening)(,(morning|afternoon|evening))*$/,
+        'morning, afternoon, evening',
+      )
+      .optional()
+      .meta({
+        description:
+          "Comma list. Free time in the next 14 days in the viewer's time zone: morning 05-12, afternoon 12-17, evening 17-23",
+      }),
+    trial: z
+      .stringbool()
+      .optional()
+      .meta({description: 'true: coaches with an active individual type'}),
+    language: z.string().trim().min(1).max(40).optional().meta({description: 'Case-insensitive'}),
+    sort: z
+      .enum(['recommended', 'rating', 'price_asc', 'price_desc', 'next_available'])
+      .default('recommended'),
+    favorites: z.stringbool().optional().meta({description: 'true: only my favorite coaches'}),
+    page: z.coerce.number().int().min(1).default(1),
+    pageSize: z.coerce
+      .number()
+      .int()
+      .min(1)
+      .max(100)
+      .default(20)
+      .meta({description: 'Up to 50, or up to 100 together with bbox'}),
+    bbox: z
+      .string()
+      .optional()
+      .transform((value, ctx) => {
+        if (value === undefined) return undefined;
+        const parts = value.split(',').map(v => (v.trim() === '' ? NaN : Number(v)));
+        const [minLng, minLat, maxLng, maxLat] = parts as [number, number, number, number];
+        const ok =
+          parts.length === 4 &&
+          parts.every(Number.isFinite) &&
+          minLng <= maxLng &&
+          minLat <= maxLat &&
+          [minLng, maxLng].every(v => v >= -180 && v <= 180) &&
+          [minLat, maxLat].every(v => v >= -90 && v <= 90);
+        if (!ok) {
+          ctx.addIssue({code: 'custom', message: 'Expected minLng,minLat,maxLng,maxLat'});
+          return z.NEVER;
+        }
+        return {minLng, minLat, maxLng, maxLat};
+      })
+      .meta({
+        description:
+          'minLng,minLat,maxLng,maxLat: only coaches whose default location is inside (online-only coaches excluded)',
+      }),
+  })
+  .refine(query => query.bbox !== undefined || query.pageSize <= 50, {
+    message: 'Up to 50 without bbox',
+    path: ['pageSize'],
+  });
+
+export const CoachFiltersSchema = z
+  .object({
+    languages: z.array(z.string()),
+    price: z.object({min: MoneySchema.nullable(), max: MoneySchema.nullable()}),
+  })
+  .meta({id: 'CoachFilters'});

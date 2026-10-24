@@ -1,5 +1,7 @@
 import {z} from 'zod';
 
+import {AppliedPromoSchema, promoCodeField} from '../promos/promos.schemas.js';
+
 import {
   dateYMD,
   isoDateTime,
@@ -7,13 +9,41 @@ import {
   MoneySchema,
   objectId,
   SessionKindSchema,
+  TrainingFormatSchema,
   timeHHmm,
 } from '../../lib/schemas.js';
 import {UserSummarySchema} from '../users/users.schemas.js';
 
 export const BookingStatusSchema = z
-  .enum(['pending_payment', 'confirmed', 'cancelled', 'completed'])
+  .enum(['pending_payment', 'confirmed', 'cancelled', 'completed', 'no_show'])
   .meta({id: 'BookingStatus'});
+
+export const NoShowSchema = z
+  .object({markedAt: z.string(), refunded: z.boolean()})
+  .meta({id: 'NoShow'});
+
+/** No-show fields shared by Booking and Participant. */
+export const NoShowFields = {
+  noShow: NoShowSchema.nullable().meta({
+    description: 'Set when the coach marked the client as a no-show',
+  }),
+  noShowMarkable: z.boolean().meta({
+    description: 'The coach making the request can mark a no-show now (always false for clients)',
+  }),
+  noShowUndoable: z.boolean().meta({
+    description: 'The coach can remove the no-show now (inside the window and not refunded)',
+  }),
+  noShowDeadline: z.string().meta({description: 'startAt + 48h: end of the no-show window'}),
+};
+
+export const NoShowBody = z
+  .object({
+    refund: z.boolean().meta({
+      description:
+        'true: full refund like a coach cancellation (credit back for credit bookings); false: the payment stays',
+    }),
+  })
+  .meta({id: 'NoShowRequest'});
 
 export const PaymentSchema = z
   .object({
@@ -39,7 +69,11 @@ export const BookingSchema = z
     id: z.string(),
     status: BookingStatusSchema,
     isTrial: z.boolean(),
-    price: MoneySchema,
+    price: MoneySchema.meta({description: 'What the client pays (after the promo discount)'}),
+    listPrice: MoneySchema.meta({
+      description: 'Price before the promo discount (= price without a promo)',
+    }),
+    promo: AppliedPromoSchema.nullable().meta({description: 'Promo code used for this booking'}),
     payment: PaymentSchema,
     expiresAt: z
       .string()
@@ -48,6 +82,11 @@ export const BookingSchema = z
     startAt: z.string(),
     endAt: z.string(),
     seriesId: z.string().nullable(),
+    format: TrainingFormatSchema,
+    meetingUrl: z.string().nullable().meta({
+      description:
+        "Online bookings: the coach's current meeting link (only the client and the coach of the booking see it)",
+    }),
     cancellable: z.boolean().meta({description: 'Whether the client can still cancel right now'}),
     reschedulable: z.boolean().meta({
       description:
@@ -57,6 +96,7 @@ export const BookingSchema = z
       .string()
       .nullable()
       .meta({description: 'When the booking was last rescheduled'}),
+    ...NoShowFields,
     cancelDeadline: z.string().nullable(),
     cancelledAt: z.string().nullable(),
     cancelledBy: z.enum(['coach', 'client', 'system']).nullable(),
@@ -66,6 +106,7 @@ export const BookingSchema = z
       sessionTypeId: z.string().meta({description: 'Training type of the session ("Book again")'}),
       title: z.string(),
       kind: SessionKindSchema,
+      format: TrainingFormatSchema,
       location: LocationSchema.nullable(),
       capacity: z.number().int(),
       participantsCount: z.number().int(),
@@ -91,8 +132,12 @@ const IndividualBookingBody = z
     startAt: isoDateTime,
     isTrial: z.boolean().default(false),
     useCredits,
+    promoCode: promoCodeField,
+    format: TrainingFormatSchema.optional().meta({
+      description: 'Required for "both" training types; must match in_person / online types',
+    }),
     location: LocationSchema.optional().meta({
-      description: 'Overrides the training location (optional)',
+      description: 'Overrides the training location (optional; ignored for online)',
     }),
   })
   .refine(body => !(body.isTrial && body.useCredits), notTrialWithCredits)
@@ -103,6 +148,7 @@ const GroupBookingBody = z
     sessionId: objectId,
     isTrial: z.boolean().optional().meta({description: 'Not allowed for group sessions'}),
     useCredits,
+    promoCode: promoCodeField,
   })
   .refine(body => !(body.isTrial && body.useCredits), notTrialWithCredits)
   .meta({id: 'GroupBookingRequest'});
@@ -120,6 +166,9 @@ export const SeriesPreviewBody = z.object({
   time: timeHHmm.meta({description: "Start time in the coach's time zone"}),
   weeks: z.number().int().min(1).max(12),
   startDate: dateYMD,
+  format: TrainingFormatSchema.optional().meta({
+    description: 'Required for "both" training types; must match in_person / online types',
+  }),
 });
 
 export const SeriesBody = SeriesPreviewBody.extend({
@@ -128,7 +177,95 @@ export const SeriesBody = SeriesPreviewBody.extend({
     description:
       '1 credit per booked date; all bookings confirmed. Not enough credits -> INSUFFICIENT_CREDITS, nothing booked',
   }),
+  promoCode: promoCodeField.meta({
+    description: 'Discount applies to every booked date (one use of the code); not with useCredits',
+  }),
 });
+
+export const SeriesRescheduleBody = z
+  .object({
+    weekdays: z
+      .array(z.number().int().min(0).max(6))
+      .min(1)
+      .max(7)
+      .refine(days => new Set(days).size === days.length, 'Weekdays must be unique')
+      .meta({description: '0 = Sunday ... 6 = Saturday'}),
+    time: timeHHmm.meta({description: "Start time in the coach's time zone"}),
+    startDate: dateYMD.meta({description: 'First date of the new pattern (not before today)'}),
+  })
+  .meta({id: 'SeriesRescheduleRequest'});
+
+export const SeriesExtendPreviewBody = z
+  .object({weeks: z.number().int().min(1).max(12)})
+  .meta({id: 'SeriesExtendPreviewRequest'});
+
+export const SeriesExtendBody = z
+  .object({
+    weeks: z.number().int().min(1).max(12),
+    dates: z
+      .array(dateYMD)
+      .min(1)
+      .max(84)
+      .meta({description: 'Dates chosen from the extend preview'}),
+    useCredits: z.boolean().default(false),
+    promoCode: promoCodeField,
+  })
+  .meta({id: 'SeriesExtendRequest'});
+
+export const SeriesSchema = z
+  .object({
+    id: z.string(),
+    sessionType: z.object({
+      id: z.string(),
+      title: z.string(),
+      durationMin: z.number().int(),
+      isActive: z.boolean(),
+    }),
+    coach: UserSummarySchema,
+    weekdays: z.array(z.number().int()),
+    time: z.string().meta({description: "Current pattern, coach's time zone"}),
+    timezone: z.string(),
+    format: TrainingFormatSchema,
+    bookings: z.array(BookingSchema).meta({description: 'All bookings of the series, by startAt'}),
+    upcomingCount: z.number().int(),
+    nextAt: z.string().nullable(),
+    lastAt: z.string().nullable(),
+    canExtend: z.boolean(),
+    extendFrom: z
+      .string()
+      .meta({description: "Monday after the last training (YYYY-MM-DD, coach's time zone)"}),
+  })
+  .meta({id: 'Series'});
+
+export const SeriesCancelResultSchema = z
+  .object({
+    cancelled: z.array(BookingSchema),
+    kept: z.array(z.object({bookingId: z.string(), startAt: z.string(), reason: z.string()})),
+  })
+  .meta({id: 'SeriesCancelResult'});
+
+export const SeriesReschedulePreviewSchema = z
+  .object({
+    items: z.array(
+      z.object({
+        bookingId: z.string(),
+        fromStartAt: z.string(),
+        date: z.string(),
+        startAt: z.string(),
+        endAt: z.string(),
+        available: z.boolean(),
+        reason: z.enum(['UNAVAILABLE', 'PAST', 'EXCEPTION']).nullable(),
+      }),
+    ),
+  })
+  .meta({id: 'SeriesReschedulePreview'});
+
+export const SeriesRescheduleResultSchema = z
+  .object({
+    moved: z.array(BookingSchema),
+    kept: z.array(z.object({bookingId: z.string(), reason: z.string()})),
+  })
+  .meta({id: 'SeriesRescheduleResult'});
 
 export const SeriesPreviewItemSchema = z
   .object({
@@ -185,7 +322,12 @@ export const CalendarEventSchema = z
     timezone: z.string(),
     location: z
       .object({name: z.string(), address: z.string(), lat: z.number(), lng: z.number()})
-      .nullable(),
+      .nullable()
+      .meta({description: 'null for online trainings (see meetingUrl)'}),
+    meetingUrl: z
+      .string()
+      .nullable()
+      .meta({description: 'Online trainings: the meeting link (also in notes)'}),
     notes: z.string(),
   })
   .meta({id: 'CalendarEvent', description: 'Data for adding the training to the device calendar'});

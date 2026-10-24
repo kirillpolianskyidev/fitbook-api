@@ -7,6 +7,7 @@ const trainingSessionSchema = new Schema(
     coachId: {type: Schema.Types.ObjectId, ref: 'User', required: true},
     sessionTypeId: {type: Schema.Types.ObjectId, ref: 'SessionType', required: true},
     kind: {type: String, enum: ['individual', 'group'], required: true},
+    format: {type: String, enum: ['in_person', 'online'], default: 'in_person'},
     title: {type: String, required: true},
     startAt: {type: Date, required: true},
     endAt: {type: Date, required: true},

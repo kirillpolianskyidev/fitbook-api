@@ -16,6 +16,13 @@ const coachProfileSchema = new Schema(
     highlights: {type: [String], default: []},
     languages: {type: [String], default: ['English']},
     defaultLocation: {type: locationSchema, default: null},
+    // Online trainings: one permanent meeting link (kept when online is turned off, for existing bookings).
+    online: {
+      type: new Schema({enabled: Boolean, meetingUrl: String}, {_id: false}),
+      default: () => ({enabled: false, meetingUrl: null}),
+    },
+    // Denormalized from active session types: formats the coach really offers (catalog filter).
+    formats: {type: [String], default: undefined},
     cancellationPolicy: {
       type: new Schema(
         {freeCancelHours: {type: Number, min: 0, max: 72, default: 24}},
@@ -42,6 +49,9 @@ const coachProfileSchema = new Schema(
 
 coachProfileSchema.index({isPublished: 1, state: 1, city: 1});
 coachProfileSchema.index({specializations: 1});
+
+// Map search (bbox) over the default training location.
+coachProfileSchema.index({'defaultLocation.lat': 1, 'defaultLocation.lng': 1});
 
 export type CoachProfile = InferSchemaType<typeof coachProfileSchema>;
 export type CoachProfileDoc = HydratedDocument<CoachProfile>;

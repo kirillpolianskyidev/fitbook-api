@@ -1,3 +1,4 @@
+import {invalidateAvailability} from '../../lib/availabilityCache.js';
 import type {Types} from 'mongoose';
 
 import {AvailabilityModel} from '../../models/availability.js';
@@ -38,6 +39,7 @@ export async function setWeekly(coach: UserDoc, weekly: Weekly[]) {
   const availability = await getOrCreate(coach._id);
   availability.set('weekly', weekly);
   await availability.save();
+  invalidateAvailability(coach._id);
   return toAvailabilityDto(availability, coach.homeArea!.timezone);
 }
 
@@ -46,6 +48,7 @@ export async function addException(coach: UserDoc, exception: Exception) {
   const others = (availability.exceptions as Exception[]).filter(e => e.date !== exception.date);
   availability.set('exceptions', [...others, exception]);
   await availability.save();
+  invalidateAvailability(coach._id);
   return toAvailabilityDto(availability, coach.homeArea!.timezone);
 }
 
@@ -56,5 +59,6 @@ export async function removeException(coach: UserDoc, date: string) {
     (availability.exceptions as Exception[]).filter(e => e.date !== date),
   );
   await availability.save();
+  invalidateAvailability(coach._id);
   return toAvailabilityDto(availability, coach.homeArea!.timezone);
 }

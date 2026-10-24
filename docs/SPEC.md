@@ -414,6 +414,72 @@ needs a `completed` booking with the coach (`REVIEW_NOT_ALLOWED`, 403); `PUT` ag
 { average (2 decimals), count }` is recalculated from reviews after each change (and on server start).
 Endpoints: `GET /coaches/:id/reviews`, `GET|PUT /coaches/:id/my-review`.
 
+### No-show
+
+`POST /coach/bookings/:id/no-show { refund }` (the booking's coach; status `confirmed` / `completed`, else
+`NO_SHOW_NOT_ALLOWED`; between `startAt` and `startAt + 48h`, else `NO_SHOW_WINDOW_PASSED`) sets `status = no_show`,
+`noShow { markedAt, refunded }`; `refund: true` on a paid booking refunds it like a coach cancellation (credit back to
+its package unless expired). `DELETE` undoes it in the same window unless refunded (`NO_SHOW_REFUNDED`) -> `completed`
+(ended) / `confirmed`. Not counted in progress, reviews or `/coach/clients` totals.
+
+### Online trainings
+
+`coachProfile.online { enabled, meetingUrl }` (https, <= 500; enabling needs it; turning off with active online/both
+types -> `ONLINE_TYPES_ACTIVE`), `coachProfile.formats` (denormalized). `sessionTypes.format: in_person | online |
+both` (both: individual only; online/both need online on -> `ONLINE_NOT_ENABLED`). `trainingSessions.format:
+in_person | online` (group: from the type; individual: chosen with `format` when booking, required for both).
+Online sessions have no location. Booking DTO: `format`, `meetingUrl` (coach's current link, participants only).
+Completeness: `defaultLocation` or online. Catalog `formats` + `?format=` filter.
+
+### Series management
+
+`GET /bookings/series/:id` (client or coach), `POST .../cancel` (every upcoming booking with the single-cancel rules;
+kept ones listed; none -> `CANCELLATION_WINDOW_PASSED`), `POST .../reschedule/preview|reschedule { weekdays, time,
+startDate }` (movable = reschedulable bookings by start, paired in order with the first dates of the new pattern;
+taken dates stay; the pattern is updated; none movable -> `RESCHEDULE_WINDOW_PASSED`), `POST .../extend/preview|extend`
+(from `extendFrom` = Monday after the last training; `canExtend` = active type and upcoming bookings or last training
+ended <= 14 days ago, else `SERIES_NOT_EXTENDABLE`). `bookingSeries.format` stores the format.
+
+### Catalog filters
+
+`GET /coaches`: `priceMin/priceMax` (an active type in range), `timeOfDay` (free time in the next 14 days in the
+viewer's zone), `trial`, `language`, `sort` (recommended | rating | price_asc | price_desc | next_available). Free
+times (individual slots of active types, group sessions with places) are cached per coach for 5 minutes and
+invalidated on every slot / seat / working-hours / training-type change. `nextAvailableAt`, `languages` on coach
+cards; `GET /coaches/filters`.
+
+### Map search
+
+`GET /coaches?bbox=minLng,minLat,maxLng,maxLat` filters on `coachProfile.defaultLocation` (index on lat/lng), works
+with every filter and sort, `pageSize <= 100` with bbox. Coach cards: `location { lat, lng, name, city, state }`.
+
+### Earnings
+
+`GET /coach/earnings?period&date` (coach time zone): earned = mock-paid bookings (`confirmed | completed | no_show`,
+payment `paid`) by `startAt <= now` in the period, upcoming = the rest of the period; package purchases by
+`purchasedAt`; refunds (mock) by `refundedAt` (informational); credit bookings are not income. Previous period for
+`changePercent`; chart per day (week / month) or month (year); top 5 clients.
+
+### Promo codes
+
+`promoCodes` (coachId + code unique, code stored upper case): `discount { type: percent | amount, value }`,
+`validFrom` / `validUntil` (inclusive, coach time zone), `maxUses`, `usesCount`, `newClientsOnly`, `appliesTo`
+(`bookings`, `packages`), `isActive`. `promoRedemptions` (promoCodeId + clientId unique): one use per client.
+`promoCode` in `POST /bookings`, `/bookings/series`, `/bookings/series/:id/extend`, `/packages/:id/purchase`;
+re-validated, one use per request (discount on every booked date of a series), released if the request fails or
+books nothing. Not with trial / credits (`PROMO_NOT_APPLICABLE`). Bookings and purchases keep `price` (paid),
+`listPrice` and `promo { code, discountCents }`; refunds and earnings use `price`. `POST /promo-codes/check` quotes
+without using the code. Coach CRUD at `/coach/promo-codes` (a used code is deactivated instead of deleted).
+
+### Assignments (homework)
+
+`assignments`: coachId, clientId, title, note, dueDate (YYYY-MM-DD), exercises (1-30: name, sets, reps, duration,
+note, videoUrl, result `{ status: done | partial | skipped, note, updatedAt } | null`), clientNote. Status is computed
+(open / in_progress / done / partial) with progress counts. Coach: list / create for clients with a booking (else
+NOT_FOUND), PATCH (exercises by id keep their result; new without id; missing removed), DELETE. Client: list
+(`status=active|all`, nearest dueDate first), get, set / clear an exercise result, client note. Socket.IO
+`assignment:new` to the client, `assignment:updated` to the coach.
+
 ### Completion
 
 Job every 10 minutes: sessions whose `endAt < now` -> `completed`; their `confirmed` bookings -> `completed`.
@@ -597,6 +663,19 @@ Validation errors list fields: `details: { fields: { email: "Invalid email" } }`
 | 409  | PACKAGE_INACTIVE                        | buying an inactive package                                                                                          |
 | 403  | REVIEW_NOT_ALLOWED                      | review without a completed training with the coach                                                                  |
 | 409  | REVIEW_EDIT_WINDOW_PASSED               | review changed more than 24 hours after creation                                                                    |
+| 409  | SERIES_NOT_EXTENDABLE                   | extending a series with canExtend false                                                                             |
+| 409  | ONLINE_NOT_ENABLED                      | online / both training type while online is off                                                                     |
+| 409  | ONLINE_TYPES_ACTIVE                     | turning online off with active online / both types                                                                  |
+| 409  | NO_SHOW_WINDOW_PASSED                   | no-show before the start or after start + 48h                                                                       |
+| 409  | NO_SHOW_NOT_ALLOWED                     | no-show on a booking that is not confirmed / completed (DELETE: not no_show)                                        |
+| 409  | NO_SHOW_REFUNDED                        | removing a refunded no-show                                                                                         |
+| 409  | PROMO_INVALID                           | unknown or inactive promo code                                                                                      |
+| 409  | PROMO_EXPIRED                           | outside validFrom / validUntil                                                                                      |
+| 409  | PROMO_USED_UP                           | maxUses reached                                                                                                     |
+| 409  | PROMO_ALREADY_USED                      | the client already used this code                                                                                   |
+| 409  | PROMO_NEW_CLIENTS_ONLY                  | newClientsOnly and the client has a booking / package with the coach                                                |
+| 409  | PROMO_NOT_APPLICABLE                    | with isTrial / useCredits, or appliesTo does not include bookings / packages                                        |
+| 409  | PROMO_CODE_TAKEN                        | the coach already has this code                                                                                     |
 | 409  | RESCHEDULE_WINDOW_PASSED                | too late to reschedule, or the booking is not active                                                                |
 | 409  | CANCELLATION_WINDOW_PASSED              | too late to cancel (`details.freeCancelHours`, `details.deadline`)                                                  |
 | 409  | BOOKING_NOT_PAYABLE                     | not pending or expired                                                                                              |
@@ -617,8 +696,10 @@ Language: English. Currency: USD. Main city: **Chicago, IL** (`America/Chicago`)
 other US cities to demonstrate location filtering: New York NY, Austin TX, Los Angeles CA, Miami FL.
 
 - **Demo accounts** (password `Password123!`):
-  - `coach@fitbook.dev` - Alex Carter, strength & conditioning, Chicago, full schedule, group + individual types
-  - `client@fitbook.dev` - Jamie Lee, Chicago, trial already used, past and upcoming bookings, a series, notes, chats
+  - `coach@fitbook.dev` - Alex Carter, strength & conditioning, Chicago, full schedule, group + individual types,
+    promo codes `WELCOME20` (−20%, new clients only) and `SAVE10` (−$10)
+  - `client@fitbook.dev` - Jamie Lee, Chicago, trial already used, past and upcoming bookings, a series, notes, chats,
+    two assignments from Alex (one in progress with 2 of 4 exercises marked, one done)
   - `newclient@fitbook.dev` - fresh client, trial still available, no bookings
   - `newcoach@fitbook.dev` - coach with an incomplete, unpublished profile (to show onboarding)
 - **10 coaches** (7 in Chicago, 3 elsewhere): strength, yoga, running, boxing, pilates, crossfit, swimming,

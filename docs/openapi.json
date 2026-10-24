@@ -49,14 +49,27 @@
                   "ALREADY_ON_WAITLIST",
                   "TRIAL_ALREADY_USED",
                   "CANCELLATION_WINDOW_PASSED",
+                  "NO_SHOW_WINDOW_PASSED",
+                  "NO_SHOW_NOT_ALLOWED",
+                  "NO_SHOW_REFUNDED",
                   "REVIEW_EDIT_WINDOW_PASSED",
                   "RESCHEDULE_WINDOW_PASSED",
+                  "SERIES_NOT_EXTENDABLE",
                   "BOOKING_NOT_PAYABLE",
                   "NO_CREDITS",
                   "INSUFFICIENT_CREDITS",
                   "PACKAGE_INACTIVE",
+                  "PROMO_INVALID",
+                  "PROMO_EXPIRED",
+                  "PROMO_USED_UP",
+                  "PROMO_ALREADY_USED",
+                  "PROMO_NEW_CLIENTS_ONLY",
+                  "PROMO_NOT_APPLICABLE",
+                  "PROMO_CODE_TAKEN",
                   "TRIAL_NOT_ALLOWED",
                   "PROFILE_INCOMPLETE",
+                  "ONLINE_NOT_ENABLED",
+                  "ONLINE_TYPES_ACTIVE",
                   "SESSION_TYPE_INACTIVE",
                   "RATE_LIMITED",
                   "TOO_MANY_ATTEMPTS",
@@ -553,6 +566,57 @@
               "$ref": "#/components/schemas/SessionKind"
             }
           },
+          "languages": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "location": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "properties": {
+              "lat": {
+                "type": "number"
+              },
+              "lng": {
+                "type": "number"
+              },
+              "name": {
+                "type": "string"
+              },
+              "city": {
+                "type": "string"
+              },
+              "state": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "lat",
+              "lng",
+              "name",
+              "city",
+              "state"
+            ],
+            "description": "Public part of the default training location (map); null for online-only coaches"
+          },
+          "nextAvailableAt": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Earliest free time in the next 14 days: individual slot (any active type), or a free group place for coaches with only group types"
+          },
+          "formats": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/TrainingFormat"
+            },
+            "description": "Formats the coach offers (from active training types; \"both\" gives both)"
+          },
           "isFavorite": {
             "type": "boolean",
             "description": "In my favorites (always false for coaches)"
@@ -570,6 +634,10 @@
           "homeArea",
           "priceFrom",
           "kinds",
+          "languages",
+          "location",
+          "nextAvailableAt",
+          "formats",
           "isFavorite"
         ]
       },
@@ -633,6 +701,43 @@
           "group"
         ]
       },
+      "TrainingFormat": {
+        "type": "string",
+        "enum": [
+          "in_person",
+          "online"
+        ]
+      },
+      "CoachFilters": {
+        "type": "object",
+        "properties": {
+          "languages": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "price": {
+            "type": "object",
+            "properties": {
+              "min": {
+                "$ref": "#/components/schemas/Money"
+              },
+              "max": {
+                "$ref": "#/components/schemas/Money"
+              }
+            },
+            "required": [
+              "min",
+              "max"
+            ]
+          }
+        },
+        "required": [
+          "languages",
+          "price"
+        ]
+      },
       "CoachDetails": {
         "type": "object",
         "properties": {
@@ -678,6 +783,57 @@
               "$ref": "#/components/schemas/SessionKind"
             }
           },
+          "languages": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "location": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "properties": {
+              "lat": {
+                "type": "number"
+              },
+              "lng": {
+                "type": "number"
+              },
+              "name": {
+                "type": "string"
+              },
+              "city": {
+                "type": "string"
+              },
+              "state": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "lat",
+              "lng",
+              "name",
+              "city",
+              "state"
+            ],
+            "description": "Public part of the default training location (map); null for online-only coaches"
+          },
+          "nextAvailableAt": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Earliest free time in the next 14 days: individual slot (any active type), or a free group place for coaches with only group types"
+          },
+          "formats": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/TrainingFormat"
+            },
+            "description": "Formats the coach offers (from active training types; \"both\" gives both)"
+          },
           "isFavorite": {
             "type": "boolean",
             "description": "In my favorites (always false for coaches)"
@@ -692,12 +848,6 @@
             }
           },
           "highlights": {
-            "type": "array",
-            "items": {
-              "type": "string"
-            }
-          },
-          "languages": {
             "type": "array",
             "items": {
               "type": "string"
@@ -735,11 +885,14 @@
           "homeArea",
           "priceFrom",
           "kinds",
+          "languages",
+          "location",
+          "nextAvailableAt",
+          "formats",
           "isFavorite",
           "bio",
           "certifications",
           "highlights",
-          "languages",
           "defaultLocation",
           "cancellationPolicy",
           "sessionTypes",
@@ -916,6 +1069,9 @@
           "kind": {
             "$ref": "#/components/schemas/SessionKind"
           },
+          "format": {
+            "$ref": "#/components/schemas/SessionTypeFormat"
+          },
           "durationMin": {
             "type": "integer"
           },
@@ -940,6 +1096,7 @@
           "coachId",
           "title",
           "kind",
+          "format",
           "durationMin",
           "price",
           "capacity",
@@ -947,6 +1104,15 @@
           "description",
           "isActive"
         ]
+      },
+      "SessionTypeFormat": {
+        "type": "string",
+        "enum": [
+          "in_person",
+          "online",
+          "both"
+        ],
+        "description": "both: the client chooses when booking (individual only)"
       },
       "Package": {
         "type": "object",
@@ -1031,6 +1197,9 @@
           "kind": {
             "$ref": "#/components/schemas/SessionKind"
           },
+          "format": {
+            "$ref": "#/components/schemas/TrainingFormat"
+          },
           "title": {
             "type": "string"
           },
@@ -1076,6 +1245,7 @@
           "coachId",
           "sessionTypeId",
           "kind",
+          "format",
           "title",
           "startAt",
           "endAt",
@@ -1178,6 +1348,9 @@
           "defaultLocation": {
             "$ref": "#/components/schemas/Location"
           },
+          "online": {
+            "$ref": "#/components/schemas/OnlineSettings"
+          },
           "cancellationPolicy": {
             "$ref": "#/components/schemas/CancellationPolicy"
           },
@@ -1216,10 +1389,30 @@
           "highlights",
           "languages",
           "defaultLocation",
+          "online",
           "cancellationPolicy",
           "rating",
           "isPublished",
           "completeness"
+        ]
+      },
+      "OnlineSettings": {
+        "type": "object",
+        "properties": {
+          "enabled": {
+            "type": "boolean"
+          },
+          "meetingUrl": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Permanent video meeting link (https, up to 500 characters)"
+          }
+        },
+        "required": [
+          "enabled",
+          "meetingUrl"
         ]
       },
       "ReviewPage": {
@@ -1741,6 +1934,609 @@
           "measurements"
         ]
       },
+      "Assignment": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "coach": {
+            "$ref": "#/components/schemas/UserSummary"
+          },
+          "client": {
+            "$ref": "#/components/schemas/UserSummary"
+          },
+          "title": {
+            "type": "string"
+          },
+          "note": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "dueDate": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "YYYY-MM-DD"
+          },
+          "exercises": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Exercise"
+            }
+          },
+          "status": {
+            "$ref": "#/components/schemas/AssignmentStatus"
+          },
+          "progress": {
+            "type": "object",
+            "properties": {
+              "done": {
+                "type": "integer"
+              },
+              "partial": {
+                "type": "integer"
+              },
+              "skipped": {
+                "type": "integer"
+              },
+              "total": {
+                "type": "integer"
+              }
+            },
+            "required": [
+              "done",
+              "partial",
+              "skipped",
+              "total"
+            ]
+          },
+          "clientNote": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "createdAt": {
+            "type": "string"
+          },
+          "updatedAt": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "coach",
+          "client",
+          "title",
+          "note",
+          "dueDate",
+          "exercises",
+          "status",
+          "progress",
+          "clientNote",
+          "createdAt",
+          "updatedAt"
+        ]
+      },
+      "UserSummary": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "firstName": {
+            "type": "string"
+          },
+          "lastName": {
+            "type": "string"
+          },
+          "avatarUrl": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        },
+        "required": [
+          "id",
+          "firstName",
+          "lastName",
+          "avatarUrl"
+        ]
+      },
+      "Exercise": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "sets": {
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "reps": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "duration": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "note": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "videoUrl": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "result": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "properties": {
+              "status": {
+                "type": "string",
+                "enum": [
+                  "done",
+                  "partial",
+                  "skipped"
+                ]
+              },
+              "note": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "updatedAt": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "status",
+              "note",
+              "updatedAt"
+            ],
+            "description": "The client's mark, null = not marked"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "sets",
+          "reps",
+          "duration",
+          "note",
+          "videoUrl",
+          "result"
+        ]
+      },
+      "AssignmentStatus": {
+        "type": "string",
+        "enum": [
+          "open",
+          "in_progress",
+          "done",
+          "partial"
+        ],
+        "description": "open: nothing marked; in_progress: some exercises marked; done: all done; partial: all marked, not all done"
+      },
+      "CreateAssignmentRequest": {
+        "type": "object",
+        "properties": {
+          "title": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 80
+          },
+          "note": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "maxLength": 2000
+          },
+          "dueDate": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date",
+            "example": "2026-11-03"
+          },
+          "exercises": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "name": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 80
+                },
+                "sets": {
+                  "type": [
+                    "integer",
+                    "null"
+                  ],
+                  "minimum": 1,
+                  "maximum": 50
+                },
+                "reps": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "maxLength": 20,
+                  "description": "Free text, e.g. \"8-10\""
+                },
+                "duration": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "maxLength": 20,
+                  "description": "Free text, e.g. \"30 sec\""
+                },
+                "note": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "maxLength": 500
+                },
+                "videoUrl": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "maxLength": 500
+                }
+              },
+              "required": [
+                "name"
+              ]
+            },
+            "minItems": 1,
+            "maxItems": 30
+          }
+        },
+        "required": [
+          "title",
+          "exercises"
+        ]
+      },
+      "UpdateAssignmentRequest": {
+        "type": "object",
+        "properties": {
+          "title": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 80
+          },
+          "note": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "maxLength": 2000
+          },
+          "dueDate": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date",
+            "example": "2026-11-03"
+          },
+          "exercises": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string",
+                  "description": "Existing exercise (updated, its result is kept); without id a new exercise is added",
+                  "example": "6650f0c2a1b2c3d4e5f60718"
+                },
+                "name": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 80
+                },
+                "sets": {
+                  "type": [
+                    "integer",
+                    "null"
+                  ],
+                  "minimum": 1,
+                  "maximum": 50
+                },
+                "reps": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "maxLength": 20,
+                  "description": "Free text, e.g. \"8-10\""
+                },
+                "duration": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "maxLength": 20,
+                  "description": "Free text, e.g. \"30 sec\""
+                },
+                "note": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "maxLength": 500
+                },
+                "videoUrl": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "maxLength": 500
+                }
+              },
+              "required": [
+                "name"
+              ]
+            },
+            "minItems": 1,
+            "maxItems": 30,
+            "description": "The full new list: exercises missing from it are removed"
+          }
+        }
+      },
+      "ExerciseResultRequest": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": [
+              "done",
+              "partial",
+              "skipped"
+            ]
+          },
+          "note": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "maxLength": 500
+          }
+        },
+        "required": [
+          "status"
+        ]
+      },
+      "AssignmentClientNoteRequest": {
+        "type": "object",
+        "properties": {
+          "note": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "maxLength": 1000
+          }
+        },
+        "required": [
+          "note"
+        ]
+      },
+      "Earnings": {
+        "type": "object",
+        "properties": {
+          "period": {
+            "type": "string",
+            "enum": [
+              "week",
+              "month",
+              "year"
+            ]
+          },
+          "from": {
+            "type": "string",
+            "description": "First day of the period (YYYY-MM-DD)"
+          },
+          "to": {
+            "type": "string",
+            "description": "Last day of the period (YYYY-MM-DD)"
+          },
+          "total": {
+            "type": "object",
+            "properties": {
+              "amountCents": {
+                "type": "integer",
+                "minimum": 0,
+                "example": 4500
+              },
+              "currency": {
+                "type": "string",
+                "enum": [
+                  "USD"
+                ]
+              }
+            },
+            "required": [
+              "amountCents",
+              "currency"
+            ],
+            "description": "Earned trainings + packages sold in the period"
+          },
+          "upcoming": {
+            "type": "object",
+            "properties": {
+              "amountCents": {
+                "type": "integer",
+                "minimum": 0,
+                "example": 4500
+              },
+              "currency": {
+                "type": "string",
+                "enum": [
+                  "USD"
+                ]
+              }
+            },
+            "required": [
+              "amountCents",
+              "currency"
+            ],
+            "description": "Paid trainings later in the period (not started yet)"
+          },
+          "previousTotal": {
+            "$ref": "#/components/schemas/Money"
+          },
+          "changePercent": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "description": "null when previousTotal is 0"
+          },
+          "breakdown": {
+            "type": "object",
+            "properties": {
+              "individual": {
+                "$ref": "#/components/schemas/Money"
+              },
+              "group": {
+                "$ref": "#/components/schemas/Money"
+              },
+              "packages": {
+                "$ref": "#/components/schemas/Money"
+              },
+              "refunds": {
+                "type": "object",
+                "properties": {
+                  "amountCents": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "example": 4500
+                  },
+                  "currency": {
+                    "type": "string",
+                    "enum": [
+                      "USD"
+                    ]
+                  }
+                },
+                "required": [
+                  "amountCents",
+                  "currency"
+                ],
+                "description": "Money refunded in the period (informational)"
+              }
+            },
+            "required": [
+              "individual",
+              "group",
+              "packages",
+              "refunds"
+            ]
+          },
+          "counts": {
+            "type": "object",
+            "properties": {
+              "trainings": {
+                "type": "integer"
+              },
+              "packagesSold": {
+                "type": "integer"
+              },
+              "clients": {
+                "type": "integer"
+              }
+            },
+            "required": [
+              "trainings",
+              "packagesSold",
+              "clients"
+            ]
+          },
+          "chart": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "start": {
+                  "type": "string"
+                },
+                "amount": {
+                  "$ref": "#/components/schemas/Money"
+                }
+              },
+              "required": [
+                "start",
+                "amount"
+              ]
+            },
+            "description": "week: 7 days, month: every day, year: 12 months"
+          },
+          "topClients": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "client": {
+                  "$ref": "#/components/schemas/UserSummary"
+                },
+                "amount": {
+                  "$ref": "#/components/schemas/Money"
+                },
+                "trainings": {
+                  "type": "integer"
+                }
+              },
+              "required": [
+                "client",
+                "amount",
+                "trainings"
+              ]
+            }
+          }
+        },
+        "required": [
+          "period",
+          "from",
+          "to",
+          "total",
+          "upcoming",
+          "previousTotal",
+          "changePercent",
+          "breakdown",
+          "counts",
+          "chart",
+          "topClients"
+        ]
+      },
       "Availability": {
         "type": "object",
         "properties": {
@@ -1842,7 +2638,65 @@
             "type": "boolean"
           },
           "price": {
-            "$ref": "#/components/schemas/Money"
+            "type": "object",
+            "properties": {
+              "amountCents": {
+                "type": "integer",
+                "minimum": 0,
+                "example": 4500
+              },
+              "currency": {
+                "type": "string",
+                "enum": [
+                  "USD"
+                ]
+              }
+            },
+            "required": [
+              "amountCents",
+              "currency"
+            ],
+            "description": "What the client pays (after the promo discount)"
+          },
+          "listPrice": {
+            "type": "object",
+            "properties": {
+              "amountCents": {
+                "type": "integer",
+                "minimum": 0,
+                "example": 4500
+              },
+              "currency": {
+                "type": "string",
+                "enum": [
+                  "USD"
+                ]
+              }
+            },
+            "required": [
+              "amountCents",
+              "currency"
+            ],
+            "description": "Price before the promo discount (= price without a promo)"
+          },
+          "promo": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "properties": {
+              "code": {
+                "type": "string"
+              },
+              "discount": {
+                "$ref": "#/components/schemas/Money"
+              }
+            },
+            "required": [
+              "code",
+              "discount"
+            ],
+            "description": "Promo code used for this booking"
           },
           "payment": {
             "$ref": "#/components/schemas/Payment"
@@ -1866,6 +2720,16 @@
               "null"
             ]
           },
+          "format": {
+            "$ref": "#/components/schemas/TrainingFormat"
+          },
+          "meetingUrl": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Online bookings: the coach's current meeting link (only the client and the coach of the booking see it)"
+          },
           "cancellable": {
             "type": "boolean",
             "description": "Whether the client can still cancel right now"
@@ -1880,6 +2744,37 @@
               "null"
             ],
             "description": "When the booking was last rescheduled"
+          },
+          "noShow": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "properties": {
+              "markedAt": {
+                "type": "string"
+              },
+              "refunded": {
+                "type": "boolean"
+              }
+            },
+            "required": [
+              "markedAt",
+              "refunded"
+            ],
+            "description": "Set when the coach marked the client as a no-show"
+          },
+          "noShowMarkable": {
+            "type": "boolean",
+            "description": "The coach making the request can mark a no-show now (always false for clients)"
+          },
+          "noShowUndoable": {
+            "type": "boolean",
+            "description": "The coach can remove the no-show now (inside the window and not refunded)"
+          },
+          "noShowDeadline": {
+            "type": "string",
+            "description": "startAt + 48h: end of the no-show window"
           },
           "cancelDeadline": {
             "type": [
@@ -1927,6 +2822,9 @@
               "kind": {
                 "$ref": "#/components/schemas/SessionKind"
               },
+              "format": {
+                "$ref": "#/components/schemas/TrainingFormat"
+              },
               "location": {
                 "$ref": "#/components/schemas/Location"
               },
@@ -1942,6 +2840,7 @@
               "sessionTypeId",
               "title",
               "kind",
+              "format",
               "location",
               "capacity",
               "participantsCount"
@@ -1965,14 +2864,22 @@
           "status",
           "isTrial",
           "price",
+          "listPrice",
+          "promo",
           "payment",
           "expiresAt",
           "startAt",
           "endAt",
           "seriesId",
+          "format",
+          "meetingUrl",
           "cancellable",
           "reschedulable",
           "rescheduledAt",
+          "noShow",
+          "noShowMarkable",
+          "noShowUndoable",
+          "noShowDeadline",
           "cancelDeadline",
           "cancelledAt",
           "cancelledBy",
@@ -1990,7 +2897,8 @@
           "pending_payment",
           "confirmed",
           "cancelled",
-          "completed"
+          "completed",
+          "no_show"
         ]
       },
       "Payment": {
@@ -2043,32 +2951,6 @@
           "refundedAt"
         ]
       },
-      "UserSummary": {
-        "type": "object",
-        "properties": {
-          "id": {
-            "type": "string"
-          },
-          "firstName": {
-            "type": "string"
-          },
-          "lastName": {
-            "type": "string"
-          },
-          "avatarUrl": {
-            "type": [
-              "string",
-              "null"
-            ]
-          }
-        },
-        "required": [
-          "id",
-          "firstName",
-          "lastName",
-          "avatarUrl"
-        ]
-      },
       "IndividualBookingRequest": {
         "type": "object",
         "properties": {
@@ -2090,6 +2972,20 @@
             "type": "boolean",
             "default": false,
             "description": "Pay with 1 credit of a package of this coach: the booking is confirmed immediately"
+          },
+          "promoCode": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 40,
+            "description": "Coach's promo code (not with isTrial / useCredits)"
+          },
+          "format": {
+            "type": "string",
+            "enum": [
+              "in_person",
+              "online"
+            ],
+            "description": "Required for \"both\" training types; must match in_person / online types"
           },
           "location": {
             "type": "object",
@@ -2201,7 +3097,7 @@
               "lat",
               "lng"
             ],
-            "description": "Overrides the training location (optional)"
+            "description": "Overrides the training location (optional; ignored for online)"
           }
         },
         "required": [
@@ -2225,6 +3121,12 @@
             "type": "boolean",
             "default": false,
             "description": "Pay with 1 credit of a package of this coach: the booking is confirmed immediately"
+          },
+          "promoCode": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 40,
+            "description": "Coach's promo code (not with isTrial / useCredits)"
           }
         },
         "required": [
@@ -2359,7 +3261,15 @@
               "address",
               "lat",
               "lng"
-            ]
+            ],
+            "description": "null for online trainings (see meetingUrl)"
+          },
+          "meetingUrl": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Online trainings: the meeting link (also in notes)"
           },
           "notes": {
             "type": "string"
@@ -2371,9 +3281,322 @@
           "endAt",
           "timezone",
           "location",
+          "meetingUrl",
           "notes"
         ],
         "description": "Data for adding the training to the device calendar"
+      },
+      "NoShowRequest": {
+        "type": "object",
+        "properties": {
+          "refund": {
+            "type": "boolean",
+            "description": "true: full refund like a coach cancellation (credit back for credit bookings); false: the payment stays"
+          }
+        },
+        "required": [
+          "refund"
+        ]
+      },
+      "Series": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "sessionType": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string"
+              },
+              "title": {
+                "type": "string"
+              },
+              "durationMin": {
+                "type": "integer"
+              },
+              "isActive": {
+                "type": "boolean"
+              }
+            },
+            "required": [
+              "id",
+              "title",
+              "durationMin",
+              "isActive"
+            ]
+          },
+          "coach": {
+            "$ref": "#/components/schemas/UserSummary"
+          },
+          "weekdays": {
+            "type": "array",
+            "items": {
+              "type": "integer"
+            }
+          },
+          "time": {
+            "type": "string",
+            "description": "Current pattern, coach's time zone"
+          },
+          "timezone": {
+            "type": "string"
+          },
+          "format": {
+            "$ref": "#/components/schemas/TrainingFormat"
+          },
+          "bookings": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Booking"
+            },
+            "description": "All bookings of the series, by startAt"
+          },
+          "upcomingCount": {
+            "type": "integer"
+          },
+          "nextAt": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "lastAt": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "canExtend": {
+            "type": "boolean"
+          },
+          "extendFrom": {
+            "type": "string",
+            "description": "Monday after the last training (YYYY-MM-DD, coach's time zone)"
+          }
+        },
+        "required": [
+          "id",
+          "sessionType",
+          "coach",
+          "weekdays",
+          "time",
+          "timezone",
+          "format",
+          "bookings",
+          "upcomingCount",
+          "nextAt",
+          "lastAt",
+          "canExtend",
+          "extendFrom"
+        ]
+      },
+      "SeriesCancelResult": {
+        "type": "object",
+        "properties": {
+          "cancelled": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Booking"
+            }
+          },
+          "kept": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "bookingId": {
+                  "type": "string"
+                },
+                "startAt": {
+                  "type": "string"
+                },
+                "reason": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "bookingId",
+                "startAt",
+                "reason"
+              ]
+            }
+          }
+        },
+        "required": [
+          "cancelled",
+          "kept"
+        ]
+      },
+      "SeriesReschedulePreview": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "bookingId": {
+                  "type": "string"
+                },
+                "fromStartAt": {
+                  "type": "string"
+                },
+                "date": {
+                  "type": "string"
+                },
+                "startAt": {
+                  "type": "string"
+                },
+                "endAt": {
+                  "type": "string"
+                },
+                "available": {
+                  "type": "boolean"
+                },
+                "reason": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "enum": [
+                    "UNAVAILABLE",
+                    "PAST",
+                    "EXCEPTION",
+                    null
+                  ]
+                }
+              },
+              "required": [
+                "bookingId",
+                "fromStartAt",
+                "date",
+                "startAt",
+                "endAt",
+                "available",
+                "reason"
+              ]
+            }
+          }
+        },
+        "required": [
+          "items"
+        ]
+      },
+      "SeriesRescheduleRequest": {
+        "type": "object",
+        "properties": {
+          "weekdays": {
+            "type": "array",
+            "items": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 6
+            },
+            "minItems": 1,
+            "maxItems": 7,
+            "description": "0 = Sunday ... 6 = Saturday"
+          },
+          "time": {
+            "type": "string",
+            "pattern": "^([01]\\d|2[0-3]):(00|30)$",
+            "example": "09:00",
+            "description": "Start time in the coach's time zone"
+          },
+          "startDate": {
+            "type": "string",
+            "format": "date",
+            "example": "2026-11-03",
+            "description": "First date of the new pattern (not before today)"
+          }
+        },
+        "required": [
+          "weekdays",
+          "time",
+          "startDate"
+        ]
+      },
+      "SeriesRescheduleResult": {
+        "type": "object",
+        "properties": {
+          "moved": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Booking"
+            }
+          },
+          "kept": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "bookingId": {
+                  "type": "string"
+                },
+                "reason": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "bookingId",
+                "reason"
+              ]
+            }
+          }
+        },
+        "required": [
+          "moved",
+          "kept"
+        ]
+      },
+      "SeriesExtendPreviewRequest": {
+        "type": "object",
+        "properties": {
+          "weeks": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 12
+          }
+        },
+        "required": [
+          "weeks"
+        ]
+      },
+      "SeriesExtendRequest": {
+        "type": "object",
+        "properties": {
+          "weeks": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 12
+          },
+          "dates": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "date",
+              "example": "2026-11-03"
+            },
+            "minItems": 1,
+            "maxItems": 84,
+            "description": "Dates chosen from the extend preview"
+          },
+          "useCredits": {
+            "type": "boolean",
+            "default": false
+          },
+          "promoCode": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 40,
+            "description": "Coach's promo code (not with isTrial / useCredits)"
+          }
+        },
+        "required": [
+          "weeks",
+          "dates"
+        ]
       },
       "CreatePackageRequest": {
         "type": "object",
@@ -2504,7 +3727,31 @@
               "amountCents",
               "currency"
             ],
-            "description": "What was paid"
+            "description": "What was paid (after the promo discount)"
+          },
+          "listPrice": {
+            "type": "object",
+            "properties": {
+              "amountCents": {
+                "type": "integer",
+                "minimum": 0,
+                "example": 4500
+              },
+              "currency": {
+                "type": "string",
+                "enum": [
+                  "USD"
+                ]
+              }
+            },
+            "required": [
+              "amountCents",
+              "currency"
+            ],
+            "description": "Package price before the promo discount"
+          },
+          "promo": {
+            "$ref": "#/components/schemas/AppliedPromo"
           },
           "purchasedAt": {
             "type": "string"
@@ -2525,10 +3772,41 @@
           "creditsTotal",
           "creditsLeft",
           "price",
+          "listPrice",
+          "promo",
           "purchasedAt",
           "expiresAt",
           "expired"
         ]
+      },
+      "AppliedPromo": {
+        "type": [
+          "object",
+          "null"
+        ],
+        "properties": {
+          "code": {
+            "type": "string"
+          },
+          "discount": {
+            "$ref": "#/components/schemas/Money"
+          }
+        },
+        "required": [
+          "code",
+          "discount"
+        ]
+      },
+      "PurchasePackageRequest": {
+        "type": "object",
+        "properties": {
+          "promoCode": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 40,
+            "description": "Coach's promo code (not with isTrial / useCredits)"
+          }
+        }
       },
       "MyPackages": {
         "type": "object",
@@ -2547,6 +3825,388 @@
         "required": [
           "items",
           "creditsAvailable"
+        ]
+      },
+      "PromoCode": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "code": {
+            "type": "string"
+          },
+          "discount": {
+            "$ref": "#/components/schemas/Discount"
+          },
+          "validFrom": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "validUntil": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "maxUses": {
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "usesCount": {
+            "type": "integer"
+          },
+          "newClientsOnly": {
+            "type": "boolean"
+          },
+          "appliesTo": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "enum": [
+                "bookings",
+                "packages"
+              ]
+            }
+          },
+          "isActive": {
+            "type": "boolean"
+          },
+          "createdAt": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "code",
+          "discount",
+          "validFrom",
+          "validUntil",
+          "maxUses",
+          "usesCount",
+          "newClientsOnly",
+          "appliesTo",
+          "isActive",
+          "createdAt"
+        ]
+      },
+      "Discount": {
+        "type": "object",
+        "properties": {
+          "type": {
+            "type": "string",
+            "enum": [
+              "percent",
+              "amount"
+            ]
+          },
+          "value": {
+            "type": "integer",
+            "description": "percent: 1-100; amount: cents > 0"
+          }
+        },
+        "required": [
+          "type",
+          "value"
+        ]
+      },
+      "CreatePromoCodeRequest": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "string",
+            "pattern": "^[A-Za-z0-9]{4,20}$"
+          },
+          "discount": {
+            "type": "object",
+            "properties": {
+              "type": {
+                "type": "string",
+                "enum": [
+                  "percent",
+                  "amount"
+                ]
+              },
+              "value": {
+                "type": "integer",
+                "description": "percent: 1-100; amount: cents > 0"
+              }
+            },
+            "required": [
+              "type",
+              "value"
+            ]
+          },
+          "validFrom": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date",
+            "example": "2026-11-03"
+          },
+          "validUntil": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date",
+            "example": "2026-11-03"
+          },
+          "maxUses": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "minimum": 1
+          },
+          "newClientsOnly": {
+            "type": "boolean",
+            "default": false
+          },
+          "appliesTo": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "enum": [
+                "bookings",
+                "packages"
+              ]
+            },
+            "minItems": 1,
+            "maxItems": 2,
+            "default": [
+              "bookings",
+              "packages"
+            ]
+          },
+          "isActive": {
+            "type": "boolean",
+            "default": true
+          }
+        },
+        "required": [
+          "code",
+          "discount"
+        ]
+      },
+      "UpdatePromoCodeRequest": {
+        "type": "object",
+        "properties": {
+          "discount": {
+            "type": "object",
+            "properties": {
+              "type": {
+                "type": "string",
+                "enum": [
+                  "percent",
+                  "amount"
+                ]
+              },
+              "value": {
+                "type": "integer",
+                "description": "percent: 1-100; amount: cents > 0"
+              }
+            },
+            "required": [
+              "type",
+              "value"
+            ]
+          },
+          "validFrom": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date",
+            "example": "2026-11-03"
+          },
+          "validUntil": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date",
+            "example": "2026-11-03"
+          },
+          "maxUses": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "minimum": 1
+          },
+          "newClientsOnly": {
+            "type": "boolean"
+          },
+          "appliesTo": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "enum": [
+                "bookings",
+                "packages"
+              ]
+            },
+            "minItems": 1,
+            "maxItems": 2
+          },
+          "isActive": {
+            "type": "boolean"
+          }
+        }
+      },
+      "PromoQuote": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "string"
+          },
+          "label": {
+            "type": "string",
+            "example": "−20%"
+          },
+          "unitPrice": {
+            "type": "object",
+            "properties": {
+              "amountCents": {
+                "type": "integer",
+                "minimum": 0,
+                "example": 4500
+              },
+              "currency": {
+                "type": "string",
+                "enum": [
+                  "USD"
+                ]
+              }
+            },
+            "required": [
+              "amountCents",
+              "currency"
+            ],
+            "description": "One training / package before the discount"
+          },
+          "unitDiscount": {
+            "$ref": "#/components/schemas/Money"
+          },
+          "total": {
+            "type": "object",
+            "properties": {
+              "amountCents": {
+                "type": "integer",
+                "minimum": 0,
+                "example": 4500
+              },
+              "currency": {
+                "type": "string",
+                "enum": [
+                  "USD"
+                ]
+              }
+            },
+            "required": [
+              "amountCents",
+              "currency"
+            ],
+            "description": "For all count trainings, after the discount"
+          },
+          "totalDiscount": {
+            "$ref": "#/components/schemas/Money"
+          }
+        },
+        "required": [
+          "code",
+          "label",
+          "unitPrice",
+          "unitDiscount",
+          "total",
+          "totalDiscount"
+        ]
+      },
+      "PromoCheckRequest": {
+        "type": "object",
+        "properties": {
+          "coachId": {
+            "type": "string",
+            "description": "Object id",
+            "example": "6650f0c2a1b2c3d4e5f60718"
+          },
+          "code": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 40
+          },
+          "target": {
+            "oneOf": [
+              {
+                "type": "object",
+                "properties": {
+                  "type": {
+                    "type": "string",
+                    "enum": [
+                      "booking"
+                    ]
+                  },
+                  "sessionTypeId": {
+                    "type": [
+                      "string",
+                      "null"
+                    ],
+                    "description": "Individual training type",
+                    "example": "6650f0c2a1b2c3d4e5f60718"
+                  },
+                  "sessionId": {
+                    "type": [
+                      "string",
+                      "null"
+                    ],
+                    "description": "Group session",
+                    "example": "6650f0c2a1b2c3d4e5f60718"
+                  },
+                  "count": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 84,
+                    "default": 1,
+                    "description": "Trainings of a series"
+                  }
+                },
+                "required": [
+                  "type"
+                ]
+              },
+              {
+                "type": "object",
+                "properties": {
+                  "type": {
+                    "type": "string",
+                    "enum": [
+                      "package"
+                    ]
+                  },
+                  "packageId": {
+                    "type": "string",
+                    "description": "Object id",
+                    "example": "6650f0c2a1b2c3d4e5f60718"
+                  }
+                },
+                "required": [
+                  "type",
+                  "packageId"
+                ]
+              }
+            ]
+          }
+        },
+        "required": [
+          "coachId",
+          "code",
+          "target"
         ]
       },
       "WaitlistEntry": {
@@ -2641,6 +4301,9 @@
           "kind": {
             "$ref": "#/components/schemas/SessionKind"
           },
+          "format": {
+            "$ref": "#/components/schemas/TrainingFormat"
+          },
           "title": {
             "type": "string"
           },
@@ -2683,6 +4346,7 @@
           "coachId",
           "sessionTypeId",
           "kind",
+          "format",
           "title",
           "startAt",
           "endAt",
@@ -2721,16 +4385,41 @@
             "type": "string"
           },
           "status": {
-            "type": "string",
-            "enum": [
-              "pending_payment",
-              "confirmed",
-              "cancelled",
-              "completed"
-            ]
+            "$ref": "#/components/schemas/BookingStatus"
           },
           "isTrial": {
             "type": "boolean"
+          },
+          "noShow": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "properties": {
+              "markedAt": {
+                "type": "string"
+              },
+              "refunded": {
+                "type": "boolean"
+              }
+            },
+            "required": [
+              "markedAt",
+              "refunded"
+            ],
+            "description": "Set when the coach marked the client as a no-show"
+          },
+          "noShowMarkable": {
+            "type": "boolean",
+            "description": "The coach making the request can mark a no-show now (always false for clients)"
+          },
+          "noShowUndoable": {
+            "type": "boolean",
+            "description": "The coach can remove the no-show now (inside the window and not refunded)"
+          },
+          "noShowDeadline": {
+            "type": "string",
+            "description": "startAt + 48h: end of the no-show window"
           },
           "client": {
             "$ref": "#/components/schemas/UserSummary"
@@ -2743,6 +4432,10 @@
           "bookingId",
           "status",
           "isTrial",
+          "noShow",
+          "noShowMarkable",
+          "noShowUndoable",
+          "noShowDeadline",
           "client",
           "notesCount"
         ]
@@ -4223,6 +5916,97 @@
           {
             "schema": {
               "type": "string",
+              "enum": [
+                "in_person",
+                "online"
+              ],
+              "description": "Coaches offering this format"
+            },
+            "required": false,
+            "description": "Coaches offering this format",
+            "name": "format",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": [
+                "integer",
+                "null"
+              ],
+              "minimum": 0,
+              "description": "Cents: an active type costs at least this"
+            },
+            "required": false,
+            "description": "Cents: an active type costs at least this",
+            "name": "priceMin",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": [
+                "integer",
+                "null"
+              ],
+              "minimum": 0,
+              "description": "Cents: an active type costs at most this"
+            },
+            "required": false,
+            "description": "Cents: an active type costs at most this",
+            "name": "priceMax",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "pattern": "^(morning|afternoon|evening)(,(morning|afternoon|evening))*$",
+              "description": "Comma list. Free time in the next 14 days in the viewer's time zone: morning 05-12, afternoon 12-17, evening 17-23"
+            },
+            "required": false,
+            "description": "Comma list. Free time in the next 14 days in the viewer's time zone: morning 05-12, afternoon 12-17, evening 17-23",
+            "name": "timeOfDay",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "description": "true: coaches with an active individual type"
+            },
+            "required": false,
+            "description": "true: coaches with an active individual type",
+            "name": "trial",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 40,
+              "description": "Case-insensitive"
+            },
+            "required": false,
+            "description": "Case-insensitive",
+            "name": "language",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "enum": [
+                "recommended",
+                "rating",
+                "price_asc",
+                "price_desc",
+                "next_available"
+              ],
+              "default": "recommended"
+            },
+            "required": false,
+            "name": "sort",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
               "description": "true: only my favorite coaches"
             },
             "required": false,
@@ -4244,11 +6028,23 @@
             "schema": {
               "type": "integer",
               "minimum": 1,
-              "maximum": 50,
-              "default": 20
+              "maximum": 100,
+              "default": 20,
+              "description": "Up to 50, or up to 100 together with bbox"
             },
             "required": false,
+            "description": "Up to 50, or up to 100 together with bbox",
             "name": "pageSize",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "description": "minLng,minLat,maxLng,maxLat: only coaches whose default location is inside (online-only coaches excluded)"
+            },
+            "required": false,
+            "description": "minLng,minLat,maxLng,maxLat: only coaches whose default location is inside (online-only coaches excluded)",
+            "name": "bbox",
             "in": "query"
           }
         ],
@@ -4282,6 +6078,52 @@
                     "pageSize",
                     "total"
                   ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "VALIDATION_ERROR",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED, TOKEN_EXPIRED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/coaches/filters": {
+      "get": {
+        "tags": [
+          "Coaches"
+        ],
+        "summary": "Values for the catalog filters: languages of published coaches and the price range",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "x-auth": "user",
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CoachFilters"
                 }
               }
             }
@@ -4738,6 +6580,24 @@
                   },
                   "defaultLocation": {
                     "$ref": "#/components/schemas/Location"
+                  },
+                  "online": {
+                    "type": "object",
+                    "properties": {
+                      "enabled": {
+                        "type": "boolean"
+                      },
+                      "meetingUrl": {
+                        "type": [
+                          "string",
+                          "null"
+                        ]
+                      }
+                    },
+                    "required": [
+                      "enabled"
+                    ],
+                    "description": "Enabling needs a meetingUrl (https)"
                   }
                 }
               }
@@ -5975,6 +7835,861 @@
         }
       }
     },
+    "/api/v1/coach/clients/{clientId}/assignments": {
+      "get": {
+        "tags": [
+          "Coach: assignments"
+        ],
+        "summary": "A client's assignments from me, newest first",
+        "description": "Only clients who have (or had) a booking with the coach, otherwise NOT_FOUND.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "x-auth": "coach",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "pattern": "^[0-9a-f]{24}$/i"
+            },
+            "required": true,
+            "name": "clientId",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "items": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/Assignment"
+                      }
+                    }
+                  },
+                  "required": [
+                    "items"
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "VALIDATION_ERROR",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED, TOKEN_EXPIRED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "NOT_FOUND",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Coach: assignments"
+        ],
+        "summary": "Give a client homework (Socket.IO `assignment:new` to the client)",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "x-auth": "coach",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "pattern": "^[0-9a-f]{24}$/i"
+            },
+            "required": true,
+            "name": "clientId",
+            "in": "path"
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateAssignmentRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Assignment"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "VALIDATION_ERROR",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED, TOKEN_EXPIRED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "NOT_FOUND",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/coach/assignments/{id}": {
+      "patch": {
+        "tags": [
+          "Coach: assignments"
+        ],
+        "summary": "Edit an assignment",
+        "description": "`exercises` is the full new list: an item with an existing `id` is updated and keeps its result, an item without `id` is added, exercises missing from the list are removed.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "x-auth": "coach",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "description": "Object id",
+              "example": "6650f0c2a1b2c3d4e5f60718"
+            },
+            "required": true,
+            "description": "Object id",
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateAssignmentRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Assignment"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "VALIDATION_ERROR",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED, TOKEN_EXPIRED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "NOT_FOUND",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Coach: assignments"
+        ],
+        "summary": "Delete an assignment",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "x-auth": "coach",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "description": "Object id",
+              "example": "6650f0c2a1b2c3d4e5f60718"
+            },
+            "required": true,
+            "description": "Object id",
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "No content"
+          },
+          "400": {
+            "description": "VALIDATION_ERROR",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED, TOKEN_EXPIRED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "NOT_FOUND",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/me/assignments": {
+      "get": {
+        "tags": [
+          "Assignments"
+        ],
+        "summary": "My assignments: nearest dueDate first, then without a date (newer first)",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "x-auth": "client",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "enum": [
+                "active",
+                "all"
+              ],
+              "default": "active",
+              "description": "active = open + in_progress"
+            },
+            "required": false,
+            "description": "active = open + in_progress",
+            "name": "status",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "items": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/Assignment"
+                      }
+                    }
+                  },
+                  "required": [
+                    "items"
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "VALIDATION_ERROR",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED, TOKEN_EXPIRED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/me/assignments/{id}": {
+      "get": {
+        "tags": [
+          "Assignments"
+        ],
+        "summary": "One of my assignments",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "x-auth": "client",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "description": "Object id",
+              "example": "6650f0c2a1b2c3d4e5f60718"
+            },
+            "required": true,
+            "description": "Object id",
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Assignment"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "VALIDATION_ERROR",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED, TOKEN_EXPIRED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "NOT_FOUND",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/me/assignments/{id}/exercises/{exerciseId}/result": {
+      "put": {
+        "tags": [
+          "Assignments"
+        ],
+        "summary": "Mark an exercise done / partial / skipped (Socket.IO `assignment:updated` to the coach)",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "x-auth": "client",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "description": "Object id",
+              "example": "6650f0c2a1b2c3d4e5f60718"
+            },
+            "required": true,
+            "description": "Object id",
+            "name": "id",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "description": "Object id",
+              "example": "6650f0c2a1b2c3d4e5f60718"
+            },
+            "required": true,
+            "description": "Object id",
+            "name": "exerciseId",
+            "in": "path"
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ExerciseResultRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Assignment"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "VALIDATION_ERROR",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED, TOKEN_EXPIRED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "NOT_FOUND",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Assignments"
+        ],
+        "summary": "Remove the mark of an exercise",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "x-auth": "client",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "description": "Object id",
+              "example": "6650f0c2a1b2c3d4e5f60718"
+            },
+            "required": true,
+            "description": "Object id",
+            "name": "id",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "description": "Object id",
+              "example": "6650f0c2a1b2c3d4e5f60718"
+            },
+            "required": true,
+            "description": "Object id",
+            "name": "exerciseId",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Assignment"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "VALIDATION_ERROR",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED, TOKEN_EXPIRED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "NOT_FOUND",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/me/assignments/{id}/note": {
+      "put": {
+        "tags": [
+          "Assignments"
+        ],
+        "summary": "My note to the coach on the assignment (null removes it)",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "x-auth": "client",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "description": "Object id",
+              "example": "6650f0c2a1b2c3d4e5f60718"
+            },
+            "required": true,
+            "description": "Object id",
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AssignmentClientNoteRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Assignment"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "VALIDATION_ERROR",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED, TOKEN_EXPIRED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "NOT_FOUND",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/coach/earnings": {
+      "get": {
+        "tags": [
+          "Coach: earnings"
+        ],
+        "summary": "My earnings for a week, month or year (coach time zone): total, upcoming, breakdown, chart, top clients",
+        "description": "Earned = card-paid (mock) trainings that started in the period (confirmed, completed or no-show without refund); upcoming = paid trainings later in the period; packages by purchase date; credit bookings are not counted again; refunds are listed separately. total = earned + packages.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "x-auth": "coach",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "enum": [
+                "week",
+                "month",
+                "year"
+              ],
+              "default": "week"
+            },
+            "required": false,
+            "name": "period",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "format": "date",
+              "example": "2026-11-03",
+              "description": "Any day inside the period (coach's time zone), default today"
+            },
+            "required": false,
+            "description": "Any day inside the period (coach's time zone), default today",
+            "name": "date",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Earnings"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "VALIDATION_ERROR",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED, TOKEN_EXPIRED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/coach/session-types": {
       "get": {
         "tags": [
@@ -6065,6 +8780,9 @@
                   },
                   "kind": {
                     "$ref": "#/components/schemas/SessionKind"
+                  },
+                  "format": {
+                    "$ref": "#/components/schemas/SessionTypeFormat"
                   },
                   "durationMin": {
                     "type": "integer",
@@ -6178,6 +8896,9 @@
                     "type": "string",
                     "minLength": 2,
                     "maxLength": 80
+                  },
+                  "format": {
+                    "$ref": "#/components/schemas/SessionTypeFormat"
                   },
                   "durationMin": {
                     "type": "integer",
@@ -6676,7 +9397,7 @@
             }
           },
           "409": {
-            "description": "SLOT_UNAVAILABLE, SESSION_FULL, ALREADY_BOOKED, TRIAL_ALREADY_USED, NO_CREDITS",
+            "description": "SLOT_UNAVAILABLE, SESSION_FULL, ALREADY_BOOKED, TRIAL_ALREADY_USED, NO_CREDITS, PROMO_INVALID, PROMO_EXPIRED, PROMO_USED_UP, PROMO_ALREADY_USED, PROMO_NEW_CLIENTS_ONLY, PROMO_NOT_APPLICABLE",
             "content": {
               "application/json": {
                 "schema": {
@@ -6888,6 +9609,14 @@
                     "type": "string",
                     "format": "date",
                     "example": "2026-11-03"
+                  },
+                  "format": {
+                    "type": "string",
+                    "enum": [
+                      "in_person",
+                      "online"
+                    ],
+                    "description": "Required for \"both\" training types; must match in_person / online types"
                   }
                 },
                 "required": [
@@ -7026,6 +9755,14 @@
                     "format": "date",
                     "example": "2026-11-03"
                   },
+                  "format": {
+                    "type": "string",
+                    "enum": [
+                      "in_person",
+                      "online"
+                    ],
+                    "description": "Required for \"both\" training types; must match in_person / online types"
+                  },
                   "dates": {
                     "type": "array",
                     "items": {
@@ -7041,6 +9778,12 @@
                     "type": "boolean",
                     "default": false,
                     "description": "1 credit per booked date; all bookings confirmed. Not enough credits -> INSUFFICIENT_CREDITS, nothing booked"
+                  },
+                  "promoCode": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 40,
+                    "description": "Discount applies to every booked date (one use of the code); not with useCredits"
                   }
                 },
                 "required": [
@@ -7107,7 +9850,7 @@
             }
           },
           "409": {
-            "description": "INSUFFICIENT_CREDITS",
+            "description": "INSUFFICIENT_CREDITS, PROMO_INVALID, PROMO_EXPIRED, PROMO_USED_UP, PROMO_ALREADY_USED, PROMO_NEW_CLIENTS_ONLY, PROMO_NOT_APPLICABLE",
             "content": {
               "application/json": {
                 "schema": {
@@ -7771,6 +10514,791 @@
         }
       }
     },
+    "/api/v1/coach/bookings/{id}/no-show": {
+      "post": {
+        "tags": [
+          "Coach: schedule"
+        ],
+        "summary": "Mark the client as a no-show (from the start until 48 hours later)",
+        "description": "`refund: true` returns the payment like a coach cancellation (a credit goes back to its package); `refund: false` keeps it. Ignored for trial / free bookings. Group sessions: per participant booking.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "x-auth": "coach",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "description": "Object id",
+              "example": "6650f0c2a1b2c3d4e5f60718"
+            },
+            "required": true,
+            "description": "Object id",
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/NoShowRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Booking"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "VALIDATION_ERROR",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED, TOKEN_EXPIRED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "NOT_FOUND",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "NO_SHOW_WINDOW_PASSED, NO_SHOW_NOT_ALLOWED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Coach: schedule"
+        ],
+        "summary": "Remove a no-show (only without a refund, inside the 48-hour window)",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "x-auth": "coach",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "description": "Object id",
+              "example": "6650f0c2a1b2c3d4e5f60718"
+            },
+            "required": true,
+            "description": "Object id",
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Booking"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "VALIDATION_ERROR",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED, TOKEN_EXPIRED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "NOT_FOUND",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "NO_SHOW_WINDOW_PASSED, NO_SHOW_NOT_ALLOWED, NO_SHOW_REFUNDED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/bookings/series/{id}": {
+      "get": {
+        "tags": [
+          "Bookings: series"
+        ],
+        "summary": "A recurring series: pattern, all bookings, upcoming count and whether it can be extended",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "x-auth": "user",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "description": "Object id",
+              "example": "6650f0c2a1b2c3d4e5f60718"
+            },
+            "required": true,
+            "description": "Object id",
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Series"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "VALIDATION_ERROR",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED, TOKEN_EXPIRED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "NOT_FOUND",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/bookings/series/{id}/cancel": {
+      "post": {
+        "tags": [
+          "Bookings: series"
+        ],
+        "summary": "Cancel every upcoming booking of the series (same rules as one cancellation)",
+        "description": "Bookings past their deadline are kept and listed in `kept`. None cancelled -> 409.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "x-auth": "client",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "description": "Object id",
+              "example": "6650f0c2a1b2c3d4e5f60718"
+            },
+            "required": true,
+            "description": "Object id",
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "reason": {
+                    "type": "string",
+                    "maxLength": 300
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SeriesCancelResult"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "VALIDATION_ERROR",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED, TOKEN_EXPIRED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "NOT_FOUND",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "CANCELLATION_WINDOW_PASSED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/bookings/series/{id}/reschedule/preview": {
+      "post": {
+        "tags": [
+          "Bookings: series"
+        ],
+        "summary": "Preview moving all movable upcoming bookings to new weekdays / time",
+        "description": "Movable bookings (reschedulable, by start) are paired in order with the first dates of the new pattern from `startDate`. No movable booking -> RESCHEDULE_WINDOW_PASSED.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "x-auth": "client",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "description": "Object id",
+              "example": "6650f0c2a1b2c3d4e5f60718"
+            },
+            "required": true,
+            "description": "Object id",
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SeriesRescheduleRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SeriesReschedulePreview"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "VALIDATION_ERROR",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED, TOKEN_EXPIRED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "NOT_FOUND",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "RESCHEDULE_WINDOW_PASSED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/bookings/series/{id}/reschedule": {
+      "post": {
+        "tags": [
+          "Bookings: series"
+        ],
+        "summary": "Move all movable upcoming bookings to new weekdays / time (taken dates stay unchanged)",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "x-auth": "client",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "description": "Object id",
+              "example": "6650f0c2a1b2c3d4e5f60718"
+            },
+            "required": true,
+            "description": "Object id",
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SeriesRescheduleRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SeriesRescheduleResult"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "VALIDATION_ERROR",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED, TOKEN_EXPIRED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "NOT_FOUND",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "RESCHEDULE_WINDOW_PASSED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/bookings/series/{id}/extend/preview": {
+      "post": {
+        "tags": [
+          "Bookings: series"
+        ],
+        "summary": "Preview extending the series by N weeks from extendFrom (same format as the series preview)",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "x-auth": "client",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "description": "Object id",
+              "example": "6650f0c2a1b2c3d4e5f60718"
+            },
+            "required": true,
+            "description": "Object id",
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SeriesExtendPreviewRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "items": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/SeriesPreviewItem"
+                      }
+                    }
+                  },
+                  "required": [
+                    "items"
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "VALIDATION_ERROR",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED, TOKEN_EXPIRED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "NOT_FOUND",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "SERIES_NOT_EXTENDABLE",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/bookings/series/{id}/extend": {
+      "post": {
+        "tags": [
+          "Bookings: series"
+        ],
+        "summary": "Extend the series: book the chosen dates into the same series",
+        "description": "Like POST /bookings/series: new bookings are pending_payment (pay with /bookings/series/:id/pay) or confirmed with useCredits.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "x-auth": "client",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "description": "Object id",
+              "example": "6650f0c2a1b2c3d4e5f60718"
+            },
+            "required": true,
+            "description": "Object id",
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SeriesExtendRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SeriesResult"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "VALIDATION_ERROR",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED, TOKEN_EXPIRED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "NOT_FOUND",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "SERIES_NOT_EXTENDABLE, INSUFFICIENT_CREDITS, PROMO_INVALID, PROMO_EXPIRED, PROMO_USED_UP, PROMO_ALREADY_USED, PROMO_NEW_CLIENTS_ONLY, PROMO_NOT_APPLICABLE",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "SESSION_TYPE_INACTIVE",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/coach/packages": {
       "get": {
         "tags": [
@@ -8084,6 +11612,15 @@
             "in": "path"
           }
         ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PurchasePackageRequest"
+              }
+            }
+          }
+        },
         "responses": {
           "201": {
             "description": "Success",
@@ -8136,7 +11673,7 @@
             }
           },
           "409": {
-            "description": "PACKAGE_INACTIVE",
+            "description": "PACKAGE_INACTIVE, PROMO_INVALID, PROMO_EXPIRED, PROMO_USED_UP, PROMO_ALREADY_USED, PROMO_NEW_CLIENTS_ONLY, PROMO_NOT_APPLICABLE",
             "content": {
               "application/json": {
                 "schema": {
@@ -8206,6 +11743,389 @@
           },
           "403": {
             "description": "FORBIDDEN",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/coach/promo-codes": {
+      "get": {
+        "tags": [
+          "Coach: promo codes"
+        ],
+        "summary": "My promo codes, newest first",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "x-auth": "coach",
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "items": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/PromoCode"
+                      }
+                    }
+                  },
+                  "required": [
+                    "items"
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "VALIDATION_ERROR",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED, TOKEN_EXPIRED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Coach: promo codes"
+        ],
+        "summary": "Create a promo code (percent or amount off bookings and / or packages)",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "x-auth": "coach",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreatePromoCodeRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PromoCode"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "VALIDATION_ERROR",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED, TOKEN_EXPIRED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "PROMO_CODE_TAKEN",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/coach/promo-codes/{id}": {
+      "patch": {
+        "tags": [
+          "Coach: promo codes"
+        ],
+        "summary": "Update a promo code (everything but the code)",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "x-auth": "coach",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "description": "Object id",
+              "example": "6650f0c2a1b2c3d4e5f60718"
+            },
+            "required": true,
+            "description": "Object id",
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdatePromoCodeRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PromoCode"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "VALIDATION_ERROR",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED, TOKEN_EXPIRED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "NOT_FOUND",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Coach: promo codes"
+        ],
+        "summary": "Delete a promo code (deactivated instead if it was used)",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "x-auth": "coach",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "description": "Object id",
+              "example": "6650f0c2a1b2c3d4e5f60718"
+            },
+            "required": true,
+            "description": "Object id",
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "No content"
+          },
+          "400": {
+            "description": "VALIDATION_ERROR",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED, TOKEN_EXPIRED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "NOT_FOUND",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/promo-codes/check": {
+      "post": {
+        "tags": [
+          "Promo codes"
+        ],
+        "summary": "Check a promo code for a booking (count trainings) or a package and get the discounted price",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "x-auth": "client",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PromoCheckRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PromoQuote"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "VALIDATION_ERROR",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED, TOKEN_EXPIRED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "NOT_FOUND",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "PROMO_INVALID, PROMO_EXPIRED, PROMO_USED_UP, PROMO_ALREADY_USED, PROMO_NEW_CLIENTS_ONLY, PROMO_NOT_APPLICABLE",
             "content": {
               "application/json": {
                 "schema": {

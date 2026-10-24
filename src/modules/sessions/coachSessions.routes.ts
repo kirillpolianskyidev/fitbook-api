@@ -2,6 +2,7 @@ import {z} from 'zod';
 
 import {route} from '../../lib/route.js';
 import {IdParams, isoDateTime, itemsOf, objectId} from '../../lib/schemas.js';
+import {BookingStatusSchema, NoShowFields} from '../bookings/bookings.schemas.js';
 import {UserSummarySchema} from '../users/users.schemas.js';
 import * as service from './coachSessions.service.js';
 import {TrainingSessionSchema, withRange} from './sessions.schemas.js';
@@ -11,8 +12,9 @@ const tags = ['Coach: schedule'];
 const ParticipantSchema = z
   .object({
     bookingId: z.string(),
-    status: z.enum(['pending_payment', 'confirmed', 'cancelled', 'completed']),
+    status: BookingStatusSchema,
     isTrial: z.boolean(),
+    ...NoShowFields,
     client: UserSummarySchema,
     notesCount: z.number().int(),
   })

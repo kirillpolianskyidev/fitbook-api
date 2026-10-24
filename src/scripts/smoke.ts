@@ -155,6 +155,23 @@ async function main() {
     () => api().get(`${v1}/coaches?specialization=yoga`).set(client),
     200,
   );
+  await step(
+    'catalog on the map (downtown Chicago)',
+    () => api().get(`${v1}/coaches?bbox=-87.75,41.80,-87.55,41.98&pageSize=100`).set(client),
+    200,
+    'coachMap',
+  );
+  await step(
+    'catalog filters values',
+    () => api().get(`${v1}/coaches/filters`).set(client),
+    200,
+    'coachFilters',
+  );
+  await step(
+    'catalog: morning, next available first',
+    () => api().get(`${v1}/coaches?timeOfDay=morning&sort=next_available&pageSize=3`).set(client),
+    200,
+  );
   const details = await step(
     'coach details',
     () => api().get(`${v1}/coaches/${coachId}`).set(client),
@@ -222,10 +239,11 @@ async function main() {
   const booked = await step(
     'book individual slot',
     () =>
-      api()
-        .post(`${v1}/bookings`)
-        .set(client)
-        .send({sessionTypeId: individualType.id, startAt: freeSlots[0]!.startAt}),
+      api().post(`${v1}/bookings`).set(client).send({
+        sessionTypeId: individualType.id,
+        startAt: freeSlots[0]!.startAt,
+        format: 'in_person',
+      }),
     201,
     'bookingPending',
   );
@@ -233,22 +251,63 @@ async function main() {
   await step(
     'book same slot again',
     () =>
-      api()
-        .post(`${v1}/bookings`)
-        .set(client)
-        .send({sessionTypeId: individualType.id, startAt: freeSlots[0]!.startAt}),
+      api().post(`${v1}/bookings`).set(client).send({
+        sessionTypeId: individualType.id,
+        startAt: freeSlots[0]!.startAt,
+        format: 'in_person',
+      }),
     409,
     'errorSlotUnavailable',
   );
   await step(
     'trial again',
     () =>
-      api()
-        .post(`${v1}/bookings`)
-        .set(client)
-        .send({sessionTypeId: individualType.id, startAt: freeSlots[2]!.startAt, isTrial: true}),
+      api().post(`${v1}/bookings`).set(client).send({
+        sessionTypeId: individualType.id,
+        startAt: freeSlots[2]!.startAt,
+        isTrial: true,
+        format: 'in_person',
+      }),
     409,
     'errorTrialUsed',
+  );
+  await step(
+    'check promo code',
+    () =>
+      api()
+        .post(`${v1}/promo-codes/check`)
+        .set(client)
+        .send({
+          coachId,
+          code: 'save10',
+          target: {type: 'booking', sessionTypeId: individualType.id, count: 4},
+        }),
+    200,
+    'promoCheck',
+  );
+  await step(
+    'new-clients-only promo for a regular client',
+    () =>
+      api().post(`${v1}/bookings`).set(client).send({
+        sessionTypeId: individualType.id,
+        startAt: freeSlots[4]!.startAt,
+        format: 'in_person',
+        promoCode: 'WELCOME20',
+      }),
+    409,
+    'errorPromoNewClientsOnly',
+  );
+  await step(
+    'book with a promo code',
+    () =>
+      api().post(`${v1}/bookings`).set(client).send({
+        sessionTypeId: individualType.id,
+        startAt: freeSlots[4]!.startAt,
+        format: 'in_person',
+        promoCode: 'SAVE10',
+      }),
+    201,
+    'bookingWithPromo',
   );
   await step(
     'pay booking',
@@ -311,10 +370,12 @@ async function main() {
   await step(
     'book with a credit',
     () =>
-      api()
-        .post(`${v1}/bookings`)
-        .set(client)
-        .send({sessionTypeId: individualType.id, startAt: freeSlots[1]!.startAt, useCredits: true}),
+      api().post(`${v1}/bookings`).set(client).send({
+        sessionTypeId: individualType.id,
+        startAt: freeSlots[1]!.startAt,
+        useCredits: true,
+        format: 'online',
+      }),
     201,
     'bookingWithCredits',
   );
@@ -353,7 +414,8 @@ async function main() {
       'errorSessionFull',
     );
 
-  const weekday = from.plus({days: 1}).weekday % 7;
+  // Tuesday: a working day of the demo coach whatever weekday the smoke runs on.
+  const weekday = 2;
   const preview = await step(
     'series preview',
     () =>
@@ -366,12 +428,13 @@ async function main() {
           time: '18:00',
           weeks: 3,
           startDate: from.toISODate(),
+          format: 'in_person',
         }),
     200,
     'seriesPreview',
   );
   const dates = (preview.body.items as {date: string; available: boolean}[]).map(i => i.date);
-  await step(
+  const seriesBooked = await step(
     'series booking',
     () =>
       api()
@@ -383,10 +446,24 @@ async function main() {
           time: '18:00',
           weeks: 3,
           startDate: from.toISODate(),
+          format: 'in_person',
           dates,
         }),
     201,
     'seriesResult',
+  );
+  const seriesId = seriesBooked.body.seriesId as string;
+  await step(
+    'series details',
+    () => api().get(`${v1}/bookings/series/${seriesId}`).set(client),
+    200,
+    'series',
+  );
+  await step(
+    'series extend preview',
+    () =>
+      api().post(`${v1}/bookings/series/${seriesId}/extend/preview`).set(client).send({weeks: 2}),
+    200,
   );
 
   const upcoming = await step(
@@ -493,11 +570,107 @@ async function main() {
     'schedule',
   );
   console.log(`  ${(schedule.body.items as unknown[]).length} sessions this week`);
+  const recent = await step(
+    'coach schedule last 2 days',
+    () =>
+      api()
+        .get(`${v1}/coach/schedule`)
+        .query({
+          from: DateTime.now().minus({hours: 47}).toUTC().toISO(),
+          to: DateTime.now().toUTC().toISO(),
+        })
+        .set(coach),
+    200,
+  );
+  type Participant = {bookingId: string; noShowMarkable: boolean};
+  const markable = (recent.body.items as {participants: Participant[]}[])
+    .flatMap(item => item.participants)
+    .find(p => p.noShowMarkable);
+  if (markable) {
+    await step(
+      'mark a no-show',
+      () =>
+        api()
+          .post(`${v1}/coach/bookings/${markable.bookingId}/no-show`)
+          .set(coach)
+          .send({refund: false}),
+      200,
+      'bookingNoShow',
+    );
+    await step(
+      'remove the no-show',
+      () => api().delete(`${v1}/coach/bookings/${markable.bookingId}/no-show`).set(coach),
+      200,
+    );
+  } else {
+    failures += 1;
+    console.log('✗ no markable booking in the last 48 hours (seed)');
+  }
   await step(
     'coach clients',
     () => api().get(`${v1}/coach/clients`).set(coach),
     200,
     'coachClients',
+  );
+  await step(
+    'coach earnings (month)',
+    () => api().get(`${v1}/coach/earnings?period=month`).set(coach),
+    200,
+    'earnings',
+  );
+  await step(
+    'coach promo codes',
+    () => api().get(`${v1}/coach/promo-codes`).set(coach),
+    200,
+    'promoCodes',
+  );
+  const jamieId = (login.body.user as {id: string}).id;
+  const myAssignments = await step(
+    'my active assignments',
+    () => api().get(`${v1}/me/assignments`).set(client),
+    200,
+    'myAssignments',
+  );
+  const activeAssignment = (
+    myAssignments.body.items as {id: string; exercises: {id: string; result: unknown}[]}[]
+  )[0];
+  const unmarked = activeAssignment?.exercises.find(e => !e.result);
+  if (activeAssignment && unmarked) {
+    await step(
+      'mark an exercise done',
+      () =>
+        api()
+          .put(`${v1}/me/assignments/${activeAssignment.id}/exercises/${unmarked.id}/result`)
+          .set(client)
+          .send({status: 'done', note: 'Easy'}),
+      200,
+      'assignmentMarked',
+    );
+  } else {
+    failures += 1;
+    console.log('✗ no active assignment with an unmarked exercise (seed)');
+  }
+  await step(
+    'coach: give homework',
+    () =>
+      api()
+        .post(`${v1}/coach/clients/${jamieId}/assignments`)
+        .set(coach)
+        .send({
+          title: 'Recovery week',
+          dueDate: DateTime.now().setZone('America/Chicago').plus({days: 6}).toISODate(),
+          exercises: [
+            {name: 'Foam rolling', duration: '10 min'},
+            {name: 'Glute bridge', sets: 3, reps: '15'},
+          ],
+        }),
+    201,
+    'assignmentCreated',
+  );
+  await step(
+    "coach: client's assignments",
+    () => api().get(`${v1}/coach/clients/${jamieId}/assignments`).set(coach),
+    200,
   );
   await step(
     'client calling coach endpoint',

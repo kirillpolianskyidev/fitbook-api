@@ -7,6 +7,8 @@ const sessionTypeSchema = new Schema(
     coachId: {type: Schema.Types.ObjectId, ref: 'User', required: true, index: true},
     title: {type: String, required: true, trim: true},
     kind: {type: String, enum: ['individual', 'group'], required: true},
+    // in_person | online | both (both: the client chooses when booking; individual only).
+    format: {type: String, enum: ['in_person', 'online', 'both'], default: 'in_person'},
     durationMin: {type: Number, required: true},
     price: {type: moneySchema, required: true},
     capacity: {type: Number, required: true, default: 1},

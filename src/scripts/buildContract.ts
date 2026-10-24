@@ -77,6 +77,20 @@ const UI_HINTS: Partial<Record<ErrorCode, string>> = {
   PACKAGE_INACTIVE: 'Reload the coach profile (the package was withdrawn).',
   REVIEW_NOT_ALLOWED: 'Hide "Write a review" (`canCreate` is false until a training is completed).',
   REVIEW_EDIT_WINDOW_PASSED: 'Show the review as read-only.',
+  SERIES_NOT_EXTENDABLE: 'Offer a new series instead.',
+  ONLINE_NOT_ENABLED: 'Ask the coach to turn on online trainings in the profile first.',
+  ONLINE_TYPES_ACTIVE: 'Change the online / both training types to in person first.',
+  NO_SHOW_WINDOW_PASSED: 'Hide the no-show action (`noShowMarkable` / `noShowUndoable` are false).',
+  NO_SHOW_NOT_ALLOWED: 'Reload the booking.',
+  NO_SHOW_REFUNDED: 'Explain that the payment was returned; the mark stays.',
+  PROMO_INVALID: 'Show under the promo field.',
+  PROMO_EXPIRED: 'Show under the promo field.',
+  PROMO_USED_UP: 'Show under the promo field.',
+  PROMO_ALREADY_USED: 'Show under the promo field.',
+  PROMO_NEW_CLIENTS_ONLY: 'Show under the promo field.',
+  PROMO_NOT_APPLICABLE:
+    'Show under the promo field (not with the free trial / credits, or not for this kind of purchase).',
+  PROMO_CODE_TAKEN: 'Show under the code input.',
   RESCHEDULE_WINDOW_PASSED: 'Hide "Reschedule"; reload the booking (`reschedulable` is false now).',
   BOOKING_NOT_PAYABLE: 'Reload the booking; it was paid or released.',
   RATE_LIMITED: 'Ask to try again later (`details.retryAfterSeconds` when present).',
@@ -173,6 +187,17 @@ ${example('errorResendTooEarly', 'Example: resend before resendAvailableAt')}
 - **Group:** \`GET /coaches/:id/group-sessions?from&to\` (shows \`spotsLeft\`) -> \`POST /bookings { sessionId }\`.
 - **Series:** \`POST /bookings/series/preview\` (weekdays 0 = Sunday, local time, weeks 1-12) shows free / taken
   dates -> user picks -> \`POST /bookings/series { ..., dates }\` -> \`POST /bookings/series/:id/pay\`.
+- **Manage a series:** \`GET /bookings/series/:id\` (client or its coach) -> \`Series { sessionType, coach, weekdays,
+  time, timezone, format, bookings, upcomingCount, nextAt, lastAt, canExtend, extendFrom }\`.
+  \`POST /bookings/series/:id/cancel { reason? }\` cancels every upcoming booking with the usual rules (refunds,
+  credits back) -> \`{ cancelled, kept }\` (kept = past the deadline; none cancelled -> \`CANCELLATION_WINDOW_PASSED\`).
+  New day / time for all upcoming: \`POST /bookings/series/:id/reschedule/preview\` and \`/reschedule\` with
+  \`{ weekdays, time, startDate }\`: the movable bookings (reschedulable, by start) are paired in order with the first
+  dates of the new pattern; free ones move (payment, credits, notes stay), taken ones stay -> \`{ moved, kept }\`; the
+  pattern is updated. Extend: \`POST /bookings/series/:id/extend/preview { weeks }\` (from \`extendFrom\`, same items
+  as the series preview) and \`POST /bookings/series/:id/extend { weeks, dates, useCredits? }\` -> same as
+  \`POST /bookings/series\` with the same \`seriesId\`; pay new bookings with \`/bookings/series/:id/pay\`.
+  \`canExtend: false\` -> \`SERIES_NOT_EXTENDABLE\`.
 - **Mock payment:** paid bookings start as \`pending_payment\` with \`expiresAt\` (15 minutes); call
   \`POST /bookings/:id/pay\`. Unpaid bookings are released automatically (\`cancelled\`, \`cancelledBy: system\`).
 - **Location:** individual bookings may pass a \`location\` chosen on the map (Google Places), including an optional
@@ -199,10 +224,48 @@ ${example('errorResendTooEarly', 'Example: resend before resendAvailableAt')}
   the coach and the client can edit; \`lastEditedBy\` tells who changed it.
 
 Booking statuses: \`pending_payment\` -> \`confirmed\` -> \`completed\`, or \`cancelled\` (by \`client\`, \`coach\`
-or \`system\`).
+or \`system\`), or \`no_show\` (the coach marked that the client did not come; see 5a).
 
 ${example('bookingPending', 'Example: new booking (pending payment)')}
 ${example('seriesPreview', 'Example: series preview')}
+
+## 3a. Catalog: filters, sorting, next available
+
+- \`GET /coaches\` filters (all combine): \`search\`, \`specialization\`, \`kind\`, \`state\`, \`city\`, \`favorites\`,
+  \`format\`, \`priceMin\` / \`priceMax\` (cents: an active type in the range), \`timeOfDay=morning,afternoon,evening\`
+  (free individual slot or group place in the next 14 days starting in that part of the day in the viewer's time
+  zone: morning 05:00-11:59, afternoon 12:00-16:59, evening 17:00-22:59), \`trial=true\` (has an active individual
+  type), \`language\` (case-insensitive). \`sort\`: \`recommended\` (default: my state first, then rating),
+  \`rating\`, \`price_asc\`, \`price_desc\` (by \`priceFrom\`), \`next_available\` (\`null\` last). \`total\` counts
+  the filtered coaches; paging follows the sort.
+- Coach objects (catalog, profile, favorites) have \`nextAvailableAt\` (earliest free individual slot in the next 14
+  days; for group-only coaches the earliest free group place; \`null\` if none) and \`languages\`.
+- \`GET /coaches/filters\` -> \`{ languages, price { min, max } }\` for the filter screen.
+- Map: \`GET /coaches?bbox=minLng,minLat,maxLng,maxLat\` returns coaches whose default location is inside the box
+  (online-only coaches are never returned with bbox), combined with all filters and sorting; \`pageSize\` up to 100
+  with bbox (50 otherwise). Invalid bbox -> \`VALIDATION_ERROR\`. Coach objects have
+  \`location { lat, lng, name, city, state }\` (public part of the default location, no meeting-point comment) or
+  \`null\`.
+
+${example('coachFilters', 'Example: GET /coaches/filters')}
+${example('coachMap', 'Example: GET /coaches?bbox=...')}
+
+## 3b. Online trainings
+
+- Coach profile: \`online { enabled, meetingUrl }\` (\`PUT /coach/profile\`; enabling needs an https
+  \`meetingUrl\` up to 500 characters -> \`VALIDATION_ERROR\` \`details.fields.meetingUrl\`). Turning online off while
+  active \`online\` / \`both\` types exist -> \`ONLINE_TYPES_ACTIVE\`. A coach with online on needs no
+  \`defaultLocation\` to publish (completeness requires a default location or online).
+- Training type \`format\`: \`in_person\` (default) | \`online\` | \`both\` (the client chooses; individual only,
+  group + both -> \`VALIDATION_ERROR\`). \`online\` / \`both\` need online on (\`ONLINE_NOT_ENABLED\`).
+- Booking an individual training: \`format: "in_person" | "online"\` in \`POST /bookings\`,
+  \`/bookings/series/preview\` and \`/bookings/series\` - required for \`both\` types, must match single-format types.
+  Group bookings take the session's format. Online bookings have \`session.location: null\`; reschedule keeps the format.
+- Booking: \`format\`, \`session.format\` and \`meetingUrl\` (the coach's current link, online only; only the client and
+  the coach of the booking ever see it). Calendar event of an online booking: \`location: null\`, \`meetingUrl\` and the
+  link in \`notes\`.
+- Public coach objects (catalog, profile, favorites): \`formats: ["in_person", "online"]\` from active types. Filter:
+  \`GET /coaches?format=online\` / \`format=in_person\`. The meeting link is never public.
 
 ## 4a. Packages (credits)
 
@@ -222,6 +285,34 @@ ${example('seriesPreview', 'Example: series preview')}
 
 ${example('clientPackage', 'Example: POST /packages/:id/purchase')}
 ${example('bookingWithCredits', 'Example: POST /bookings with useCredits')}
+
+## 4f. Promo codes
+
+- Client: \`POST /promo-codes/check { coachId, code, target }\` with \`target = { type: "booking", sessionTypeId |
+  sessionId, count = 1 }\` (individual type / group session; \`count\` = number of trainings, e.g. series dates) or
+  \`{ type: "package", packageId }\` -> \`{ code, label: "−20%", unitPrice, unitDiscount, total, totalDiscount }\`.
+  Checking does not use the code. Codes are case-insensitive.
+- Apply with \`promoCode\` in \`POST /bookings\` (individual or group), \`POST /bookings/series\`,
+  \`POST /bookings/series/:id/extend\` and \`POST /packages/:id/purchase\` (body \`{ promoCode? }\`, optional). The
+  server checks again. One request = one use: in a series every booked date gets the discount. An amount discount is
+  per training and never goes below 0. Price 0 -> the booking is \`confirmed\` with \`payment.status = "not_required"\`.
+  Not with \`isTrial\` / \`useCredits\` -> \`PROMO_NOT_APPLICABLE\` (also when \`appliesTo\` does not include
+  \`bookings\` / \`packages\`).
+- Each client can use a code once (also if the booking was cancelled later). \`newClientsOnly\`: no non-cancelled booking
+  and no package purchase with this coach. \`validFrom\` / \`validUntil\`: inclusive, coach's time zone. A failed
+  request does not use the code.
+- \`Booking\` and \`ClientPackage\`: \`price\` = what is paid (after the discount), \`listPrice\` = before the discount,
+  \`promo { code, discount } | null\`. Refunds return \`price\` (the paid amount); earnings use \`price\`.
+- Coach: \`GET /coach/promo-codes\` (newest first), \`POST /coach/promo-codes\` (201; \`code\` 4-20 A-Z/0-9, stored upper
+  case, unique per coach -> \`PROMO_CODE_TAKEN\`), \`PATCH /coach/promo-codes/:id\` (everything except \`code\`),
+  \`DELETE /coach/promo-codes/:id\` (204; a used code is deactivated instead). Errors: \`PROMO_INVALID\` (unknown or
+  inactive), \`PROMO_EXPIRED\`, \`PROMO_USED_UP\` (\`maxUses\` reached), \`PROMO_ALREADY_USED\`,
+  \`PROMO_NEW_CLIENTS_ONLY\`, \`PROMO_NOT_APPLICABLE\` - all 409.
+
+${example('promoCheck', 'Example: POST /promo-codes/check')}
+${example('bookingWithPromo', 'Example: POST /bookings with promoCode')}
+${example('promoCodes', 'Example: GET /coach/promo-codes')}
+${example('errorPromoNewClientsOnly', 'Error: PROMO_NEW_CLIENTS_ONLY')}
 
 ## 4b. Waitlist (full group sessions)
 
@@ -295,6 +386,56 @@ Profile (\`/coach/profile\`, publish when \`completeness.complete\`), training t
 
 ${example('schedule', 'Example: coach schedule')}
 
+### 5b. Earnings
+
+\`GET /coach/earnings?period=week|month|year&date=YYYY-MM-DD\` (default \`week\` and today; coach's time zone, weeks
+Monday-Sunday) -> \`{ period, from, to, total, upcoming, previousTotal, changePercent, breakdown { individual, group,
+packages, refunds }, counts { trainings, packagesSold, clients }, chart, topClients }\`.
+- Earned: card-paid (\`payment.method = "mock"\`, \`payment.status = "paid"\`) bookings that started in the period
+  (\`confirmed\`, \`completed\` or \`no_show\` without refund); \`upcoming\`: paid ones later in the period.
+  Credit bookings are not income (the money is in the package sale); trials / free bookings are 0.
+- Packages: purchase price by purchase date. Refunds (informational): refunded card payments by refund date.
+- \`total\` = earned + packages; \`changePercent\` vs the previous period (\`null\` if it was 0). \`chart\`: 7 days,
+  every day of the month, or 12 months (future buckets 0). \`topClients\`: up to 5 by trainings + packages.
+
+${example('earnings', 'Example: GET /coach/earnings?period=month')}
+
+### 5a. No-show
+
+- From the start of a training until \`noShowDeadline\` (start + 48h) the coach can mark a client of a
+  \`confirmed\` / \`completed\` booking as a no-show: \`POST /coach/bookings/:id/no-show { refund }\` -> Booking with
+  \`status: "no_show"\` and \`noShow { markedAt, refunded }\`. \`refund: true\` returns the payment like a coach
+  cancellation (\`payment.status = "refunded"\`; a credit goes back to its package if not expired); \`refund: false\`
+  keeps it (a credit stays used). Ignored for trial / free bookings. Group sessions: per participant booking.
+- \`DELETE /coach/bookings/:id/no-show\` removes it inside the same window, only if it was not refunded
+  (\`NO_SHOW_REFUNDED\`); the booking goes back to \`completed\` (ended) or \`confirmed\`.
+- Booking and schedule participants have \`noShow\`, \`noShowMarkable\`, \`noShowUndoable\` (true only for the
+  booking's coach), \`noShowDeadline\`. Without a mark nothing changes: the training becomes \`completed\`.
+- No-shows do not count in progress, do not allow a review and are not counted in \`/coach/clients\`.
+
+${example('bookingNoShow', 'Example: POST /coach/bookings/:id/no-show')}
+
+### 5c. Homework (assignments)
+
+- Coach, only for own clients (a booking with the coach, otherwise \`NOT_FOUND\`):
+  \`GET /coach/clients/:clientId/assignments\` (newest first), \`POST /coach/clients/:clientId/assignments\`
+  (201; \`{ title 1-80, note? <=2000, dueDate? YYYY-MM-DD, exercises: 1-30 [{ name 1-80, sets? 1-50, reps? <=20,
+  duration? <=20, note? <=500, videoUrl? https <=500 }] }\`), \`PATCH /coach/assignments/:id\` (any field;
+  \`exercises\` = the full new list: an item with an existing \`id\` is updated and keeps its \`result\`, an item without
+  \`id\` is new, missing ones are removed; an unknown \`id\` -> \`VALIDATION_ERROR\`), \`DELETE /coach/assignments/:id\`
+  (204).
+- Client: \`GET /me/assignments?status=active|all\` (default \`active\` = \`open\` + \`in_progress\`; nearest
+  \`dueDate\` first, then without a date, newer first), \`GET /me/assignments/:id\`,
+  \`PUT /me/assignments/:id/exercises/:exerciseId/result { status: done|partial|skipped, note? <=500 }\` and
+  \`DELETE\` of the same path (both 200 \`Assignment\`), \`PUT /me/assignments/:id/note { note | null }\` (<=1000).
+  Someone else's assignment -> \`NOT_FOUND\`.
+- \`status\` (computed): \`open\` nothing marked, \`in_progress\` some marked, \`done\` all done, \`partial\` all marked but
+  not all done. \`progress { done, partial, skipped, total }\`.
+- Socket.IO: \`assignment:new { assignment }\` to the client; \`assignment:updated { assignment }\` to the coach.
+
+${example('assignmentCreated', 'Example: POST /coach/clients/:clientId/assignments')}
+${example('assignmentMarked', 'Example: PUT /me/assignments/:id/exercises/:exerciseId/result')}
+
 ## 6. Realtime chat (Socket.IO)
 
 \`\`\`ts
@@ -306,7 +447,9 @@ const socket = io(SOCKET_URL, {auth: {token: accessToken}, transports: ['websock
   A rejected handshake emits \`connect_error\` with message \`UNAUTHORIZED\` or \`TOKEN_EXPIRED\`.
 - Server -> app events: \`message:new { conversationId, message }\`, \`message:read { conversationId, readerId,
   readAt }\`, \`conversation:updated { conversation }\`, \`typing { conversationId, userId }\`,
-  \`waitlist:offered { entry: WaitlistEntry }\` (a held group place is waiting to be booked).
+  \`waitlist:offered { entry: WaitlistEntry }\` (a held group place is waiting to be booked),
+  \`assignment:new { assignment }\` (to the client: new homework), \`assignment:updated { assignment }\` (to the coach:
+  the client marked an exercise or changed the note).
 - App -> server events (with ack \`{ ok: true, data? } | { ok: false, error: { code, message } }\`):
   \`message:send { conversationId, text }\`, \`typing { conversationId }\`, \`conversation:read { conversationId }\`.
 - REST equivalents: \`GET /conversations\`, \`POST /conversations\` (get or create), \`GET/POST
@@ -328,8 +471,11 @@ ${example('errorValidation', 'Example: validation error')}
 ## 8. Enums
 
 - Role: \`coach | client\`; Theme: \`light | dark | system\`; Training kind: \`individual | group\`
-- Booking status: \`pending_payment | confirmed | cancelled | completed\`; Payment status: \`unpaid | paid | refunded | not_required\`; Payment method: \`mock | credits\`
+- Training format: \`in_person | online\`; Training type format: \`in_person | online | both\`
+- Booking status: \`pending_payment | confirmed | cancelled | completed | no_show\`; Payment status: \`unpaid | paid | refunded | not_required\`; Payment method: \`mock | credits\`
 - Session status: \`scheduled | cancelled | completed\`; Note phase: \`before | after\`
+- Promo discount type: \`percent | amount\`; Promo appliesTo: \`bookings | packages\`
+- Assignment status: \`open | in_progress | done | partial\`; Exercise result status: \`done | partial | skipped\`
 - Specializations: ${SPECIALIZATIONS.map(s => `\`${s}\``).join(', ')}
 - States: 2-letter US state codes (\`IL\`, \`NY\`, ...); country is always \`US\`.
 
@@ -351,6 +497,7 @@ ${example('bookingConfirmed', 'POST /bookings/:id/pay')}
 ${example('bookingCancelled', 'POST /bookings/:id/cancel')}
 ${example('bookingRescheduled', 'POST /bookings/:id/reschedule')}
 ${example('seriesResult', 'POST /bookings/series')}
+${example('series', 'GET /bookings/series/:id')}
 ${example('calendarEvent', 'GET /bookings/:id/calendar-event')}
 ${example('notes', 'GET /bookings/:id/notes')}
 ${example('messages', 'GET /conversations/:id/messages')}
@@ -360,6 +507,7 @@ ${example('availability', 'GET /coach/availability')}
 ${example('coachClients', 'GET /coach/clients')}
 ${example('coachClientProgress', 'GET /coach/clients/:clientId/progress')}
 ${example('measurements', 'GET /me/measurements')}
+${example('myAssignments', 'GET /me/assignments')}
 ${example('errorSlotUnavailable', 'Error: SLOT_UNAVAILABLE')}
 ${example('errorTrialUsed', 'Error: TRIAL_ALREADY_USED')}
 ${example('errorForbidden', 'Error: FORBIDDEN')}
@@ -372,9 +520,9 @@ Password for all: \`Password123!\`. Every password sign-in asks for an emailed c
 
 | Email | Who |
 | --- | --- |
-| \`coach@fitbook.dev\` | Alex Carter - coach in Chicago with a full schedule, group classes, clients and chats |
-| \`client@fitbook.dev\` | Jamie Lee - client in Chicago: trial used, Tue/Thu series with Alex, notes, chats, a pending and a cancelled booking |
-| \`newclient@fitbook.dev\` | Riley Chen - client in Chicago with the free trial still available |
+| \`coach@fitbook.dev\` | Alex Carter - coach in Chicago with a full schedule, group classes, clients and chats; promo codes \`WELCOME20\` (−20%, new clients only) and \`SAVE10\` (−$10, everybody) |
+| \`client@fitbook.dev\` | Jamie Lee - client in Chicago: trial used, Tue/Thu series with Alex, notes, chats, a pending and a cancelled booking, homework from Alex (one in progress, one done) |
+| \`newclient@fitbook.dev\` | Riley Chen - client in Chicago with the free trial still available (can use Alex's \`WELCOME20\`) |
 | \`newcoach@fitbook.dev\` | Taylor Morgan - coach with an incomplete, unpublished profile (onboarding demo) |
 
 Other coaches: Maya Patel (yoga), Marcus Reed (boxing), Sofia Alvarez (running), Daniel Kim (CrossFit),

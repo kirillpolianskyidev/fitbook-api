@@ -10,7 +10,7 @@ import {BOOKING_LEAD_MINUTES, isWholeDayOff} from '../../lib/slots.js';
 import {addMinutes, isOnSlotGrid, zonedDateTime} from '../../lib/time.js';
 import {AvailabilityModel} from '../../models/availability.js';
 import {BookingModel, type BookingDoc} from '../../models/booking.js';
-import {BookingSeriesModel} from '../../models/bookingSeries.js';
+import {BookingSeriesModel, type BookingSeriesDoc} from '../../models/bookingSeries.js';
 import {CoachProfileModel} from '../../models/coachProfile.js';
 import {NoteModel} from '../../models/note.js';
 import {SeatLockModel} from '../../models/seatLock.js';
@@ -34,6 +34,9 @@ import {
   restoreOfferedSeat,
 } from '../waitlist/waitlist.service.js';
 import {creditsAvailable, returnCredit, takeCredit} from '../packages/packages.service.js';
+import {noShowFields} from './noShow.js';
+import type {PromoCodeDoc} from '../../models/promoCode.js';
+import {discountOf, redeemPromo, type Redemption} from '../promos/promos.service.js';
 import {toUserSummary} from '../users/users.service.js';
 import type {
   BookingDto,
@@ -43,7 +46,7 @@ import type {
 } from './bookings.schemas.js';
 
 const ACTIVE = ['pending_payment', 'confirmed'] as const;
-type Status = 'pending_payment' | 'confirmed' | 'cancelled' | 'completed';
+type Status = 'pending_payment' | 'confirmed' | 'cancelled' | 'completed' | 'no_show';
 type CancelledBy = 'coach' | 'client' | 'system';
 
 const activeKey = (sessionId: Types.ObjectId, clientId: Types.ObjectId) =>
@@ -70,7 +73,7 @@ export async function toBookingDtos(
       .select('firstName lastName avatarUrl')
       .lean(),
     CoachProfileModel.find({userId: {$in: coachIds}})
-      .select('userId cancellationPolicy')
+      .select('userId cancellationPolicy online')
       .lean(),
     NoteModel.aggregate<{_id: Types.ObjectId; n: number}>([
       {$match: {bookingId: {$in: bookings.map(b => b._id)}}},
@@ -82,6 +85,9 @@ export async function toBookingDtos(
   const hoursByCoach = new Map(
     profiles.map(p => [p.userId.toString(), p.cancellationPolicy?.freeCancelHours ?? 24]),
   );
+  const meetingUrlByCoach = new Map(
+    profiles.map(p => [p.userId.toString(), p.online?.meetingUrl ?? null]),
+  );
   const notesById = new Map(noteCounts.map(n => [n._id.toString(), n.n]));
   const now = Date.now();
 
@@ -92,6 +98,7 @@ export async function toBookingDtos(
     const freeCancelHours = hoursByCoach.get(booking.coachId.toString()) ?? 24;
     const deadline = addMinutes(booking.startAt, -freeCancelHours * 60);
     const status = booking.status as Status;
+    const format = (session?.format ?? 'in_person') as 'in_person' | 'online';
     const isActive = status === 'pending_payment' || status === 'confirmed';
     const cancellable =
       isActive &&
@@ -104,6 +111,8 @@ export async function toBookingDtos(
       status,
       isTrial: booking.isTrial,
       price: toMoneyDto(booking.price),
+      listPrice: toMoneyDto(booking.listPrice ?? booking.price),
+      promo: promoDto(booking.promo),
       payment: {
         status: booking.payment.status as 'unpaid' | 'paid' | 'refunded' | 'not_required',
         method: (booking.payment.method ?? 'mock') as 'mock' | 'credits',
@@ -115,9 +124,14 @@ export async function toBookingDtos(
       startAt: booking.startAt.toISOString(),
       endAt: booking.endAt.toISOString(),
       seriesId: booking.seriesId?.toString() ?? null,
+      format,
+      // Only participants receive Booking objects; the link is read from the coach profile at request time.
+      meetingUrl:
+        format === 'online' ? (meetingUrlByCoach.get(booking.coachId.toString()) ?? null) : null,
       cancellable,
       reschedulable,
       rescheduledAt: booking.rescheduledAt?.toISOString() ?? null,
+      ...noShowFields(booking, viewerId),
       cancelDeadline: isActive ? deadline.toISOString() : null,
       cancelledAt: booking.cancelledAt?.toISOString() ?? null,
       cancelledBy: (booking.cancelledBy as CancelledBy | undefined) ?? null,
@@ -127,6 +141,7 @@ export async function toBookingDtos(
         sessionTypeId: session?.sessionTypeId.toString() ?? '',
         title: session?.title ?? '',
         kind: (session?.kind as 'individual' | 'group') ?? 'individual',
+        format,
         location: toLocationDto(session?.location),
         capacity: session?.capacity ?? 1,
         participantsCount: session?.participantsCount ?? 0,
@@ -169,6 +184,38 @@ async function assertPublishedCoach(coachId: Types.ObjectId) {
   }
 }
 
+export function promoDto(
+  promo: {code?: string | null; discountCents?: number | null} | null | undefined,
+) {
+  return promo?.code
+    ? {
+        code: promo.code,
+        discount: {amountCents: promo.discountCents ?? 0, currency: 'USD' as const},
+      }
+    : null;
+}
+
+/** Price fields of a booking / purchase with an optional promo discount. */
+export function promoPricing(promo: PromoCodeDoc | null | undefined, listCents: number) {
+  const discountCents = promo ? discountOf(promo, listCents) : 0;
+  return {
+    price: {amountCents: listCents - discountCents, currency: 'USD' as const},
+    listPrice: {amountCents: listCents, currency: 'USD' as const},
+    promo: promo ? {code: promo.code, discountCents} : null,
+  };
+}
+
+/** A promo code cannot be combined with the free trial or credits. */
+export function assertPromoCombinable(input: {
+  promoCode?: string;
+  isTrial?: boolean;
+  useCredits?: boolean;
+}) {
+  if (input.promoCode && (input.isTrial || input.useCredits)) {
+    throw new AppError('PROMO_NOT_APPLICABLE');
+  }
+}
+
 /** A booking paid with a credit: confirmed immediately. */
 function creditPayment(clientPackageId: Types.ObjectId) {
   return {
@@ -207,14 +254,39 @@ type IndividualInput = {
   startAt: string;
   isTrial: boolean;
   useCredits?: boolean;
+  format?: 'in_person' | 'online';
   location?: Location;
+  promoCode?: string;
 };
+
+/** The format of a new individual booking: required for "both" types, must match the others. */
+export function bookingFormat(
+  typeFormat: string | null | undefined,
+  requested?: 'in_person' | 'online',
+): 'in_person' | 'online' {
+  const format = (typeFormat ?? 'in_person') as 'in_person' | 'online' | 'both';
+  if (format === 'both') {
+    if (!requested) {
+      throw new AppError('VALIDATION_ERROR', undefined, {
+        fields: {format: 'Choose in_person or online for this training type'},
+      });
+    }
+    return requested;
+  }
+  if (requested && requested !== format) {
+    throw new AppError('VALIDATION_ERROR', undefined, {
+      fields: {format: `This training type is ${format} only`},
+    });
+  }
+  return format;
+}
 
 export async function createIndividualBooking(
   client: UserDoc,
   input: IndividualInput,
-  options: {seriesId?: Types.ObjectId} = {},
+  options: {seriesId?: Types.ObjectId; promo?: PromoCodeDoc} = {},
 ) {
+  assertPromoCombinable(input);
   const type = await SessionTypeModel.findById(input.sessionTypeId);
   if (!type) {
     throw new AppError('NOT_FOUND', 'Training type not found.');
@@ -228,18 +300,31 @@ export async function createIndividualBooking(
     });
   }
   await assertPublishedCoach(type.coachId);
+  const format = bookingFormat(type.format, input.format);
 
   const startAt = new Date(input.startAt);
   if (!isOnSlotGrid(startAt) || !(await isFreeSlot(type.coachId, type.durationMin, startAt))) {
     throw new AppError('SLOT_UNAVAILABLE');
   }
 
+  // A promo code is used before the time is locked and released if anything below fails.
+  const redemption = input.promoCode
+    ? await redeemPromo(client, type.coachId, input.promoCode, 'bookings', 'booking')
+    : null;
+  const promo = options.promo ?? redemption?.promo ?? null;
   // A credit is taken before the time is locked and given back if anything below fails.
-  const credit = input.useCredits ? await takeCredit(client._id, type.coachId) : null;
+  let credit: Awaited<ReturnType<typeof takeCredit>> | null = null;
+  try {
+    credit = input.useCredits ? await takeCredit(client._id, type.coachId) : null;
+  } catch (error) {
+    await redemption?.release();
+    throw error;
+  }
 
   // Claim the trial first: the unique index on emailKey makes it race-safe across accounts.
   if (input.isTrial) {
     if (client.trialUsed) {
+      if (credit) await returnCredit(credit._id);
       throw new AppError('TRIAL_ALREADY_USED');
     }
     try {
@@ -251,27 +336,34 @@ export async function createIndividualBooking(
   }
 
   const profile = await CoachProfileModel.findOne({userId: type.coachId}).lean();
-  const price = input.isTrial
-    ? {amountCents: 0, currency: 'USD' as const}
-    : {amountCents: type.price.amountCents, currency: 'USD' as const};
+  const pricing = input.isTrial
+    ? promoPricing(null, 0)
+    : promoPricing(promo, type.price.amountCents);
+  const {price} = pricing;
   let session: TrainingSessionDoc;
   try {
     session = await createLockedSession({
       coachId: type.coachId,
       sessionTypeId: type._id,
       kind: 'individual',
+      format,
       title: type.title,
       startAt,
       endAt: addMinutes(startAt, type.durationMin),
       capacity: 1,
       participantsCount: 1,
       price,
-      location: input.location ?? type.location ?? profile?.defaultLocation ?? null,
+      // Online bookings have no place (a location in the request is ignored).
+      location:
+        format === 'online'
+          ? null
+          : (input.location ?? type.location ?? profile?.defaultLocation ?? null),
     });
   } catch (error) {
     if (input.isTrial)
       await TrialClaimModel.deleteOne({emailKey: client.emailKey, bookingId: null});
     if (credit) await returnCredit(credit._id);
+    await redemption?.release();
     throw error;
   }
 
@@ -281,7 +373,7 @@ export async function createIndividualBooking(
     clientId: client._id,
     seriesId: options.seriesId ?? null,
     isTrial: input.isTrial,
-    price,
+    ...pricing,
     startAt: session.startAt,
     endAt: session.endAt,
     activeKey: activeKey(session._id, client._id),
@@ -305,10 +397,12 @@ export async function joinGroupSession(
   sessionId: string,
   isTrial?: boolean,
   useCredits = false,
+  promoCode?: string,
 ) {
   if (isTrial) {
     throw new AppError('TRIAL_NOT_ALLOWED');
   }
+  assertPromoCombinable({promoCode, useCredits});
   const session = await TrainingSessionModel.findOne({
     _id: sessionId,
     kind: 'group',
@@ -327,18 +421,23 @@ export async function joinGroupSession(
   const claimed = await claimOfferedSeat(session._id, client._id);
   const seat = claimed ?? (await takeSeat(session._id, client._id, session.capacity));
   let credit: Awaited<ReturnType<typeof takeCredit>> | null = null;
+  let redemption: Redemption | null = null;
   try {
     credit = useCredits ? await takeCredit(client._id, session.coachId) : null;
+    redemption = promoCode
+      ? await redeemPromo(client, session.coachId, promoCode, 'bookings', 'booking')
+      : null;
+    const pricing = promoPricing(redemption?.promo, session.price.amountCents);
     const booking = await BookingModel.create({
       sessionId: session._id,
       coachId: session.coachId,
       clientId: client._id,
       isTrial: false,
-      price: session.price,
+      ...pricing,
       startAt: session.startAt,
       endAt: session.endAt,
       activeKey: activeKey(session._id, client._id),
-      ...(credit ? creditPayment(credit._id) : initialPayment(session.price.amountCents, false)),
+      ...(credit ? creditPayment(credit._id) : initialPayment(pricing.price.amountCents, false)),
     });
     await markBooked(session._id, client._id);
     await syncParticipants(session._id);
@@ -347,6 +446,7 @@ export async function joinGroupSession(
     if (claimed) await restoreOfferedSeat(session._id, client._id);
     else await SeatLockModel.deleteOne({_id: seat._id});
     if (credit) await returnCredit(credit._id);
+    await redemption?.release();
     if (isDuplicateKeyError(error)) throw new AppError('ALREADY_BOOKED');
     throw error;
   }
@@ -372,7 +472,7 @@ export const syncParticipants = (sessionId: Types.ObjectId) => syncSeatCounts(se
 // Recurring series (individual)
 // ---------------------------------------------------------------------------------------------
 
-type PreviewItem = {
+export type PreviewItem = {
   date: string;
   startAt: string;
   endAt: string;
@@ -380,7 +480,7 @@ type PreviewItem = {
   reason?: 'UNAVAILABLE' | 'PAST' | 'EXCEPTION';
 };
 
-async function seriesType(sessionTypeId: string) {
+export async function seriesType(sessionTypeId: string) {
   const type = await SessionTypeModel.findById(sessionTypeId);
   if (!type) throw new AppError('NOT_FOUND', 'Training type not found.');
   if (!type.isActive) throw new AppError('SESSION_TYPE_INACTIVE');
@@ -397,6 +497,7 @@ export async function previewSeries(
   input: z.infer<typeof SeriesPreviewBody>,
 ): Promise<PreviewItem[]> {
   const type = await seriesType(input.sessionTypeId);
+  bookingFormat(type.format, input.format);
   const timezone = await coachTimezone(type.coachId);
   const first = DateTime.fromISO(input.startDate, {zone: timezone}).startOf('day');
   const end = first.plus({weeks: input.weeks});
@@ -434,25 +535,10 @@ export async function previewSeries(
 }
 
 export async function createSeries(client: UserDoc, input: z.infer<typeof SeriesBody>) {
-  const preview = await previewSeries(input);
-  const byDate = new Map(preview.map(item => [item.date, item]));
-  const unknown = input.dates.filter(date => !byDate.has(date));
-  if (unknown.length) {
-    throw new AppError('VALIDATION_ERROR', 'Some dates are not part of this series.', {
-      fields: {dates: `Not in the series: ${unknown.join(', ')}`},
-    });
-  }
   const type = await seriesType(input.sessionTypeId);
-  if (input.useCredits) {
-    const needed = [...new Set(input.dates)].filter(date => byDate.get(date)!.available).length;
-    const available = await creditsAvailable(client._id, type.coachId);
-    if (available < needed) {
-      throw new AppError('INSUFFICIENT_CREDITS', undefined, {
-        creditsAvailable: available,
-        creditsNeeded: needed,
-      });
-    }
-  }
+  const format = bookingFormat(type.format, input.format);
+  const preview = await previewSeries(input);
+  assertDatesInPreview(input.dates, preview);
   const series = await BookingSeriesModel.create({
     clientId: client._id,
     coachId: type.coachId,
@@ -461,50 +547,113 @@ export async function createSeries(client: UserDoc, input: z.infer<typeof Series
     time: input.time,
     weeks: input.weeks,
     startDate: input.startDate,
+    format,
   });
+  try {
+    const result = await bookSeriesDates(client, series, preview, {...input, format});
+    return {seriesId: series.id as string, ...result};
+  } catch (error) {
+    await series.deleteOne();
+    throw error;
+  }
+}
 
-  const bookings: BookingDoc[] = [];
-  const skipped: {date: string; reason: 'UNAVAILABLE' | 'PAST' | 'EXCEPTION'}[] = [];
-  for (const date of [...new Set(input.dates)].sort()) {
-    const item = byDate.get(date)!;
-    if (!item.available) {
-      skipped.push({date, reason: item.reason ?? 'UNAVAILABLE'});
-      continue;
-    }
-    try {
-      bookings.push(
-        await createIndividualBooking(
-          client,
-          {
-            sessionTypeId: input.sessionTypeId,
-            startAt: item.startAt,
-            isTrial: false,
-            useCredits: input.useCredits,
-          },
-          {seriesId: series._id},
-        ),
-      );
-    } catch (error) {
-      if (error instanceof AppError && error.code === 'SLOT_UNAVAILABLE') {
-        skipped.push({date, reason: 'UNAVAILABLE'});
-        continue;
-      }
-      if (error instanceof AppError && error.code === 'NO_CREDITS') {
-        // Credits were used up in parallel: nothing is booked (credits go back).
-        for (const booking of bookings) await cancelBookingInternal(booking, 'system');
-        await BookingModel.deleteMany({_id: {$in: bookings.map(b => b._id)}});
-        await series.deleteOne();
-        throw new AppError('INSUFFICIENT_CREDITS', undefined, {
-          creditsAvailable: await creditsAvailable(client._id, type.coachId),
-        });
-      }
-      throw error;
+export function assertDatesInPreview(dates: string[], preview: PreviewItem[]) {
+  const known = new Set(preview.map(item => item.date));
+  const unknown = dates.filter(date => !known.has(date));
+  if (unknown.length) {
+    throw new AppError('VALIDATION_ERROR', 'Some dates are not part of this series.', {
+      fields: {dates: `Not in the series: ${unknown.join(', ')}`},
+    });
+  }
+}
+
+/**
+ * Books the chosen dates of a preview into a series (new or extended). Taken dates are skipped. With credits,
+ * all dates are paid with credits or nothing is booked (INSUFFICIENT_CREDITS).
+ */
+export async function bookSeriesDates(
+  client: UserDoc,
+  series: BookingSeriesDoc,
+  preview: PreviewItem[],
+  input: {
+    sessionTypeId: string;
+    dates: string[];
+    useCredits?: boolean;
+    format?: 'in_person' | 'online';
+    promoCode?: string;
+  },
+) {
+  assertPromoCombinable(input);
+  const byDate = new Map(preview.map(item => [item.date, item]));
+  if (input.useCredits) {
+    const needed = [...new Set(input.dates)].filter(date => byDate.get(date)!.available).length;
+    const available = await creditsAvailable(client._id, series.coachId);
+    if (available < needed) {
+      throw new AppError('INSUFFICIENT_CREDITS', undefined, {
+        creditsAvailable: available,
+        creditsNeeded: needed,
+      });
     }
   }
-  series.bookingIds = bookings.map(b => b._id);
-  series.skippedDates = skipped.map(s => s.date);
-  await series.save();
-  return {seriesId: series.id as string, bookings: await toBookingDtos(bookings), skipped};
+
+  // One use of the code for the whole request: the discount applies to every booked date.
+  const redemption = input.promoCode
+    ? await redeemPromo(client, series.coachId, input.promoCode, 'bookings', 'series')
+    : null;
+  try {
+    const result = await bookDates();
+    if (!result.bookings.length) await redemption?.release();
+    return result;
+  } catch (error) {
+    await redemption?.release();
+    throw error;
+  }
+
+  async function bookDates() {
+    const bookings: BookingDoc[] = [];
+    const skipped: {date: string; reason: 'UNAVAILABLE' | 'PAST' | 'EXCEPTION'}[] = [];
+    for (const date of [...new Set(input.dates)].sort()) {
+      const item = byDate.get(date)!;
+      if (!item.available) {
+        skipped.push({date, reason: item.reason ?? 'UNAVAILABLE'});
+        continue;
+      }
+      try {
+        bookings.push(
+          await createIndividualBooking(
+            client,
+            {
+              sessionTypeId: input.sessionTypeId,
+              startAt: item.startAt,
+              isTrial: false,
+              useCredits: input.useCredits,
+              format: input.format,
+            },
+            {seriesId: series._id, ...(redemption && {promo: redemption.promo})},
+          ),
+        );
+      } catch (error) {
+        if (error instanceof AppError && error.code === 'SLOT_UNAVAILABLE') {
+          skipped.push({date, reason: 'UNAVAILABLE'});
+          continue;
+        }
+        if (error instanceof AppError && error.code === 'NO_CREDITS') {
+          // Credits were used up in parallel: nothing is booked (credits go back).
+          for (const booking of bookings) await cancelBookingInternal(booking, 'system');
+          await BookingModel.deleteMany({_id: {$in: bookings.map(b => b._id)}});
+          throw new AppError('INSUFFICIENT_CREDITS', undefined, {
+            creditsAvailable: await creditsAvailable(client._id, series.coachId),
+          });
+        }
+        throw error;
+      }
+    }
+    series.bookingIds = [...series.bookingIds, ...bookings.map(b => b._id)];
+    series.skippedDates = [...series.skippedDates, ...skipped.map(s => s.date)];
+    await series.save();
+    return {bookings: await toBookingDtos(bookings), skipped};
+  }
 }
 
 // ---------------------------------------------------------------------------------------------
@@ -844,10 +993,15 @@ export async function calendarEvent(user: UserDoc, bookingId: string) {
   const other = isCoach ? client : coach;
   const otherName = [other?.firstName, other?.lastName].filter(Boolean).join(' ');
   const location = session?.location;
+  const meetingUrl =
+    session?.format === 'online'
+      ? ((profile?.online?.meetingUrl as string | undefined) ?? null)
+      : null;
   const freeCancelHours = profile?.cancellationPolicy?.freeCancelHours ?? 24;
   const notes = [
     `FitBook ${session?.kind === 'group' ? 'group training' : 'training'}${otherName ? ` with ${otherName}` : ''}.`,
     location?.comment ? `Meeting point: ${location.comment}.` : null,
+    meetingUrl ? `Join online: ${meetingUrl}` : null,
     isCoach ? null : `Free cancellation up to ${freeCancelHours}h before the start.`,
     `Booking: ${booking.id}`,
   ]
@@ -861,6 +1015,7 @@ export async function calendarEvent(user: UserDoc, bookingId: string) {
     location: location
       ? {name: location.name, address: location.address, lat: location.lat, lng: location.lng}
       : null,
+    meetingUrl,
     notes,
   };
 }

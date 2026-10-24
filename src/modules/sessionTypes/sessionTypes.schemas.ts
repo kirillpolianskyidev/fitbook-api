@@ -1,6 +1,11 @@
 import {z} from 'zod';
 
-import {LocationSchema, MoneySchema, SessionKindSchema} from '../../lib/schemas.js';
+import {
+  LocationSchema,
+  MoneySchema,
+  SessionKindSchema,
+  SessionTypeFormatSchema,
+} from '../../lib/schemas.js';
 
 export const SessionTypeSchema = z
   .object({
@@ -8,6 +13,7 @@ export const SessionTypeSchema = z
     coachId: z.string(),
     title: z.string(),
     kind: SessionKindSchema,
+    format: SessionTypeFormatSchema,
     durationMin: z.number().int(),
     price: MoneySchema,
     capacity: z.number().int(),
@@ -23,6 +29,7 @@ export const CreateSessionTypeBody = z
   .object({
     title: z.string().trim().min(2).max(80),
     kind: SessionKindSchema,
+    format: SessionTypeFormatSchema.default('in_person'),
     durationMin: duration,
     price: MoneySchema,
     capacity: z
@@ -38,10 +45,15 @@ export const CreateSessionTypeBody = z
   .refine(body => body.kind === 'individual' || body.capacity !== undefined, {
     message: 'Capacity is required for group sessions',
     path: ['capacity'],
+  })
+  .refine(body => !(body.kind === 'group' && body.format === 'both'), {
+    message: 'Group trainings are either in_person or online',
+    path: ['format'],
   });
 
 export const UpdateSessionTypeBody = z.object({
   title: z.string().trim().min(2).max(80).optional(),
+  format: SessionTypeFormatSchema.optional(),
   durationMin: duration.optional(),
   price: MoneySchema.optional(),
   capacity: z.number().int().min(2).max(30).optional(),
