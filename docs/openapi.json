@@ -565,6 +565,37 @@
               "type": "string"
             }
           },
+          "location": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "properties": {
+              "lat": {
+                "type": "number"
+              },
+              "lng": {
+                "type": "number"
+              },
+              "name": {
+                "type": "string"
+              },
+              "city": {
+                "type": "string"
+              },
+              "state": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "lat",
+              "lng",
+              "name",
+              "city",
+              "state"
+            ],
+            "description": "Public part of the default training location (map); null for online-only coaches"
+          },
           "nextAvailableAt": {
             "type": [
               "string",
@@ -597,6 +628,7 @@
           "priceFrom",
           "kinds",
           "languages",
+          "location",
           "nextAvailableAt",
           "formats",
           "isFavorite"
@@ -750,6 +782,37 @@
               "type": "string"
             }
           },
+          "location": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "properties": {
+              "lat": {
+                "type": "number"
+              },
+              "lng": {
+                "type": "number"
+              },
+              "name": {
+                "type": "string"
+              },
+              "city": {
+                "type": "string"
+              },
+              "state": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "lat",
+              "lng",
+              "name",
+              "city",
+              "state"
+            ],
+            "description": "Public part of the default training location (map); null for online-only coaches"
+          },
           "nextAvailableAt": {
             "type": [
               "string",
@@ -816,6 +879,7 @@
           "priceFrom",
           "kinds",
           "languages",
+          "location",
           "nextAvailableAt",
           "formats",
           "isFavorite",
@@ -4865,11 +4929,23 @@
             "schema": {
               "type": "integer",
               "minimum": 1,
-              "maximum": 50,
-              "default": 20
+              "maximum": 100,
+              "default": 20,
+              "description": "Up to 50, or up to 100 together with bbox"
             },
             "required": false,
+            "description": "Up to 50, or up to 100 together with bbox",
             "name": "pageSize",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "description": "minLng,minLat,maxLng,maxLat: only coaches whose default location is inside (online-only coaches excluded)"
+            },
+            "required": false,
+            "description": "minLng,minLat,maxLng,maxLat: only coaches whose default location is inside (online-only coaches excluded)",
+            "name": "bbox",
             "in": "query"
           }
         ],

@@ -181,6 +181,15 @@ function toCoachCard(
         : {amountCents: profile.priceFromCents, currency: 'USD'},
     kinds: profile.kinds as ('individual' | 'group')[],
     languages: profile.languages,
+    location: profile.defaultLocation
+      ? {
+          lat: profile.defaultLocation.lat,
+          lng: profile.defaultLocation.lng,
+          name: profile.defaultLocation.name,
+          city: profile.defaultLocation.city,
+          state: profile.defaultLocation.state,
+        }
+      : null,
     nextAvailableAt: nextAvailableAt?.toISOString() ?? null,
     formats: (profile.formats ?? ['in_person']) as ('in_person' | 'online')[],
     isFavorite,
@@ -239,6 +248,10 @@ export async function listCoaches(viewer: UserDoc, query: z.infer<typeof CoachLi
   if (query.city) filter.city = new RegExp(`^${escapeRegex(query.city)}$`, 'i');
   if (query.kind) filter.kinds = query.kind;
   if (query.format) filter.formats = query.format;
+  if (query.bbox) {
+    filter['defaultLocation.lng'] = {$gte: query.bbox.minLng, $lte: query.bbox.maxLng};
+    filter['defaultLocation.lat'] = {$gte: query.bbox.minLat, $lte: query.bbox.maxLat};
+  }
   if (query.language) filter.languages = new RegExp(`^${escapeRegex(query.language)}$`, 'i');
   if (query.priceMin !== undefined || query.priceMax !== undefined) {
     const coachIds = await SessionTypeModel.distinct('coachId', {

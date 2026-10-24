@@ -68,12 +68,12 @@ policy, chat, settings. Theme preference is stored in `user.settings.theme` (`li
 ```json
 {
   "verification": {
-    "id": "a25d3ca0eb84046af06a5c23441c3ac5",
+    "id": "7338be668e3f287b9ce69d13c6252a0f",
     "purpose": "login",
     "email": "client@fitbook.dev",
     "codeLength": 6,
-    "expiresAt": "2026-10-24T08:58:08.985Z",
-    "resendAvailableAt": "2026-10-24T08:49:08.985Z"
+    "expiresAt": "2026-10-24T09:08:08.163Z",
+    "resendAvailableAt": "2026-10-24T08:59:08.163Z"
   }
 }
 ```
@@ -83,7 +83,7 @@ policy, chat, settings. Theme preference is stored in `user.settings.theme` (`li
 ```json
 {
   "user": {
-    "id": "6adc70bfbf24cb029f901691",
+    "id": "6adc7316869ac55ed7c483ac",
     "email": "client@fitbook.dev",
     "role": "client",
     "firstName": "Jamie",
@@ -101,12 +101,12 @@ policy, chat, settings. Theme preference is stored in `user.settings.theme` (`li
       "theme": "dark"
     },
     "authProviders": ["password"],
-    "createdAt": "2026-10-24T08:47:59.192Z"
+    "createdAt": "2026-10-24T08:57:58.011Z"
   },
   "tokens": {
-    "accessToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJyb2xlIjoiY2xpZW50IiwidHlwIjoiYWNjZXNzIiwiaWF0IjoxNzkyODMxNjg5LCJleHAiOjE3OTI4MzI1ODksInN1YiI6IjZhZGM3MGJmYmYyNGNiMDI5ZjkwMTY5MSJ9.7oJJV0NahFvQACWUqQZIP9SgH1ua_ilq7_W-fd42I8M",
-    "refreshToken": "MjZbbSeG9HtH9RI1WpnIM1YOhUE6ijaHYRhhygcHnV2FPH8UQZvZGvjVMR39mnhK",
-    "accessTokenExpiresAt": "2026-10-24T09:03:09.000Z"
+    "accessToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJyb2xlIjoiY2xpZW50IiwidHlwIjoiYWNjZXNzIiwiaWF0IjoxNzkyODMyMjg4LCJleHAiOjE3OTI4MzMxODgsInN1YiI6IjZhZGM3MzE2ODY5YWM1NWVkN2M0ODNhYyJ9.Vj46axomSCZYoPUB7cD-458dkP7XAqmsp6aJMDX9gRo",
+    "refreshToken": "nuEIy3C9BQwsblgnRgGqkm-ryMS2JOiz3h9cIB8h6pzu2BRqkT7GqWO687I3z46u",
+    "accessTokenExpiresAt": "2026-10-24T09:13:08.000Z"
   }
 }
 ```
@@ -191,7 +191,7 @@ or `system`), or `no_show` (the coach marked that the client did not come; see 5
 
 ```json
 {
-  "id": "6adc70cae0efc45e3e8a9e48",
+  "id": "6adc7321666f13b846061a80",
   "status": "pending_payment",
   "isTrial": false,
   "price": {
@@ -205,7 +205,7 @@ or `system`), or `no_show` (the coach marked that the client did not come; see 5
     "clientPackageId": null,
     "refundedAt": null
   },
-  "expiresAt": "2026-10-24T09:03:10.159Z",
+  "expiresAt": "2026-10-24T09:13:09.373Z",
   "startAt": "2026-10-31T13:00:00.000Z",
   "endAt": "2026-10-31T14:00:00.000Z",
   "seriesId": null,
@@ -223,8 +223,8 @@ or `system`), or `no_show` (the coach marked that the client did not come; see 5
   "cancelledBy": null,
   "cancelReason": null,
   "session": {
-    "id": "6adc70cae0efc45e3e8a9e45",
-    "sessionTypeId": "6adc70bfbf24cb029f90165f",
+    "id": "6adc7321666f13b846061a7d",
+    "sessionTypeId": "6adc7315869ac55ed7c4837a",
     "title": "1:1 Strength Session",
     "kind": "individual",
     "format": "in_person",
@@ -241,19 +241,19 @@ or `system`), or `no_show` (the coach marked that the client did not come; see 5
     "participantsCount": 1
   },
   "coach": {
-    "id": "6adc70bebf24cb029f90165c",
+    "id": "6adc7315869ac55ed7c48377",
     "firstName": "Alex",
     "lastName": "Carter",
     "avatarUrl": "https://i.pravatar.cc/300?img=12"
   },
   "client": {
-    "id": "6adc70bfbf24cb029f901691",
+    "id": "6adc7316869ac55ed7c483ac",
     "firstName": "Jamie",
     "lastName": "Lee",
     "avatarUrl": "https://i.pravatar.cc/300?img=32"
   },
   "notesCount": 0,
-  "createdAt": "2026-10-24T08:48:10.159Z"
+  "createdAt": "2026-10-24T08:58:09.375Z"
 }
 ```
 
@@ -290,6 +290,11 @@ or `system`), or `no_show` (the coach marked that the client did not come; see 5
 - Coach objects (catalog, profile, favorites) have `nextAvailableAt` (earliest free individual slot in the next 14
   days; for group-only coaches the earliest free group place; `null` if none) and `languages`.
 - `GET /coaches/filters` -> `{ languages, price { min, max } }` for the filter screen.
+- Map: `GET /coaches?bbox=minLng,minLat,maxLng,maxLat` returns coaches whose default location is inside the box
+  (online-only coaches are never returned with bbox), combined with all filters and sorting; `pageSize` up to 100
+  with bbox (50 otherwise). Invalid bbox -> `VALIDATION_ERROR`. Coach objects have
+  `location { lat, lng, name, city, state }` (public part of the default location, no meeting-point comment) or
+  `null`.
 
 **Example: GET /coaches/filters**
 
@@ -315,6 +320,88 @@ or `system`), or `no_show` (the coach marked that the client did not come; see 5
       "currency": "USD"
     }
   }
+}
+```
+
+**Example: GET /coaches?bbox=...**
+
+```json
+{
+  "items": [
+    {
+      "id": "6adc7315869ac55ed7c48397",
+      "firstName": "Chris",
+      "lastName": "Johnson",
+      "avatarUrl": "https://i.pravatar.cc/300?img=15",
+      "headline": "Swim coach - stroke technique and open water",
+      "specializations": ["swimming"],
+      "experienceYears": 12,
+      "rating": {
+        "average": 4.92,
+        "count": 13
+      },
+      "homeArea": {
+        "city": "Chicago",
+        "state": "IL",
+        "country": "US",
+        "timezone": "America/Chicago"
+      },
+      "priceFrom": {
+        "amountCents": 3500,
+        "currency": "USD"
+      },
+      "kinds": ["group", "individual"],
+      "languages": ["English"],
+      "location": {
+        "lat": 41.9435,
+        "lng": -87.6532,
+        "name": "Lakeview Aquatic Center",
+        "city": "Chicago",
+        "state": "IL"
+      },
+      "nextAvailableAt": "2026-10-26T11:00:00.000Z",
+      "formats": ["in_person"],
+      "isFavorite": false
+    },
+    {
+      "id": "6adc7315869ac55ed7c48388",
+      "firstName": "Sofia",
+      "lastName": "Alvarez",
+      "avatarUrl": "https://i.pravatar.cc/300?img=44",
+      "headline": "Running coach - from first 5K to Chicago Marathon",
+      "specializations": ["running", "mobility"],
+      "experienceYears": 6,
+      "rating": {
+        "average": 4.92,
+        "count": 12
+      },
+      "homeArea": {
+        "city": "Chicago",
+        "state": "IL",
+        "country": "US",
+        "timezone": "America/Chicago"
+      },
+      "priceFrom": {
+        "amountCents": 1500,
+        "currency": "USD"
+      },
+      "kinds": ["group", "individual"],
+      "languages": ["English", "Spanish"],
+      "location": {
+        "lat": 41.9257,
+        "lng": -87.6339,
+        "name": "Lakefront Trail at Fullerton",
+        "city": "Chicago",
+        "state": "IL"
+      },
+      "nextAvailableAt": "2026-10-25T12:00:00.000Z",
+      "formats": ["in_person"],
+      "isFavorite": false
+    }
+  ],
+  "page": 1,
+  "pageSize": 100,
+  "total": 7
 }
 ```
 
@@ -355,11 +442,11 @@ or `system`), or `no_show` (the coach marked that the client did not come; see 5
 
 ```json
 {
-  "id": "6adc70cae0efc45e3e8a9e4c",
-  "packageId": "6adc70c6bf24cb029f902597",
+  "id": "6adc7321666f13b846061a84",
+  "packageId": "6adc731d869ac55ed7c492b2",
   "title": "5 sessions",
   "coach": {
-    "id": "6adc70bebf24cb029f90165c",
+    "id": "6adc7315869ac55ed7c48377",
     "firstName": "Alex",
     "lastName": "Carter",
     "avatarUrl": "https://i.pravatar.cc/300?img=12"
@@ -370,8 +457,8 @@ or `system`), or `no_show` (the coach marked that the client did not come; see 5
     "amountCents": 40500,
     "currency": "USD"
   },
-  "purchasedAt": "2026-10-24T08:48:10.358Z",
-  "expiresAt": "2026-12-23T08:48:10.358Z",
+  "purchasedAt": "2026-10-24T08:58:09.587Z",
+  "expiresAt": "2026-12-23T08:58:09.587Z",
   "expired": false
 }
 ```
@@ -380,7 +467,7 @@ or `system`), or `no_show` (the coach marked that the client did not come; see 5
 
 ```json
 {
-  "id": "6adc70cae0efc45e3e8a9e50",
+  "id": "6adc7321666f13b846061a88",
   "status": "confirmed",
   "isTrial": false,
   "price": {
@@ -390,8 +477,8 @@ or `system`), or `no_show` (the coach marked that the client did not come; see 5
   "payment": {
     "status": "paid",
     "method": "credits",
-    "paidAt": "2026-10-24T08:48:10.384Z",
-    "clientPackageId": "6adc70cae0efc45e3e8a9e4c",
+    "paidAt": "2026-10-24T08:58:09.610Z",
+    "clientPackageId": "6adc7321666f13b846061a84",
     "refundedAt": null
   },
   "expiresAt": null,
@@ -412,8 +499,8 @@ or `system`), or `no_show` (the coach marked that the client did not come; see 5
   "cancelledBy": null,
   "cancelReason": null,
   "session": {
-    "id": "6adc70cae0efc45e3e8a9e4d",
-    "sessionTypeId": "6adc70bfbf24cb029f90165f",
+    "id": "6adc7321666f13b846061a85",
+    "sessionTypeId": "6adc7315869ac55ed7c4837a",
     "title": "1:1 Strength Session",
     "kind": "individual",
     "format": "online",
@@ -422,19 +509,19 @@ or `system`), or `no_show` (the coach marked that the client did not come; see 5
     "participantsCount": 1
   },
   "coach": {
-    "id": "6adc70bebf24cb029f90165c",
+    "id": "6adc7315869ac55ed7c48377",
     "firstName": "Alex",
     "lastName": "Carter",
     "avatarUrl": "https://i.pravatar.cc/300?img=12"
   },
   "client": {
-    "id": "6adc70bfbf24cb029f901691",
+    "id": "6adc7316869ac55ed7c483ac",
     "firstName": "Jamie",
     "lastName": "Lee",
     "avatarUrl": "https://i.pravatar.cc/300?img=32"
   },
   "notesCount": 0,
-  "createdAt": "2026-10-24T08:48:10.384Z"
+  "createdAt": "2026-10-24T08:58:09.611Z"
 }
 ```
 
@@ -469,7 +556,7 @@ or `system`), or `no_show` (the coach marked that the client did not come; see 5
 {
   "items": [
     {
-      "id": "6adc70bebf24cb029f90165c",
+      "id": "6adc7315869ac55ed7c48377",
       "firstName": "Alex",
       "lastName": "Carter",
       "avatarUrl": "https://i.pravatar.cc/300?img=12",
@@ -492,12 +579,19 @@ or `system`), or `no_show` (the coach marked that the client did not come; see 5
       },
       "kinds": ["group", "individual"],
       "languages": ["English", "Spanish"],
+      "location": {
+        "lat": 41.8925,
+        "lng": -87.6347,
+        "name": "Iron Loop Gym",
+        "city": "Chicago",
+        "state": "IL"
+      },
       "nextAvailableAt": "2026-10-24T13:00:00.000Z",
       "formats": ["in_person", "online"],
       "isFavorite": true
     },
     {
-      "id": "6adc70bfbf24cb029f901663",
+      "id": "6adc7315869ac55ed7c4837e",
       "firstName": "Maya",
       "lastName": "Patel",
       "avatarUrl": "https://i.pravatar.cc/300?img=47",
@@ -520,6 +614,13 @@ or `system`), or `no_show` (the coach marked that the client did not come; see 5
       },
       "kinds": ["group", "individual"],
       "languages": ["English", "Hindi"],
+      "location": {
+        "lat": 41.8826,
+        "lng": -87.6226,
+        "name": "Millennium Park Lawn",
+        "city": "Chicago",
+        "state": "IL"
+      },
       "nextAvailableAt": "2026-10-25T14:00:00.000Z",
       "formats": ["in_person"],
       "isFavorite": true
@@ -581,13 +682,13 @@ thisWeek { weekStart, completed, planned }, streakWeeks, weekly [{ weekStart, co
 
 ```json
 {
-  "id": "6adc70cae0efc45e3e8a9e4b",
+  "id": "6adc7321666f13b846061a83",
   "type": "weight",
   "value": 181.6,
   "unit": "lb",
   "measuredAt": "2026-10-24",
   "note": null,
-  "createdAt": "2026-10-24T08:48:10.259Z"
+  "createdAt": "2026-10-24T08:58:09.483Z"
 }
 ```
 
@@ -608,28 +709,28 @@ thisWeek { weekStart, completed, planned }, streakWeeks, weekly [{ weekStart, co
 {
   "items": [
     {
-      "id": "6adc70c6bf24cb029f9025b9",
+      "id": "6adc731d869ac55ed7c492d4",
       "rating": 5,
       "text": "Super encouraging without being pushy. Worth every dollar.",
       "author": {
-        "id": "6adc70bfbf24cb029f90169c",
+        "id": "6adc7316869ac55ed7c483b7",
         "name": "Mason W.",
         "avatarUrl": "https://i.pravatar.cc/300?img=53"
       },
-      "createdAt": "2026-10-20T08:30:45.607Z",
-      "updatedAt": "2026-10-20T08:30:45.607Z"
+      "createdAt": "2026-10-20T08:40:03.947Z",
+      "updatedAt": "2026-10-20T08:40:03.947Z"
     },
     {
-      "id": "6adc70c6bf24cb029f9025b3",
+      "id": "6adc731d869ac55ed7c492ce",
       "rating": 4,
       "text": "Knows the craft well. The location can be busy on weekends.",
       "author": {
-        "id": "6adc70bfbf24cb029f901695",
+        "id": "6adc7316869ac55ed7c483b0",
         "name": "Mia G.",
         "avatarUrl": "https://i.pravatar.cc/300?img=9"
       },
-      "createdAt": "2026-10-17T11:29:54.895Z",
-      "updatedAt": "2026-10-17T11:29:54.895Z"
+      "createdAt": "2026-10-17T11:37:49.836Z",
+      "updatedAt": "2026-10-17T11:37:49.836Z"
     }
   ],
   "page": 1,
@@ -654,19 +755,19 @@ thisWeek { weekStart, completed, planned }, streakWeeks, weekly [{ weekStart, co
 ```json
 {
   "review": {
-    "id": "6adc70cae0efc45e3e8a9e44",
+    "id": "6adc7321666f13b846061a7c",
     "rating": 5,
     "text": "Great technique cues, I finally deadlift without back pain.",
     "author": {
-      "id": "6adc70bfbf24cb029f901691",
+      "id": "6adc7316869ac55ed7c483ac",
       "name": "Jamie L.",
       "avatarUrl": "https://i.pravatar.cc/300?img=32"
     },
-    "createdAt": "2026-10-24T08:48:10.076Z",
-    "updatedAt": "2026-10-24T08:48:10.076Z"
+    "createdAt": "2026-10-24T08:58:09.294Z",
+    "updatedAt": "2026-10-24T08:58:09.294Z"
   },
   "canCreate": false,
-  "editableUntil": "2026-10-25T08:48:10.076Z"
+  "editableUntil": "2026-10-25T08:58:09.294Z"
 }
 ```
 
@@ -685,9 +786,9 @@ Profile (`/coach/profile`, publish when `completeness.complete`), training types
   "items": [
     {
       "session": {
-        "id": "6adc70c4bf24cb029f901ef8",
-        "coachId": "6adc70bebf24cb029f90165c",
-        "sessionTypeId": "6adc70bfbf24cb029f901660",
+        "id": "6adc731b869ac55ed7c48c13",
+        "coachId": "6adc7315869ac55ed7c48377",
+        "sessionTypeId": "6adc7315869ac55ed7c4837b",
         "kind": "individual",
         "format": "in_person",
         "title": "1:1 Strength + Mobility (90 min)",
@@ -715,7 +816,7 @@ Profile (`/coach/profile`, publish when `completeness.complete`), training types
       },
       "participants": [
         {
-          "bookingId": "6adc70c4bf24cb029f901efc",
+          "bookingId": "6adc731b869ac55ed7c48c17",
           "status": "confirmed",
           "isTrial": false,
           "noShow": null,
@@ -723,7 +824,7 @@ Profile (`/coach/profile`, publish when `completeness.complete`), training types
           "noShowUndoable": false,
           "noShowDeadline": "2026-10-26T14:00:00.000Z",
           "client": {
-            "id": "6adc70bfbf24cb029f901699",
+            "id": "6adc7316869ac55ed7c483b4",
             "firstName": "Isabella",
             "lastName": "Taylor",
             "avatarUrl": "https://i.pravatar.cc/300?img=20"
@@ -734,9 +835,9 @@ Profile (`/coach/profile`, publish when `completeness.complete`), training types
     },
     {
       "session": {
-        "id": "6adc70bfbf24cb029f901712",
-        "coachId": "6adc70bebf24cb029f90165c",
-        "sessionTypeId": "6adc70bfbf24cb029f901661",
+        "id": "6adc7316869ac55ed7c4842d",
+        "coachId": "6adc7315869ac55ed7c48377",
+        "sessionTypeId": "6adc7315869ac55ed7c4837c",
         "kind": "group",
         "format": "in_person",
         "title": "Lunchtime Strength Circuit",
@@ -764,7 +865,7 @@ Profile (`/coach/profile`, publish when `completeness.complete`), training types
       },
       "participants": [
         {
-          "bookingId": "6adc70bfbf24cb029f901878",
+          "bookingId": "6adc7316869ac55ed7c48593",
           "status": "confirmed",
           "isTrial": false,
           "noShow": null,
@@ -772,7 +873,7 @@ Profile (`/coach/profile`, publish when `completeness.complete`), training types
           "noShowUndoable": false,
           "noShowDeadline": "2026-10-28T17:00:00.000Z",
           "client": {
-            "id": "6adc70bfbf24cb029f901691",
+            "id": "6adc7316869ac55ed7c483ac",
             "firstName": "Jamie",
             "lastName": "Lee",
             "avatarUrl": "https://i.pravatar.cc/300?img=32"
@@ -780,7 +881,7 @@ Profile (`/coach/profile`, publish when `completeness.complete`), training types
           "notesCount": 0
         },
         {
-          "bookingId": "6adc70c0bf24cb029f901904",
+          "bookingId": "6adc7317869ac55ed7c4861f",
           "status": "confirmed",
           "isTrial": false,
           "noShow": null,
@@ -788,7 +889,7 @@ Profile (`/coach/profile`, publish when `completeness.complete`), training types
           "noShowUndoable": false,
           "noShowDeadline": "2026-10-28T17:00:00.000Z",
           "client": {
-            "id": "6adc70bfbf24cb029f901697",
+            "id": "6adc7316869ac55ed7c483b2",
             "firstName": "Sophia",
             "lastName": "Martinez",
             "avatarUrl": "https://i.pravatar.cc/300?img=16"
@@ -818,7 +919,7 @@ Profile (`/coach/profile`, publish when `completeness.complete`), training types
 
 ```json
 {
-  "id": "6adc70bfbf24cb029f9016bc",
+  "id": "6adc7316869ac55ed7c483d7",
   "status": "no_show",
   "isTrial": false,
   "price": {
@@ -828,21 +929,21 @@ Profile (`/coach/profile`, publish when `completeness.complete`), training types
   "payment": {
     "status": "paid",
     "method": "credits",
-    "paidAt": "2026-10-04T08:47:58.134Z",
-    "clientPackageId": "6adc70c6bf24cb029f9025a4",
+    "paidAt": "2026-10-04T08:57:57.015Z",
+    "clientPackageId": "6adc731d869ac55ed7c492bf",
     "refundedAt": null
   },
   "expiresAt": null,
   "startAt": "2026-10-22T12:00:00.000Z",
   "endAt": "2026-10-22T13:00:00.000Z",
-  "seriesId": "6adc70bfbf24cb029f9016ac",
+  "seriesId": "6adc7316869ac55ed7c483c7",
   "format": "in_person",
   "meetingUrl": null,
   "cancellable": false,
   "reschedulable": false,
   "rescheduledAt": null,
   "noShow": {
-    "markedAt": "2026-10-24T08:48:10.802Z",
+    "markedAt": "2026-10-24T08:58:10.004Z",
     "refunded": false
   },
   "noShowMarkable": false,
@@ -853,8 +954,8 @@ Profile (`/coach/profile`, publish when `completeness.complete`), training types
   "cancelledBy": null,
   "cancelReason": null,
   "session": {
-    "id": "6adc70bfbf24cb029f9016b9",
-    "sessionTypeId": "6adc70bfbf24cb029f90165f",
+    "id": "6adc7316869ac55ed7c483d4",
+    "sessionTypeId": "6adc7315869ac55ed7c4837a",
     "title": "1:1 Strength Session",
     "kind": "individual",
     "format": "in_person",
@@ -871,19 +972,19 @@ Profile (`/coach/profile`, publish when `completeness.complete`), training types
     "participantsCount": 0
   },
   "coach": {
-    "id": "6adc70bebf24cb029f90165c",
+    "id": "6adc7315869ac55ed7c48377",
     "firstName": "Alex",
     "lastName": "Carter",
     "avatarUrl": "https://i.pravatar.cc/300?img=12"
   },
   "client": {
-    "id": "6adc70bfbf24cb029f901691",
+    "id": "6adc7316869ac55ed7c483ac",
     "firstName": "Jamie",
     "lastName": "Lee",
     "avatarUrl": "https://i.pravatar.cc/300?img=32"
   },
   "notesCount": 2,
-  "createdAt": "2026-10-24T08:47:59.283Z"
+  "createdAt": "2026-10-24T08:57:58.141Z"
 }
 ```
 
@@ -910,40 +1011,40 @@ readAt }`, `conversation:updated { conversation }`, `typing { conversationId, us
 {
   "items": [
     {
-      "id": "6adc70c6bf24cb029f902633",
-      "coachId": "6adc70bfbf24cb029f90166d",
-      "clientId": "6adc70bfbf24cb029f901691",
+      "id": "6adc731d869ac55ed7c4934e",
+      "coachId": "6adc7315869ac55ed7c48388",
+      "clientId": "6adc7316869ac55ed7c483ac",
       "participant": {
-        "id": "6adc70bfbf24cb029f90166d",
+        "id": "6adc7315869ac55ed7c48388",
         "firstName": "Sofia",
         "lastName": "Alvarez",
         "avatarUrl": "https://i.pravatar.cc/300?img=44"
       },
       "lastMessage": {
         "text": "I will add it to our notes after the session.",
-        "senderId": "6adc70bfbf24cb029f90166d",
-        "createdAt": "2026-10-20T12:32:58.134Z"
+        "senderId": "6adc7315869ac55ed7c48388",
+        "createdAt": "2026-10-20T12:42:57.015Z"
       },
       "unreadCount": 1,
-      "lastActivityAt": "2026-10-20T12:32:58.134Z"
+      "lastActivityAt": "2026-10-20T12:42:57.015Z"
     },
     {
-      "id": "6adc70c6bf24cb029f90261e",
-      "coachId": "6adc70bebf24cb029f90165c",
-      "clientId": "6adc70bfbf24cb029f901691",
+      "id": "6adc731d869ac55ed7c49339",
+      "coachId": "6adc7315869ac55ed7c48377",
+      "clientId": "6adc7316869ac55ed7c483ac",
       "participant": {
-        "id": "6adc70bebf24cb029f90165c",
+        "id": "6adc7315869ac55ed7c48377",
         "firstName": "Alex",
         "lastName": "Carter",
         "avatarUrl": "https://i.pravatar.cc/300?img=12"
       },
       "lastMessage": {
         "text": "Got it, see you at 6.",
-        "senderId": "6adc70bebf24cb029f90165c",
-        "createdAt": "2026-10-11T22:56:58.134Z"
+        "senderId": "6adc7315869ac55ed7c48377",
+        "createdAt": "2026-10-11T23:06:57.015Z"
       },
       "unreadCount": 1,
-      "lastActivityAt": "2026-10-11T22:56:58.134Z"
+      "lastActivityAt": "2026-10-11T23:06:57.015Z"
     }
   ]
 }
@@ -1219,7 +1320,7 @@ localized app strings; `message` is an English fallback.
 
 ```json
 {
-  "id": "6adc70bfbf24cb029f901691",
+  "id": "6adc7316869ac55ed7c483ac",
   "email": "client@fitbook.dev",
   "role": "client",
   "firstName": "Jamie",
@@ -1237,7 +1338,7 @@ localized app strings; `message` is an English fallback.
     "theme": "dark"
   },
   "authProviders": ["password"],
-  "createdAt": "2026-10-24T08:47:59.192Z",
+  "createdAt": "2026-10-24T08:57:58.011Z",
   "coachProfile": null
 }
 ```
@@ -1248,7 +1349,7 @@ localized app strings; `message` is an English fallback.
 {
   "items": [
     {
-      "id": "6adc70bfbf24cb029f90167c",
+      "id": "6adc7315869ac55ed7c48397",
       "firstName": "Chris",
       "lastName": "Johnson",
       "avatarUrl": "https://i.pravatar.cc/300?img=15",
@@ -1271,12 +1372,19 @@ localized app strings; `message` is an English fallback.
       },
       "kinds": ["group", "individual"],
       "languages": ["English"],
+      "location": {
+        "lat": 41.9435,
+        "lng": -87.6532,
+        "name": "Lakeview Aquatic Center",
+        "city": "Chicago",
+        "state": "IL"
+      },
       "nextAvailableAt": "2026-10-26T11:00:00.000Z",
       "formats": ["in_person"],
       "isFavorite": false
     },
     {
-      "id": "6adc70bfbf24cb029f90166d",
+      "id": "6adc7315869ac55ed7c48388",
       "firstName": "Sofia",
       "lastName": "Alvarez",
       "avatarUrl": "https://i.pravatar.cc/300?img=44",
@@ -1299,6 +1407,13 @@ localized app strings; `message` is an English fallback.
       },
       "kinds": ["group", "individual"],
       "languages": ["English", "Spanish"],
+      "location": {
+        "lat": 41.9257,
+        "lng": -87.6339,
+        "name": "Lakefront Trail at Fullerton",
+        "city": "Chicago",
+        "state": "IL"
+      },
       "nextAvailableAt": "2026-10-25T12:00:00.000Z",
       "formats": ["in_person"],
       "isFavorite": false
@@ -1314,7 +1429,7 @@ localized app strings; `message` is an English fallback.
 
 ```json
 {
-  "id": "6adc70bebf24cb029f90165c",
+  "id": "6adc7315869ac55ed7c48377",
   "firstName": "Alex",
   "lastName": "Carter",
   "avatarUrl": "https://i.pravatar.cc/300?img=12",
@@ -1337,6 +1452,13 @@ localized app strings; `message` is an English fallback.
   },
   "kinds": ["group", "individual"],
   "languages": ["English", "Spanish"],
+  "location": {
+    "lat": 41.8925,
+    "lng": -87.6347,
+    "name": "Iron Loop Gym",
+    "city": "Chicago",
+    "state": "IL"
+  },
   "nextAvailableAt": "2026-10-24T13:00:00.000Z",
   "formats": ["in_person", "online"],
   "isFavorite": true,
@@ -1372,8 +1494,8 @@ localized app strings; `message` is an English fallback.
   },
   "sessionTypes": [
     {
-      "id": "6adc70bfbf24cb029f901662",
-      "coachId": "6adc70bebf24cb029f90165c",
+      "id": "6adc7315869ac55ed7c4837d",
+      "coachId": "6adc7315869ac55ed7c48377",
       "title": "Live Online HIIT",
       "kind": "group",
       "format": "online",
@@ -1388,8 +1510,8 @@ localized app strings; `message` is an English fallback.
       "isActive": true
     },
     {
-      "id": "6adc70bfbf24cb029f901661",
-      "coachId": "6adc70bebf24cb029f90165c",
+      "id": "6adc7315869ac55ed7c4837c",
+      "coachId": "6adc7315869ac55ed7c48377",
       "title": "Lunchtime Strength Circuit",
       "kind": "group",
       "format": "in_person",
@@ -1406,7 +1528,7 @@ localized app strings; `message` is an English fallback.
   ],
   "packages": [
     {
-      "id": "6adc70c6bf24cb029f902597",
+      "id": "6adc731d869ac55ed7c492b2",
       "title": "5 sessions",
       "credits": 5,
       "price": {
@@ -1421,7 +1543,7 @@ localized app strings; `message` is an English fallback.
       }
     },
     {
-      "id": "6adc70c6bf24cb029f902596",
+      "id": "6adc731d869ac55ed7c492b1",
       "title": "10 sessions",
       "credits": 10,
       "price": {
@@ -1455,11 +1577,11 @@ localized app strings; `message` is an English fallback.
 {
   "items": [
     {
-      "id": "6adc70c6bf24cb029f9025a4",
-      "packageId": "6adc70c6bf24cb029f902596",
+      "id": "6adc731d869ac55ed7c492bf",
+      "packageId": "6adc731d869ac55ed7c492b1",
       "title": "10 sessions",
       "coach": {
-        "id": "6adc70bebf24cb029f90165c",
+        "id": "6adc7315869ac55ed7c48377",
         "firstName": "Alex",
         "lastName": "Carter",
         "avatarUrl": "https://i.pravatar.cc/300?img=12"
@@ -1470,8 +1592,8 @@ localized app strings; `message` is an English fallback.
         "amountCents": 76500,
         "currency": "USD"
       },
-      "purchasedAt": "2026-10-04T08:47:58.134Z",
-      "expiresAt": "2027-01-02T08:47:58.134Z",
+      "purchasedAt": "2026-10-04T08:57:57.015Z",
+      "expiresAt": "2027-01-02T08:57:57.015Z",
       "expired": false
     }
   ],
@@ -1485,7 +1607,7 @@ localized app strings; `message` is an English fallback.
 {
   "items": [
     {
-      "id": "6adc70c6bf24cb029f902597",
+      "id": "6adc731d869ac55ed7c492b2",
       "title": "5 sessions",
       "credits": 5,
       "price": {
@@ -1500,7 +1622,7 @@ localized app strings; `message` is an English fallback.
       }
     },
     {
-      "id": "6adc70c6bf24cb029f902596",
+      "id": "6adc731d869ac55ed7c492b1",
       "title": "10 sessions",
       "credits": 10,
       "price": {
@@ -1541,9 +1663,9 @@ localized app strings; `message` is an English fallback.
 {
   "items": [
     {
-      "id": "6adc70bfbf24cb029f901712",
-      "coachId": "6adc70bebf24cb029f90165c",
-      "sessionTypeId": "6adc70bfbf24cb029f901661",
+      "id": "6adc7316869ac55ed7c4842d",
+      "coachId": "6adc7315869ac55ed7c48377",
+      "sessionTypeId": "6adc7315869ac55ed7c4837c",
       "kind": "group",
       "format": "in_person",
       "title": "Lunchtime Strength Circuit",
@@ -1576,9 +1698,9 @@ localized app strings; `message` is an English fallback.
       }
     },
     {
-      "id": "6adc70bfbf24cb029f901734",
-      "coachId": "6adc70bebf24cb029f90165c",
-      "sessionTypeId": "6adc70bfbf24cb029f901662",
+      "id": "6adc7316869ac55ed7c4844f",
+      "coachId": "6adc7315869ac55ed7c48377",
+      "sessionTypeId": "6adc7315869ac55ed7c4837d",
       "kind": "group",
       "format": "online",
       "title": "Live Online HIIT",
@@ -1610,7 +1732,7 @@ localized app strings; `message` is an English fallback.
 
 ```json
 {
-  "id": "6adc70cae0efc45e3e8a9e48",
+  "id": "6adc7321666f13b846061a80",
   "status": "confirmed",
   "isTrial": false,
   "price": {
@@ -1620,7 +1742,7 @@ localized app strings; `message` is an English fallback.
   "payment": {
     "status": "paid",
     "method": "mock",
-    "paidAt": "2026-10-24T08:48:10.198Z",
+    "paidAt": "2026-10-24T08:58:09.412Z",
     "clientPackageId": null,
     "refundedAt": null
   },
@@ -1642,8 +1764,8 @@ localized app strings; `message` is an English fallback.
   "cancelledBy": null,
   "cancelReason": null,
   "session": {
-    "id": "6adc70cae0efc45e3e8a9e45",
-    "sessionTypeId": "6adc70bfbf24cb029f90165f",
+    "id": "6adc7321666f13b846061a7d",
+    "sessionTypeId": "6adc7315869ac55ed7c4837a",
     "title": "1:1 Strength Session",
     "kind": "individual",
     "format": "in_person",
@@ -1660,19 +1782,19 @@ localized app strings; `message` is an English fallback.
     "participantsCount": 1
   },
   "coach": {
-    "id": "6adc70bebf24cb029f90165c",
+    "id": "6adc7315869ac55ed7c48377",
     "firstName": "Alex",
     "lastName": "Carter",
     "avatarUrl": "https://i.pravatar.cc/300?img=12"
   },
   "client": {
-    "id": "6adc70bfbf24cb029f901691",
+    "id": "6adc7316869ac55ed7c483ac",
     "firstName": "Jamie",
     "lastName": "Lee",
     "avatarUrl": "https://i.pravatar.cc/300?img=32"
   },
   "notesCount": 0,
-  "createdAt": "2026-10-24T08:48:10.159Z"
+  "createdAt": "2026-10-24T08:58:09.375Z"
 }
 ```
 
@@ -1680,7 +1802,7 @@ localized app strings; `message` is an English fallback.
 
 ```json
 {
-  "id": "6adc70cae0efc45e3e8a9e48",
+  "id": "6adc7321666f13b846061a80",
   "status": "cancelled",
   "isTrial": false,
   "price": {
@@ -1690,9 +1812,9 @@ localized app strings; `message` is an English fallback.
   "payment": {
     "status": "refunded",
     "method": "mock",
-    "paidAt": "2026-10-24T08:48:10.198Z",
+    "paidAt": "2026-10-24T08:58:09.412Z",
     "clientPackageId": null,
-    "refundedAt": "2026-10-24T08:48:10.646Z"
+    "refundedAt": "2026-10-24T08:58:09.864Z"
   },
   "expiresAt": null,
   "startAt": "2026-10-31T16:00:00.000Z",
@@ -1702,18 +1824,18 @@ localized app strings; `message` is an English fallback.
   "meetingUrl": null,
   "cancellable": false,
   "reschedulable": false,
-  "rescheduledAt": "2026-10-24T08:48:10.224Z",
+  "rescheduledAt": "2026-10-24T08:58:09.438Z",
   "noShow": null,
   "noShowMarkable": false,
   "noShowUndoable": false,
   "noShowDeadline": "2026-11-02T16:00:00.000Z",
   "cancelDeadline": null,
-  "cancelledAt": "2026-10-24T08:48:10.646Z",
+  "cancelledAt": "2026-10-24T08:58:09.864Z",
   "cancelledBy": "client",
   "cancelReason": "Schedule change",
   "session": {
-    "id": "6adc70cae0efc45e3e8a9e45",
-    "sessionTypeId": "6adc70bfbf24cb029f90165f",
+    "id": "6adc7321666f13b846061a7d",
+    "sessionTypeId": "6adc7315869ac55ed7c4837a",
     "title": "1:1 Strength Session",
     "kind": "individual",
     "format": "in_person",
@@ -1730,19 +1852,19 @@ localized app strings; `message` is an English fallback.
     "participantsCount": 1
   },
   "coach": {
-    "id": "6adc70bebf24cb029f90165c",
+    "id": "6adc7315869ac55ed7c48377",
     "firstName": "Alex",
     "lastName": "Carter",
     "avatarUrl": "https://i.pravatar.cc/300?img=12"
   },
   "client": {
-    "id": "6adc70bfbf24cb029f901691",
+    "id": "6adc7316869ac55ed7c483ac",
     "firstName": "Jamie",
     "lastName": "Lee",
     "avatarUrl": "https://i.pravatar.cc/300?img=32"
   },
   "notesCount": 1,
-  "createdAt": "2026-10-24T08:48:10.159Z"
+  "createdAt": "2026-10-24T08:58:09.375Z"
 }
 ```
 
@@ -1750,7 +1872,7 @@ localized app strings; `message` is an English fallback.
 
 ```json
 {
-  "id": "6adc70cae0efc45e3e8a9e48",
+  "id": "6adc7321666f13b846061a80",
   "status": "confirmed",
   "isTrial": false,
   "price": {
@@ -1760,7 +1882,7 @@ localized app strings; `message` is an English fallback.
   "payment": {
     "status": "paid",
     "method": "mock",
-    "paidAt": "2026-10-24T08:48:10.198Z",
+    "paidAt": "2026-10-24T08:58:09.412Z",
     "clientPackageId": null,
     "refundedAt": null
   },
@@ -1772,7 +1894,7 @@ localized app strings; `message` is an English fallback.
   "meetingUrl": null,
   "cancellable": true,
   "reschedulable": true,
-  "rescheduledAt": "2026-10-24T08:48:10.224Z",
+  "rescheduledAt": "2026-10-24T08:58:09.438Z",
   "noShow": null,
   "noShowMarkable": false,
   "noShowUndoable": false,
@@ -1782,8 +1904,8 @@ localized app strings; `message` is an English fallback.
   "cancelledBy": null,
   "cancelReason": null,
   "session": {
-    "id": "6adc70cae0efc45e3e8a9e45",
-    "sessionTypeId": "6adc70bfbf24cb029f90165f",
+    "id": "6adc7321666f13b846061a7d",
+    "sessionTypeId": "6adc7315869ac55ed7c4837a",
     "title": "1:1 Strength Session",
     "kind": "individual",
     "format": "in_person",
@@ -1800,19 +1922,19 @@ localized app strings; `message` is an English fallback.
     "participantsCount": 1
   },
   "coach": {
-    "id": "6adc70bebf24cb029f90165c",
+    "id": "6adc7315869ac55ed7c48377",
     "firstName": "Alex",
     "lastName": "Carter",
     "avatarUrl": "https://i.pravatar.cc/300?img=12"
   },
   "client": {
-    "id": "6adc70bfbf24cb029f901691",
+    "id": "6adc7316869ac55ed7c483ac",
     "firstName": "Jamie",
     "lastName": "Lee",
     "avatarUrl": "https://i.pravatar.cc/300?img=32"
   },
   "notesCount": 0,
-  "createdAt": "2026-10-24T08:48:10.159Z"
+  "createdAt": "2026-10-24T08:58:09.375Z"
 }
 ```
 
@@ -1820,10 +1942,10 @@ localized app strings; `message` is an English fallback.
 
 ```json
 {
-  "seriesId": "6adc70cae0efc45e3e8a9e52",
+  "seriesId": "6adc7321666f13b846061a8a",
   "bookings": [
     {
-      "id": "6adc70cae0efc45e3e8a9e56",
+      "id": "6adc7321666f13b846061a8e",
       "status": "pending_payment",
       "isTrial": false,
       "price": {
@@ -1837,10 +1959,10 @@ localized app strings; `message` is an English fallback.
         "clientPackageId": null,
         "refundedAt": null
       },
-      "expiresAt": "2026-10-24T09:03:10.506Z",
+      "expiresAt": "2026-10-24T09:13:09.719Z",
       "startAt": "2026-11-04T00:00:00.000Z",
       "endAt": "2026-11-04T01:00:00.000Z",
-      "seriesId": "6adc70cae0efc45e3e8a9e52",
+      "seriesId": "6adc7321666f13b846061a8a",
       "format": "in_person",
       "meetingUrl": null,
       "cancellable": true,
@@ -1855,8 +1977,8 @@ localized app strings; `message` is an English fallback.
       "cancelledBy": null,
       "cancelReason": null,
       "session": {
-        "id": "6adc70cae0efc45e3e8a9e53",
-        "sessionTypeId": "6adc70bfbf24cb029f90165f",
+        "id": "6adc7321666f13b846061a8b",
+        "sessionTypeId": "6adc7315869ac55ed7c4837a",
         "title": "1:1 Strength Session",
         "kind": "individual",
         "format": "in_person",
@@ -1873,22 +1995,22 @@ localized app strings; `message` is an English fallback.
         "participantsCount": 1
       },
       "coach": {
-        "id": "6adc70bebf24cb029f90165c",
+        "id": "6adc7315869ac55ed7c48377",
         "firstName": "Alex",
         "lastName": "Carter",
         "avatarUrl": "https://i.pravatar.cc/300?img=12"
       },
       "client": {
-        "id": "6adc70bfbf24cb029f901691",
+        "id": "6adc7316869ac55ed7c483ac",
         "firstName": "Jamie",
         "lastName": "Lee",
         "avatarUrl": "https://i.pravatar.cc/300?img=32"
       },
       "notesCount": 0,
-      "createdAt": "2026-10-24T08:48:10.506Z"
+      "createdAt": "2026-10-24T08:58:09.720Z"
     },
     {
-      "id": "6adc70cae0efc45e3e8a9e5a",
+      "id": "6adc7321666f13b846061a92",
       "status": "pending_payment",
       "isTrial": false,
       "price": {
@@ -1902,10 +2024,10 @@ localized app strings; `message` is an English fallback.
         "clientPackageId": null,
         "refundedAt": null
       },
-      "expiresAt": "2026-10-24T09:03:10.516Z",
+      "expiresAt": "2026-10-24T09:13:09.734Z",
       "startAt": "2026-11-11T00:00:00.000Z",
       "endAt": "2026-11-11T01:00:00.000Z",
-      "seriesId": "6adc70cae0efc45e3e8a9e52",
+      "seriesId": "6adc7321666f13b846061a8a",
       "format": "in_person",
       "meetingUrl": null,
       "cancellable": true,
@@ -1920,8 +2042,8 @@ localized app strings; `message` is an English fallback.
       "cancelledBy": null,
       "cancelReason": null,
       "session": {
-        "id": "6adc70cae0efc45e3e8a9e57",
-        "sessionTypeId": "6adc70bfbf24cb029f90165f",
+        "id": "6adc7321666f13b846061a8f",
+        "sessionTypeId": "6adc7315869ac55ed7c4837a",
         "title": "1:1 Strength Session",
         "kind": "individual",
         "format": "in_person",
@@ -1938,19 +2060,19 @@ localized app strings; `message` is an English fallback.
         "participantsCount": 1
       },
       "coach": {
-        "id": "6adc70bebf24cb029f90165c",
+        "id": "6adc7315869ac55ed7c48377",
         "firstName": "Alex",
         "lastName": "Carter",
         "avatarUrl": "https://i.pravatar.cc/300?img=12"
       },
       "client": {
-        "id": "6adc70bfbf24cb029f901691",
+        "id": "6adc7316869ac55ed7c483ac",
         "firstName": "Jamie",
         "lastName": "Lee",
         "avatarUrl": "https://i.pravatar.cc/300?img=32"
       },
       "notesCount": 0,
-      "createdAt": "2026-10-24T08:48:10.517Z"
+      "createdAt": "2026-10-24T08:58:09.736Z"
     }
   ],
   "skipped": []
@@ -1961,15 +2083,15 @@ localized app strings; `message` is an English fallback.
 
 ```json
 {
-  "id": "6adc70cae0efc45e3e8a9e52",
+  "id": "6adc7321666f13b846061a8a",
   "sessionType": {
-    "id": "6adc70bfbf24cb029f90165f",
+    "id": "6adc7315869ac55ed7c4837a",
     "title": "1:1 Strength Session",
     "durationMin": 60,
     "isActive": true
   },
   "coach": {
-    "id": "6adc70bebf24cb029f90165c",
+    "id": "6adc7315869ac55ed7c48377",
     "firstName": "Alex",
     "lastName": "Carter",
     "avatarUrl": "https://i.pravatar.cc/300?img=12"
@@ -1980,7 +2102,7 @@ localized app strings; `message` is an English fallback.
   "format": "in_person",
   "bookings": [
     {
-      "id": "6adc70cae0efc45e3e8a9e56",
+      "id": "6adc7321666f13b846061a8e",
       "status": "pending_payment",
       "isTrial": false,
       "price": {
@@ -1994,10 +2116,10 @@ localized app strings; `message` is an English fallback.
         "clientPackageId": null,
         "refundedAt": null
       },
-      "expiresAt": "2026-10-24T09:03:10.506Z",
+      "expiresAt": "2026-10-24T09:13:09.719Z",
       "startAt": "2026-11-04T00:00:00.000Z",
       "endAt": "2026-11-04T01:00:00.000Z",
-      "seriesId": "6adc70cae0efc45e3e8a9e52",
+      "seriesId": "6adc7321666f13b846061a8a",
       "format": "in_person",
       "meetingUrl": null,
       "cancellable": true,
@@ -2012,8 +2134,8 @@ localized app strings; `message` is an English fallback.
       "cancelledBy": null,
       "cancelReason": null,
       "session": {
-        "id": "6adc70cae0efc45e3e8a9e53",
-        "sessionTypeId": "6adc70bfbf24cb029f90165f",
+        "id": "6adc7321666f13b846061a8b",
+        "sessionTypeId": "6adc7315869ac55ed7c4837a",
         "title": "1:1 Strength Session",
         "kind": "individual",
         "format": "in_person",
@@ -2030,22 +2152,22 @@ localized app strings; `message` is an English fallback.
         "participantsCount": 1
       },
       "coach": {
-        "id": "6adc70bebf24cb029f90165c",
+        "id": "6adc7315869ac55ed7c48377",
         "firstName": "Alex",
         "lastName": "Carter",
         "avatarUrl": "https://i.pravatar.cc/300?img=12"
       },
       "client": {
-        "id": "6adc70bfbf24cb029f901691",
+        "id": "6adc7316869ac55ed7c483ac",
         "firstName": "Jamie",
         "lastName": "Lee",
         "avatarUrl": "https://i.pravatar.cc/300?img=32"
       },
       "notesCount": 0,
-      "createdAt": "2026-10-24T08:48:10.506Z"
+      "createdAt": "2026-10-24T08:58:09.720Z"
     },
     {
-      "id": "6adc70cae0efc45e3e8a9e5a",
+      "id": "6adc7321666f13b846061a92",
       "status": "pending_payment",
       "isTrial": false,
       "price": {
@@ -2059,10 +2181,10 @@ localized app strings; `message` is an English fallback.
         "clientPackageId": null,
         "refundedAt": null
       },
-      "expiresAt": "2026-10-24T09:03:10.516Z",
+      "expiresAt": "2026-10-24T09:13:09.734Z",
       "startAt": "2026-11-11T00:00:00.000Z",
       "endAt": "2026-11-11T01:00:00.000Z",
-      "seriesId": "6adc70cae0efc45e3e8a9e52",
+      "seriesId": "6adc7321666f13b846061a8a",
       "format": "in_person",
       "meetingUrl": null,
       "cancellable": true,
@@ -2077,8 +2199,8 @@ localized app strings; `message` is an English fallback.
       "cancelledBy": null,
       "cancelReason": null,
       "session": {
-        "id": "6adc70cae0efc45e3e8a9e57",
-        "sessionTypeId": "6adc70bfbf24cb029f90165f",
+        "id": "6adc7321666f13b846061a8f",
+        "sessionTypeId": "6adc7315869ac55ed7c4837a",
         "title": "1:1 Strength Session",
         "kind": "individual",
         "format": "in_person",
@@ -2095,19 +2217,19 @@ localized app strings; `message` is an English fallback.
         "participantsCount": 1
       },
       "coach": {
-        "id": "6adc70bebf24cb029f90165c",
+        "id": "6adc7315869ac55ed7c48377",
         "firstName": "Alex",
         "lastName": "Carter",
         "avatarUrl": "https://i.pravatar.cc/300?img=12"
       },
       "client": {
-        "id": "6adc70bfbf24cb029f901691",
+        "id": "6adc7316869ac55ed7c483ac",
         "firstName": "Jamie",
         "lastName": "Lee",
         "avatarUrl": "https://i.pravatar.cc/300?img=32"
       },
       "notesCount": 0,
-      "createdAt": "2026-10-24T08:48:10.517Z"
+      "createdAt": "2026-10-24T08:58:09.736Z"
     }
   ],
   "upcomingCount": 3,
@@ -2133,7 +2255,7 @@ localized app strings; `message` is an English fallback.
     "lng": -87.6347
   },
   "meetingUrl": null,
-  "notes": "FitBook training with Alex Carter.\nFree cancellation up to 24h before the start.\nBooking: 6adc70cae0efc45e3e8a9e48"
+  "notes": "FitBook training with Alex Carter.\nFree cancellation up to 24h before the start.\nBooking: 6adc7321666f13b846061a80"
 }
 ```
 
@@ -2143,18 +2265,18 @@ localized app strings; `message` is an English fallback.
 {
   "before": [
     {
-      "id": "6adc70bfbf24cb029f9016e3",
-      "bookingId": "6adc70bfbf24cb029f9016bc",
+      "id": "6adc7316869ac55ed7c483fe",
+      "bookingId": "6adc7316869ac55ed7c483d7",
       "phase": "before",
       "text": "Running a 10K on Sunday - nothing too heavy on the legs please.",
       "author": {
-        "id": "6adc70bfbf24cb029f901691",
+        "id": "6adc7316869ac55ed7c483ac",
         "role": "client",
         "firstName": "Jamie",
         "lastName": "Lee"
       },
       "lastEditedBy": {
-        "id": "6adc70bfbf24cb029f901691",
+        "id": "6adc7316869ac55ed7c483ac",
         "role": "client"
       },
       "createdAt": "2026-10-21T16:00:00.000Z",
@@ -2163,18 +2285,18 @@ localized app strings; `message` is an English fallback.
   ],
   "after": [
     {
-      "id": "6adc70bfbf24cb029f9016e4",
-      "bookingId": "6adc70bfbf24cb029f9016bc",
+      "id": "6adc7316869ac55ed7c483ff",
+      "bookingId": "6adc7316869ac55ed7c483d7",
       "phase": "after",
       "text": "You hit a new personal best today. Rest well and hydrate.",
       "author": {
-        "id": "6adc70bebf24cb029f90165c",
+        "id": "6adc7315869ac55ed7c48377",
         "role": "coach",
         "firstName": "Alex",
         "lastName": "Carter"
       },
       "lastEditedBy": {
-        "id": "6adc70bebf24cb029f90165c",
+        "id": "6adc7315869ac55ed7c48377",
         "role": "coach"
       },
       "createdAt": "2026-10-22T14:00:00.000Z",
@@ -2190,25 +2312,25 @@ localized app strings; `message` is an English fallback.
 {
   "items": [
     {
-      "id": "6adc70c6bf24cb029f902639",
-      "conversationId": "6adc70c6bf24cb029f902633",
-      "senderId": "6adc70bfbf24cb029f90166d",
+      "id": "6adc731d869ac55ed7c49354",
+      "conversationId": "6adc731d869ac55ed7c4934e",
+      "senderId": "6adc7315869ac55ed7c48388",
       "senderRole": "coach",
       "text": "I will add it to our notes after the session.",
-      "createdAt": "2026-10-20T12:32:58.134Z",
+      "createdAt": "2026-10-20T12:42:57.015Z",
       "readAt": null
     },
     {
-      "id": "6adc70c6bf24cb029f902638",
-      "conversationId": "6adc70c6bf24cb029f902633",
-      "senderId": "6adc70bfbf24cb029f901691",
+      "id": "6adc731d869ac55ed7c49353",
+      "conversationId": "6adc731d869ac55ed7c4934e",
+      "senderId": "6adc7316869ac55ed7c483ac",
       "senderRole": "client",
       "text": "Can you also send me a stretching routine?",
-      "createdAt": "2026-10-20T12:00:58.134Z",
-      "readAt": "2026-10-20T12:05:58.134Z"
+      "createdAt": "2026-10-20T12:10:57.015Z",
+      "readAt": "2026-10-20T12:15:57.015Z"
     }
   ],
-  "nextCursor": "6adc70c6bf24cb029f902637"
+  "nextCursor": "6adc731d869ac55ed7c49352"
 }
 ```
 
@@ -2216,7 +2338,7 @@ localized app strings; `message` is an English fallback.
 
 ```json
 {
-  "userId": "6adc70bebf24cb029f90165c",
+  "userId": "6adc7315869ac55ed7c48377",
   "headline": "Strength & conditioning coach for busy professionals",
   "bio": "I help people with full calendars get strong, move without pain and actually enjoy training. Every program starts with a movement assessment, then we build simple, progressive sessions around your schedule.\n\nBefore coaching full time I competed in powerlifting and worked with a Division I track team, so I care a lot about technique and smart progression.",
   "specializations": ["strength", "hiit", "mobility"],
@@ -2273,8 +2395,8 @@ localized app strings; `message` is an English fallback.
 {
   "items": [
     {
-      "id": "6adc70bfbf24cb029f90165f",
-      "coachId": "6adc70bebf24cb029f90165c",
+      "id": "6adc7315869ac55ed7c4837a",
+      "coachId": "6adc7315869ac55ed7c48377",
       "title": "1:1 Strength Session",
       "kind": "individual",
       "format": "both",
@@ -2289,8 +2411,8 @@ localized app strings; `message` is an English fallback.
       "isActive": true
     },
     {
-      "id": "6adc70bfbf24cb029f901660",
-      "coachId": "6adc70bebf24cb029f90165c",
+      "id": "6adc7315869ac55ed7c4837b",
+      "coachId": "6adc7315869ac55ed7c48377",
       "title": "1:1 Strength + Mobility (90 min)",
       "kind": "individual",
       "format": "in_person",
@@ -2342,7 +2464,7 @@ localized app strings; `message` is an English fallback.
 {
   "items": [
     {
-      "id": "6adc70bfbf24cb029f901691",
+      "id": "6adc7316869ac55ed7c483ac",
       "firstName": "Jamie",
       "lastName": "Lee",
       "avatarUrl": "https://i.pravatar.cc/300?img=32",
@@ -2350,7 +2472,7 @@ localized app strings; `message` is an English fallback.
       "lastBookingAt": "2026-11-19T13:00:00.000Z"
     },
     {
-      "id": "6adc70bfbf24cb029f90169a",
+      "id": "6adc7316869ac55ed7c483b5",
       "firstName": "Lucas",
       "lastName": "Moore",
       "avatarUrl": "https://i.pravatar.cc/300?img=51",
@@ -2392,23 +2514,23 @@ localized app strings; `message` is an English fallback.
   "measurements": {
     "latest": {
       "weight": {
-        "id": "6adc70cae0efc45e3e8a9e4b",
+        "id": "6adc7321666f13b846061a83",
         "type": "weight",
         "value": 181.6,
         "unit": "lb",
         "measuredAt": "2026-10-24",
         "note": null,
-        "createdAt": "2026-10-24T08:48:10.259Z"
+        "createdAt": "2026-10-24T08:58:09.483Z"
       },
       "body_fat": null,
       "waist": {
-        "id": "6adc70c6bf24cb029f902595",
+        "id": "6adc731d869ac55ed7c492b0",
         "type": "waist",
         "value": 33.8,
         "unit": "in",
         "measuredAt": "2026-10-20",
         "note": null,
-        "createdAt": "2026-10-24T08:48:06.520Z"
+        "createdAt": "2026-10-24T08:58:05.516Z"
       }
     }
   }
@@ -2421,22 +2543,22 @@ localized app strings; `message` is an English fallback.
 {
   "items": [
     {
-      "id": "6adc70c6bf24cb029f902595",
+      "id": "6adc731d869ac55ed7c492b0",
       "type": "waist",
       "value": 33.8,
       "unit": "in",
       "measuredAt": "2026-10-20",
       "note": null,
-      "createdAt": "2026-10-24T08:48:06.520Z"
+      "createdAt": "2026-10-24T08:58:05.516Z"
     },
     {
-      "id": "6adc70c6bf24cb029f902594",
+      "id": "6adc731d869ac55ed7c492af",
       "type": "weight",
       "value": 181.9,
       "unit": "lb",
       "measuredAt": "2026-10-20",
       "note": null,
-      "createdAt": "2026-10-24T08:48:06.519Z"
+      "createdAt": "2026-10-24T08:58:05.515Z"
     }
   ]
 }

@@ -448,6 +448,11 @@ times (individual slots of active types, group sessions with places) are cached 
 invalidated on every slot / seat / working-hours / training-type change. `nextAvailableAt`, `languages` on coach
 cards; `GET /coaches/filters`.
 
+### Map search
+
+`GET /coaches?bbox=minLng,minLat,maxLng,maxLat` filters on `coachProfile.defaultLocation` (index on lat/lng), works
+with every filter and sort, `pageSize <= 100` with bbox. Coach cards: `location { lat, lng, name, city, state }`.
+
 ### Completion
 
 Job every 10 minutes: sessions whose `endAt < now` -> `completed`; their `confirmed` bookings -> `completed`.

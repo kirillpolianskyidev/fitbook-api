@@ -50,6 +50,9 @@ const coachProfileSchema = new Schema(
 coachProfileSchema.index({isPublished: 1, state: 1, city: 1});
 coachProfileSchema.index({specializations: 1});
 
+// Map search (bbox) over the default training location.
+coachProfileSchema.index({'defaultLocation.lat': 1, 'defaultLocation.lng': 1});
+
 export type CoachProfile = InferSchemaType<typeof coachProfileSchema>;
 export type CoachProfileDoc = HydratedDocument<CoachProfile>;
 export const CoachProfileModel = model('CoachProfile', coachProfileSchema);

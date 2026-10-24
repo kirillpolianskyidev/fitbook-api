@@ -233,8 +233,14 @@ ${example('seriesPreview', 'Example: series preview')}
 - Coach objects (catalog, profile, favorites) have \`nextAvailableAt\` (earliest free individual slot in the next 14
   days; for group-only coaches the earliest free group place; \`null\` if none) and \`languages\`.
 - \`GET /coaches/filters\` -> \`{ languages, price { min, max } }\` for the filter screen.
+- Map: \`GET /coaches?bbox=minLng,minLat,maxLng,maxLat\` returns coaches whose default location is inside the box
+  (online-only coaches are never returned with bbox), combined with all filters and sorting; \`pageSize\` up to 100
+  with bbox (50 otherwise). Invalid bbox -> \`VALIDATION_ERROR\`. Coach objects have
+  \`location { lat, lng, name, city, state }\` (public part of the default location, no meeting-point comment) or
+  \`null\`.
 
 ${example('coachFilters', 'Example: GET /coaches/filters')}
+${example('coachMap', 'Example: GET /coaches?bbox=...')}
 
 ## 3b. Online trainings
 

@@ -156,6 +156,12 @@ async function main() {
     200,
   );
   await step(
+    'catalog on the map (downtown Chicago)',
+    () => api().get(`${v1}/coaches?bbox=-87.75,41.80,-87.55,41.98&pageSize=100`).set(client),
+    200,
+    'coachMap',
+  );
+  await step(
     'catalog filters values',
     () => api().get(`${v1}/coaches/filters`).set(client),
     200,
