@@ -32,6 +32,8 @@ export async function profileCompleteness(profile: CoachProfileDoc) {
   if (!profile.headline) missing.push('headline');
   if (!profile.bio || profile.bio.length < 40) missing.push('bio');
   if (!profile.specializations.length) missing.push('specializations');
+  // A place to train: a default location or online trainings.
+  if (!profile.defaultLocation && !profile.online?.enabled) missing.push('defaultLocation');
   const [activeTypes, availability] = await Promise.all([
     SessionTypeModel.countDocuments({coachId: profile.userId, isActive: true}),
     AvailabilityModel.findOne({coachId: profile.userId}).lean(),
@@ -59,6 +61,10 @@ export async function toCoachProfileDto(profile: CoachProfileDoc) {
     highlights: profile.highlights,
     languages: profile.languages,
     defaultLocation: toLocationDto(profile.defaultLocation),
+    online: {
+      enabled: Boolean(profile.online?.enabled),
+      meetingUrl: profile.online?.meetingUrl ?? null,
+    },
     cancellationPolicy: {freeCancelHours: profile.cancellationPolicy?.freeCancelHours ?? 24},
     rating: {average: profile.rating?.average ?? 0, count: profile.rating?.count ?? 0},
     isPublished: profile.isPublished,
@@ -75,7 +81,33 @@ export async function updateMyProfile(
   input: z.infer<typeof UpdateCoachProfileBody>,
 ) {
   const profile = await getOwnProfile(coach);
-  profile.set(input);
+  const {online, ...rest} = input;
+  if (online) {
+    const meetingUrl =
+      online.meetingUrl === undefined
+        ? (profile.online?.meetingUrl ?? null)
+        : online.meetingUrl || null;
+    if (meetingUrl !== null && (!/^https:\/\/\S+$/i.test(meetingUrl) || meetingUrl.length > 500)) {
+      throw new AppError('VALIDATION_ERROR', undefined, {
+        fields: {meetingUrl: 'Must be an https:// link up to 500 characters'},
+      });
+    }
+    if (online.enabled && !meetingUrl) {
+      throw new AppError('VALIDATION_ERROR', undefined, {
+        fields: {meetingUrl: 'A meeting link is required to turn on online trainings'},
+      });
+    }
+    if (!online.enabled && profile.online?.enabled) {
+      const onlineTypes = await SessionTypeModel.exists({
+        coachId: coach._id,
+        isActive: true,
+        format: {$in: ['online', 'both']},
+      });
+      if (onlineTypes) throw new AppError('ONLINE_TYPES_ACTIVE');
+    }
+    profile.set('online', {enabled: online.enabled, meetingUrl});
+  }
+  profile.set(rest);
   await profile.save();
   if (profile.isPublished && !(await profileCompleteness(profile)).complete) {
     profile.isPublished = false;
@@ -140,6 +172,7 @@ function toCoachCard(profile: CoachProfileDoc, user: UserLean, isFavorite = fals
         ? null
         : {amountCents: profile.priceFromCents, currency: 'USD'},
     kinds: profile.kinds as ('individual' | 'group')[],
+    formats: (profile.formats ?? ['in_person']) as ('in_person' | 'online')[],
     isFavorite,
   };
 }
@@ -158,6 +191,7 @@ export async function listCoaches(viewer: UserDoc, query: z.infer<typeof CoachLi
   if (query.state) filter.state = query.state;
   if (query.city) filter.city = new RegExp(`^${escapeRegex(query.city)}$`, 'i');
   if (query.kind) filter.kinds = query.kind;
+  if (query.format) filter.formats = query.format;
   if (query.search) {
     const pattern = new RegExp(escapeRegex(query.search), 'i');
     const users = await UserModel.find({

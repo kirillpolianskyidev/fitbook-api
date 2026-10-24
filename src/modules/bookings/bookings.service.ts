@@ -71,7 +71,7 @@ export async function toBookingDtos(
       .select('firstName lastName avatarUrl')
       .lean(),
     CoachProfileModel.find({userId: {$in: coachIds}})
-      .select('userId cancellationPolicy')
+      .select('userId cancellationPolicy online')
       .lean(),
     NoteModel.aggregate<{_id: Types.ObjectId; n: number}>([
       {$match: {bookingId: {$in: bookings.map(b => b._id)}}},
@@ -83,6 +83,9 @@ export async function toBookingDtos(
   const hoursByCoach = new Map(
     profiles.map(p => [p.userId.toString(), p.cancellationPolicy?.freeCancelHours ?? 24]),
   );
+  const meetingUrlByCoach = new Map(
+    profiles.map(p => [p.userId.toString(), p.online?.meetingUrl ?? null]),
+  );
   const notesById = new Map(noteCounts.map(n => [n._id.toString(), n.n]));
   const now = Date.now();
 
@@ -93,6 +96,7 @@ export async function toBookingDtos(
     const freeCancelHours = hoursByCoach.get(booking.coachId.toString()) ?? 24;
     const deadline = addMinutes(booking.startAt, -freeCancelHours * 60);
     const status = booking.status as Status;
+    const format = (session?.format ?? 'in_person') as 'in_person' | 'online';
     const isActive = status === 'pending_payment' || status === 'confirmed';
     const cancellable =
       isActive &&
@@ -116,6 +120,10 @@ export async function toBookingDtos(
       startAt: booking.startAt.toISOString(),
       endAt: booking.endAt.toISOString(),
       seriesId: booking.seriesId?.toString() ?? null,
+      format,
+      // Only participants receive Booking objects; the link is read from the coach profile at request time.
+      meetingUrl:
+        format === 'online' ? (meetingUrlByCoach.get(booking.coachId.toString()) ?? null) : null,
       cancellable,
       reschedulable,
       rescheduledAt: booking.rescheduledAt?.toISOString() ?? null,
@@ -129,6 +137,7 @@ export async function toBookingDtos(
         sessionTypeId: session?.sessionTypeId.toString() ?? '',
         title: session?.title ?? '',
         kind: (session?.kind as 'individual' | 'group') ?? 'individual',
+        format,
         location: toLocationDto(session?.location),
         capacity: session?.capacity ?? 1,
         participantsCount: session?.participantsCount ?? 0,
@@ -209,8 +218,31 @@ type IndividualInput = {
   startAt: string;
   isTrial: boolean;
   useCredits?: boolean;
+  format?: 'in_person' | 'online';
   location?: Location;
 };
+
+/** The format of a new individual booking: required for "both" types, must match the others. */
+export function bookingFormat(
+  typeFormat: string | null | undefined,
+  requested?: 'in_person' | 'online',
+): 'in_person' | 'online' {
+  const format = (typeFormat ?? 'in_person') as 'in_person' | 'online' | 'both';
+  if (format === 'both') {
+    if (!requested) {
+      throw new AppError('VALIDATION_ERROR', undefined, {
+        fields: {format: 'Choose in_person or online for this training type'},
+      });
+    }
+    return requested;
+  }
+  if (requested && requested !== format) {
+    throw new AppError('VALIDATION_ERROR', undefined, {
+      fields: {format: `This training type is ${format} only`},
+    });
+  }
+  return format;
+}
 
 export async function createIndividualBooking(
   client: UserDoc,
@@ -230,6 +262,7 @@ export async function createIndividualBooking(
     });
   }
   await assertPublishedCoach(type.coachId);
+  const format = bookingFormat(type.format, input.format);
 
   const startAt = new Date(input.startAt);
   if (!isOnSlotGrid(startAt) || !(await isFreeSlot(type.coachId, type.durationMin, startAt))) {
@@ -262,13 +295,18 @@ export async function createIndividualBooking(
       coachId: type.coachId,
       sessionTypeId: type._id,
       kind: 'individual',
+      format,
       title: type.title,
       startAt,
       endAt: addMinutes(startAt, type.durationMin),
       capacity: 1,
       participantsCount: 1,
       price,
-      location: input.location ?? type.location ?? profile?.defaultLocation ?? null,
+      // Online bookings have no place (a location in the request is ignored).
+      location:
+        format === 'online'
+          ? null
+          : (input.location ?? type.location ?? profile?.defaultLocation ?? null),
     });
   } catch (error) {
     if (input.isTrial)
@@ -399,6 +437,7 @@ export async function previewSeries(
   input: z.infer<typeof SeriesPreviewBody>,
 ): Promise<PreviewItem[]> {
   const type = await seriesType(input.sessionTypeId);
+  bookingFormat(type.format, input.format);
   const timezone = await coachTimezone(type.coachId);
   const first = DateTime.fromISO(input.startDate, {zone: timezone}).startOf('day');
   const end = first.plus({weeks: input.weeks});
@@ -482,6 +521,7 @@ export async function createSeries(client: UserDoc, input: z.infer<typeof Series
             startAt: item.startAt,
             isTrial: false,
             useCredits: input.useCredits,
+            format: input.format,
           },
           {seriesId: series._id},
         ),
@@ -846,10 +886,15 @@ export async function calendarEvent(user: UserDoc, bookingId: string) {
   const other = isCoach ? client : coach;
   const otherName = [other?.firstName, other?.lastName].filter(Boolean).join(' ');
   const location = session?.location;
+  const meetingUrl =
+    session?.format === 'online'
+      ? ((profile?.online?.meetingUrl as string | undefined) ?? null)
+      : null;
   const freeCancelHours = profile?.cancellationPolicy?.freeCancelHours ?? 24;
   const notes = [
     `FitBook ${session?.kind === 'group' ? 'group training' : 'training'}${otherName ? ` with ${otherName}` : ''}.`,
     location?.comment ? `Meeting point: ${location.comment}.` : null,
+    meetingUrl ? `Join online: ${meetingUrl}` : null,
     isCoach ? null : `Free cancellation up to ${freeCancelHours}h before the start.`,
     `Booking: ${booking.id}`,
   ]
@@ -863,6 +908,7 @@ export async function calendarEvent(user: UserDoc, bookingId: string) {
     location: location
       ? {name: location.name, address: location.address, lat: location.lat, lng: location.lng}
       : null,
+    meetingUrl,
     notes,
   };
 }

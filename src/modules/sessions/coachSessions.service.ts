@@ -68,13 +68,16 @@ export async function createGroupSessions(
           coachId: coach._id,
           sessionTypeId: type._id,
           kind: 'group',
+          // Group types are in_person or online; online sessions have no place.
+          format: type.format === 'online' ? 'online' : 'in_person',
           title: type.title,
           startAt,
           endAt: addMinutes(startAt, type.durationMin),
           capacity: type.capacity,
           participantsCount: 0,
           price: type.price,
-          location: type.location ?? profile?.defaultLocation ?? null,
+          location:
+            type.format === 'online' ? null : (type.location ?? profile?.defaultLocation ?? null),
         }),
       );
     } catch (error) {

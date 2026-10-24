@@ -60,6 +60,8 @@
                   "PACKAGE_INACTIVE",
                   "TRIAL_NOT_ALLOWED",
                   "PROFILE_INCOMPLETE",
+                  "ONLINE_NOT_ENABLED",
+                  "ONLINE_TYPES_ACTIVE",
                   "SESSION_TYPE_INACTIVE",
                   "RATE_LIMITED",
                   "TOO_MANY_ATTEMPTS",
@@ -556,6 +558,13 @@
               "$ref": "#/components/schemas/SessionKind"
             }
           },
+          "formats": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/TrainingFormat"
+            },
+            "description": "Formats the coach offers (from active training types; \"both\" gives both)"
+          },
           "isFavorite": {
             "type": "boolean",
             "description": "In my favorites (always false for coaches)"
@@ -573,6 +582,7 @@
           "homeArea",
           "priceFrom",
           "kinds",
+          "formats",
           "isFavorite"
         ]
       },
@@ -636,6 +646,13 @@
           "group"
         ]
       },
+      "TrainingFormat": {
+        "type": "string",
+        "enum": [
+          "in_person",
+          "online"
+        ]
+      },
       "CoachDetails": {
         "type": "object",
         "properties": {
@@ -680,6 +697,13 @@
             "items": {
               "$ref": "#/components/schemas/SessionKind"
             }
+          },
+          "formats": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/TrainingFormat"
+            },
+            "description": "Formats the coach offers (from active training types; \"both\" gives both)"
           },
           "isFavorite": {
             "type": "boolean",
@@ -738,6 +762,7 @@
           "homeArea",
           "priceFrom",
           "kinds",
+          "formats",
           "isFavorite",
           "bio",
           "certifications",
@@ -919,6 +944,9 @@
           "kind": {
             "$ref": "#/components/schemas/SessionKind"
           },
+          "format": {
+            "$ref": "#/components/schemas/SessionTypeFormat"
+          },
           "durationMin": {
             "type": "integer"
           },
@@ -943,6 +971,7 @@
           "coachId",
           "title",
           "kind",
+          "format",
           "durationMin",
           "price",
           "capacity",
@@ -950,6 +979,15 @@
           "description",
           "isActive"
         ]
+      },
+      "SessionTypeFormat": {
+        "type": "string",
+        "enum": [
+          "in_person",
+          "online",
+          "both"
+        ],
+        "description": "both: the client chooses when booking (individual only)"
       },
       "Package": {
         "type": "object",
@@ -1034,6 +1072,9 @@
           "kind": {
             "$ref": "#/components/schemas/SessionKind"
           },
+          "format": {
+            "$ref": "#/components/schemas/TrainingFormat"
+          },
           "title": {
             "type": "string"
           },
@@ -1079,6 +1120,7 @@
           "coachId",
           "sessionTypeId",
           "kind",
+          "format",
           "title",
           "startAt",
           "endAt",
@@ -1181,6 +1223,9 @@
           "defaultLocation": {
             "$ref": "#/components/schemas/Location"
           },
+          "online": {
+            "$ref": "#/components/schemas/OnlineSettings"
+          },
           "cancellationPolicy": {
             "$ref": "#/components/schemas/CancellationPolicy"
           },
@@ -1219,10 +1264,30 @@
           "highlights",
           "languages",
           "defaultLocation",
+          "online",
           "cancellationPolicy",
           "rating",
           "isPublished",
           "completeness"
+        ]
+      },
+      "OnlineSettings": {
+        "type": "object",
+        "properties": {
+          "enabled": {
+            "type": "boolean"
+          },
+          "meetingUrl": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Permanent video meeting link (https, up to 500 characters)"
+          }
+        },
+        "required": [
+          "enabled",
+          "meetingUrl"
         ]
       },
       "ReviewPage": {
@@ -1869,6 +1934,16 @@
               "null"
             ]
           },
+          "format": {
+            "$ref": "#/components/schemas/TrainingFormat"
+          },
+          "meetingUrl": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Online bookings: the coach's current meeting link (only the client and the coach of the booking see it)"
+          },
           "cancellable": {
             "type": "boolean",
             "description": "Whether the client can still cancel right now"
@@ -1961,6 +2036,9 @@
               "kind": {
                 "$ref": "#/components/schemas/SessionKind"
               },
+              "format": {
+                "$ref": "#/components/schemas/TrainingFormat"
+              },
               "location": {
                 "$ref": "#/components/schemas/Location"
               },
@@ -1976,6 +2054,7 @@
               "sessionTypeId",
               "title",
               "kind",
+              "format",
               "location",
               "capacity",
               "participantsCount"
@@ -2004,6 +2083,8 @@
           "startAt",
           "endAt",
           "seriesId",
+          "format",
+          "meetingUrl",
           "cancellable",
           "reschedulable",
           "rescheduledAt",
@@ -2130,6 +2211,14 @@
             "default": false,
             "description": "Pay with 1 credit of a package of this coach: the booking is confirmed immediately"
           },
+          "format": {
+            "type": "string",
+            "enum": [
+              "in_person",
+              "online"
+            ],
+            "description": "Required for \"both\" training types; must match in_person / online types"
+          },
           "location": {
             "type": "object",
             "properties": {
@@ -2240,7 +2329,7 @@
               "lat",
               "lng"
             ],
-            "description": "Overrides the training location (optional)"
+            "description": "Overrides the training location (optional; ignored for online)"
           }
         },
         "required": [
@@ -2398,7 +2487,15 @@
               "address",
               "lat",
               "lng"
-            ]
+            ],
+            "description": "null for online trainings (see meetingUrl)"
+          },
+          "meetingUrl": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Online trainings: the meeting link (also in notes)"
           },
           "notes": {
             "type": "string"
@@ -2410,6 +2507,7 @@
           "endAt",
           "timezone",
           "location",
+          "meetingUrl",
           "notes"
         ],
         "description": "Data for adding the training to the device calendar"
@@ -2692,6 +2790,9 @@
           "kind": {
             "$ref": "#/components/schemas/SessionKind"
           },
+          "format": {
+            "$ref": "#/components/schemas/TrainingFormat"
+          },
           "title": {
             "type": "string"
           },
@@ -2734,6 +2835,7 @@
           "coachId",
           "sessionTypeId",
           "kind",
+          "format",
           "title",
           "startAt",
           "endAt",
@@ -4303,6 +4405,20 @@
           {
             "schema": {
               "type": "string",
+              "enum": [
+                "in_person",
+                "online"
+              ],
+              "description": "Coaches offering this format"
+            },
+            "required": false,
+            "description": "Coaches offering this format",
+            "name": "format",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
               "description": "true: only my favorite coaches"
             },
             "required": false,
@@ -4818,6 +4934,24 @@
                   },
                   "defaultLocation": {
                     "$ref": "#/components/schemas/Location"
+                  },
+                  "online": {
+                    "type": "object",
+                    "properties": {
+                      "enabled": {
+                        "type": "boolean"
+                      },
+                      "meetingUrl": {
+                        "type": [
+                          "string",
+                          "null"
+                        ]
+                      }
+                    },
+                    "required": [
+                      "enabled"
+                    ],
+                    "description": "Enabling needs a meetingUrl (https)"
                   }
                 }
               }
@@ -6146,6 +6280,9 @@
                   "kind": {
                     "$ref": "#/components/schemas/SessionKind"
                   },
+                  "format": {
+                    "$ref": "#/components/schemas/SessionTypeFormat"
+                  },
                   "durationMin": {
                     "type": "integer",
                     "minimum": 30,
@@ -6258,6 +6395,9 @@
                     "type": "string",
                     "minLength": 2,
                     "maxLength": 80
+                  },
+                  "format": {
+                    "$ref": "#/components/schemas/SessionTypeFormat"
                   },
                   "durationMin": {
                     "type": "integer",
@@ -6968,6 +7108,14 @@
                     "type": "string",
                     "format": "date",
                     "example": "2026-11-03"
+                  },
+                  "format": {
+                    "type": "string",
+                    "enum": [
+                      "in_person",
+                      "online"
+                    ],
+                    "description": "Required for \"both\" training types; must match in_person / online types"
                   }
                 },
                 "required": [
@@ -7105,6 +7253,14 @@
                     "type": "string",
                     "format": "date",
                     "example": "2026-11-03"
+                  },
+                  "format": {
+                    "type": "string",
+                    "enum": [
+                      "in_person",
+                      "online"
+                    ],
+                    "description": "Required for \"both\" training types; must match in_person / online types"
                   },
                   "dates": {
                     "type": "array",

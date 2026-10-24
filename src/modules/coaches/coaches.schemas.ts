@@ -6,6 +6,7 @@ import {
   MoneySchema,
   SessionKindSchema,
   SpecializationSchema,
+  TrainingFormatSchema,
 } from '../../lib/schemas.js';
 import {PackageSchema} from '../packages/packages.schemas.js';
 import {SessionTypeSchema} from '../sessionTypes/sessionTypes.schemas.js';
@@ -28,6 +29,16 @@ export const CancellationPolicySchema = z
     description: 'Clients may cancel only if at least this many hours remain',
   });
 
+export const OnlineSettingsSchema = z
+  .object({
+    enabled: z.boolean(),
+    meetingUrl: z
+      .string()
+      .nullable()
+      .meta({description: 'Permanent video meeting link (https, up to 500 characters)'}),
+  })
+  .meta({id: 'OnlineSettings'});
+
 export const CoachProfileSchema = z
   .object({
     userId: z.string(),
@@ -39,6 +50,7 @@ export const CoachProfileSchema = z
     highlights: z.array(z.string()),
     languages: z.array(z.string()),
     defaultLocation: LocationSchema.nullable(),
+    online: OnlineSettingsSchema,
     cancellationPolicy: CancellationPolicySchema,
     rating: RatingSchema,
     isPublished: z.boolean(),
@@ -55,6 +67,10 @@ export const UpdateCoachProfileBody = z.object({
   highlights: z.array(z.string().trim().min(1).max(160)).max(8).optional(),
   languages: z.array(z.string().trim().min(2).max(40)).max(8).optional(),
   defaultLocation: LocationSchema.nullable().optional(),
+  online: z
+    .object({enabled: z.boolean(), meetingUrl: z.string().trim().nullable().optional()})
+    .optional()
+    .meta({description: 'Enabling needs a meetingUrl (https)'}),
 });
 
 export const PublishBody = z.object({isPublished: z.boolean()});
@@ -72,6 +88,9 @@ export const CoachCardSchema = z
     homeArea: HomeAreaSchema,
     priceFrom: MoneySchema.nullable(),
     kinds: z.array(SessionKindSchema),
+    formats: z.array(TrainingFormatSchema).meta({
+      description: 'Formats the coach offers (from active training types; "both" gives both)',
+    }),
     isFavorite: z.boolean().meta({description: 'In my favorites (always false for coaches)'}),
   })
   .meta({id: 'CoachCard'});
@@ -93,6 +112,7 @@ export const CoachListQuery = z.object({
   city: z.string().trim().max(80).optional(),
   state: z.string().trim().length(2).toUpperCase().optional(),
   kind: SessionKindSchema.optional(),
+  format: TrainingFormatSchema.optional().meta({description: 'Coaches offering this format'}),
   favorites: z.stringbool().optional().meta({description: 'true: only my favorite coaches'}),
   page: z.coerce.number().int().min(1).default(1),
   pageSize: z.coerce.number().int().min(1).max(50).default(20),

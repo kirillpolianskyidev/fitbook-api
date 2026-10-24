@@ -125,6 +125,7 @@ async function createCoach(seed: SeedCoach, passwordHash: string): Promise<Coach
     highlights: seed.highlights,
     languages: seed.languages,
     defaultLocation: seed.defaultLocation,
+    online: {enabled: Boolean(seed.meetingUrl), meetingUrl: seed.meetingUrl ?? null},
     cancellationPolicy: {freeCancelHours: seed.freeCancelHours},
     rating: seed.rating,
     isPublished: true,
@@ -154,6 +155,7 @@ async function createCoach(seed: SeedCoach, passwordHash: string): Promise<Coach
         coachId: user._id,
         title: t.title,
         kind: t.kind,
+        format: t.format ?? 'in_person',
         durationMin: t.durationMin,
         price: {amountCents: t.priceCents, currency: 'USD'},
         capacity: t.kind === 'individual' ? 1 : t.capacity,
@@ -171,6 +173,7 @@ async function createSession(
   coach: Coach,
   type: SessionTypeDoc,
   startAt: Date,
+  options: {format?: 'in_person' | 'online'} = {},
 ): Promise<TrainingSessionDoc | null> {
   const endAt = addMinutes(startAt, type.durationMin);
   try {
@@ -178,13 +181,17 @@ async function createSession(
       coachId: coach.user._id,
       sessionTypeId: type._id,
       kind: type.kind,
+      format: (options.format ?? type.format) === 'online' ? 'online' : 'in_person',
       title: type.title,
       startAt,
       endAt,
       capacity: type.capacity,
       participantsCount: 0,
       price: type.price,
-      location: type.location ?? coach.seed.defaultLocation,
+      location:
+        (options.format ?? type.format) === 'online'
+          ? null
+          : (type.location ?? coach.seed.defaultLocation),
       status: endAt <= now ? 'completed' : 'scheduled',
     });
   } catch {
@@ -683,6 +690,23 @@ async function main() {
     }
     purchase.creditsLeft = 10 - paidWithCredits.length;
     await purchase.save();
+  }
+
+  // --- Jamie: an upcoming online 1:1 with Alex ---------------------------------------------------
+  for (const [dayOffset, time] of [
+    [3, '17:00'],
+    [5, '18:00'],
+    [9, '17:00'],
+  ] as const) {
+    const session = await createSession(
+      alex,
+      alex.types.get('alex-1on1')!,
+      at(chicago, dayOffset, time),
+      {
+        format: 'online',
+      },
+    );
+    if (session && (await addBooking(session, jamie))) break;
   }
 
   // --- No-shows (Alex): one training yesterday that can still be marked, one past no-show ---------

@@ -7,6 +7,7 @@ import {
   MoneySchema,
   objectId,
   SessionKindSchema,
+  TrainingFormatSchema,
   timeHHmm,
 } from '../../lib/schemas.js';
 import {UserSummarySchema} from '../users/users.schemas.js';
@@ -75,6 +76,11 @@ export const BookingSchema = z
     startAt: z.string(),
     endAt: z.string(),
     seriesId: z.string().nullable(),
+    format: TrainingFormatSchema,
+    meetingUrl: z.string().nullable().meta({
+      description:
+        "Online bookings: the coach's current meeting link (only the client and the coach of the booking see it)",
+    }),
     cancellable: z.boolean().meta({description: 'Whether the client can still cancel right now'}),
     reschedulable: z.boolean().meta({
       description:
@@ -94,6 +100,7 @@ export const BookingSchema = z
       sessionTypeId: z.string().meta({description: 'Training type of the session ("Book again")'}),
       title: z.string(),
       kind: SessionKindSchema,
+      format: TrainingFormatSchema,
       location: LocationSchema.nullable(),
       capacity: z.number().int(),
       participantsCount: z.number().int(),
@@ -119,8 +126,11 @@ const IndividualBookingBody = z
     startAt: isoDateTime,
     isTrial: z.boolean().default(false),
     useCredits,
+    format: TrainingFormatSchema.optional().meta({
+      description: 'Required for "both" training types; must match in_person / online types',
+    }),
     location: LocationSchema.optional().meta({
-      description: 'Overrides the training location (optional)',
+      description: 'Overrides the training location (optional; ignored for online)',
     }),
   })
   .refine(body => !(body.isTrial && body.useCredits), notTrialWithCredits)
@@ -148,6 +158,9 @@ export const SeriesPreviewBody = z.object({
   time: timeHHmm.meta({description: "Start time in the coach's time zone"}),
   weeks: z.number().int().min(1).max(12),
   startDate: dateYMD,
+  format: TrainingFormatSchema.optional().meta({
+    description: 'Required for "both" training types; must match in_person / online types',
+  }),
 });
 
 export const SeriesBody = SeriesPreviewBody.extend({
@@ -213,7 +226,12 @@ export const CalendarEventSchema = z
     timezone: z.string(),
     location: z
       .object({name: z.string(), address: z.string(), lat: z.number(), lng: z.number()})
-      .nullable(),
+      .nullable()
+      .meta({description: 'null for online trainings (see meetingUrl)'}),
+    meetingUrl: z
+      .string()
+      .nullable()
+      .meta({description: 'Online trainings: the meeting link (also in notes)'}),
     notes: z.string(),
   })
   .meta({id: 'CalendarEvent', description: 'Data for adding the training to the device calendar'});

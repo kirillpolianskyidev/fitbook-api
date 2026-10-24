@@ -93,6 +93,11 @@ export const RoleSchema = z.enum(['coach', 'client']).meta({id: 'Role'});
 export const ThemeSchema = z.enum(['light', 'dark', 'system']).meta({id: 'Theme'});
 export const SpecializationSchema = z.enum(SPECIALIZATIONS).meta({id: 'Specialization'});
 export const SessionKindSchema = z.enum(['individual', 'group']).meta({id: 'SessionKind'});
+export const TrainingFormatSchema = z.enum(['in_person', 'online']).meta({id: 'TrainingFormat'});
+export const SessionTypeFormatSchema = z.enum(['in_person', 'online', 'both']).meta({
+  id: 'SessionTypeFormat',
+  description: 'both: the client chooses when booking (individual only)',
+});
 
 export const MoneySchema = z
   .object({

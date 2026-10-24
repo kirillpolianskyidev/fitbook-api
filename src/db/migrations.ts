@@ -1,4 +1,5 @@
 import {logger} from '../lib/logger.js';
+import {refreshCoachCatalogFields} from '../modules/sessionTypes/sessionTypes.service.js';
 import {BookingModel} from '../models/booking.js';
 import {CoachProfileModel} from '../models/coachProfile.js';
 import {ReviewModel} from '../models/review.js';
@@ -64,5 +65,14 @@ export async function runMigrations() {
   }
   if (fixed > 0) {
     logger.info({coaches: fixed}, 'Migration: coach ratings recalculated from reviews');
+  }
+
+  // 2026-10: online trainings. Profiles created before have no denormalized `formats` (catalog filter).
+  const withoutFormats = await CoachProfileModel.find({formats: {$exists: false}})
+    .select('userId')
+    .lean();
+  for (const profile of withoutFormats) await refreshCoachCatalogFields(profile.userId);
+  if (withoutFormats.length > 0) {
+    logger.info({coaches: withoutFormats.length}, 'Migration: coach formats calculated');
   }
 }

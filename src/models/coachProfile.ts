@@ -16,6 +16,13 @@ const coachProfileSchema = new Schema(
     highlights: {type: [String], default: []},
     languages: {type: [String], default: ['English']},
     defaultLocation: {type: locationSchema, default: null},
+    // Online trainings: one permanent meeting link (kept when online is turned off, for existing bookings).
+    online: {
+      type: new Schema({enabled: Boolean, meetingUrl: String}, {_id: false}),
+      default: () => ({enabled: false, meetingUrl: null}),
+    },
+    // Denormalized from active session types: formats the coach really offers (catalog filter).
+    formats: {type: [String], default: undefined},
     cancellationPolicy: {
       type: new Schema(
         {freeCancelHours: {type: Number, min: 0, max: 72, default: 24}},

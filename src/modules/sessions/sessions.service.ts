@@ -18,6 +18,7 @@ export function toSessionDto(session: TrainingSessionDoc): TrainingSessionDto {
     coachId: session.coachId.toString(),
     sessionTypeId: session.sessionTypeId.toString(),
     kind: session.kind as 'individual' | 'group',
+    format: (session.format ?? 'in_person') as 'in_person' | 'online',
     title: session.title,
     startAt: session.startAt.toISOString(),
     endAt: session.endAt.toISOString(),

@@ -77,6 +77,8 @@ const UI_HINTS: Partial<Record<ErrorCode, string>> = {
   PACKAGE_INACTIVE: 'Reload the coach profile (the package was withdrawn).',
   REVIEW_NOT_ALLOWED: 'Hide "Write a review" (`canCreate` is false until a training is completed).',
   REVIEW_EDIT_WINDOW_PASSED: 'Show the review as read-only.',
+  ONLINE_NOT_ENABLED: 'Ask the coach to turn on online trainings in the profile first.',
+  ONLINE_TYPES_ACTIVE: 'Change the online / both training types to in person first.',
   NO_SHOW_WINDOW_PASSED: 'Hide the no-show action (`noShowMarkable` / `noShowUndoable` are false).',
   NO_SHOW_NOT_ALLOWED: 'Reload the booking.',
   NO_SHOW_REFUNDED: 'Explain that the payment was returned; the mark stays.',
@@ -206,6 +208,23 @@ or \`system\`), or \`no_show\` (the coach marked that the client did not come; s
 
 ${example('bookingPending', 'Example: new booking (pending payment)')}
 ${example('seriesPreview', 'Example: series preview')}
+
+## 3b. Online trainings
+
+- Coach profile: \`online { enabled, meetingUrl }\` (\`PUT /coach/profile\`; enabling needs an https
+  \`meetingUrl\` up to 500 characters -> \`VALIDATION_ERROR\` \`details.fields.meetingUrl\`). Turning online off while
+  active \`online\` / \`both\` types exist -> \`ONLINE_TYPES_ACTIVE\`. A coach with online on needs no
+  \`defaultLocation\` to publish (completeness requires a default location or online).
+- Training type \`format\`: \`in_person\` (default) | \`online\` | \`both\` (the client chooses; individual only,
+  group + both -> \`VALIDATION_ERROR\`). \`online\` / \`both\` need online on (\`ONLINE_NOT_ENABLED\`).
+- Booking an individual training: \`format: "in_person" | "online"\` in \`POST /bookings\`,
+  \`/bookings/series/preview\` and \`/bookings/series\` - required for \`both\` types, must match single-format types.
+  Group bookings take the session's format. Online bookings have \`session.location: null\`; reschedule keeps the format.
+- Booking: \`format\`, \`session.format\` and \`meetingUrl\` (the coach's current link, online only; only the client and
+  the coach of the booking ever see it). Calendar event of an online booking: \`location: null\`, \`meetingUrl\` and the
+  link in \`notes\`.
+- Public coach objects (catalog, profile, favorites): \`formats: ["in_person", "online"]\` from active types. Filter:
+  \`GET /coaches?format=online\` / \`format=in_person\`. The meeting link is never public.
 
 ## 4a. Packages (credits)
 
@@ -346,6 +365,7 @@ ${example('errorValidation', 'Example: validation error')}
 ## 8. Enums
 
 - Role: \`coach | client\`; Theme: \`light | dark | system\`; Training kind: \`individual | group\`
+- Training format: \`in_person | online\`; Training type format: \`in_person | online | both\`
 - Booking status: \`pending_payment | confirmed | cancelled | completed | no_show\`; Payment status: \`unpaid | paid | refunded | not_required\`; Payment method: \`mock | credits\`
 - Session status: \`scheduled | cancelled | completed\`; Note phase: \`before | after\`
 - Specializations: ${SPECIALIZATIONS.map(s => `\`${s}\``).join(', ')}

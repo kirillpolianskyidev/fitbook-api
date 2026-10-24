@@ -222,10 +222,11 @@ async function main() {
   const booked = await step(
     'book individual slot',
     () =>
-      api()
-        .post(`${v1}/bookings`)
-        .set(client)
-        .send({sessionTypeId: individualType.id, startAt: freeSlots[0]!.startAt}),
+      api().post(`${v1}/bookings`).set(client).send({
+        sessionTypeId: individualType.id,
+        startAt: freeSlots[0]!.startAt,
+        format: 'in_person',
+      }),
     201,
     'bookingPending',
   );
@@ -233,20 +234,23 @@ async function main() {
   await step(
     'book same slot again',
     () =>
-      api()
-        .post(`${v1}/bookings`)
-        .set(client)
-        .send({sessionTypeId: individualType.id, startAt: freeSlots[0]!.startAt}),
+      api().post(`${v1}/bookings`).set(client).send({
+        sessionTypeId: individualType.id,
+        startAt: freeSlots[0]!.startAt,
+        format: 'in_person',
+      }),
     409,
     'errorSlotUnavailable',
   );
   await step(
     'trial again',
     () =>
-      api()
-        .post(`${v1}/bookings`)
-        .set(client)
-        .send({sessionTypeId: individualType.id, startAt: freeSlots[2]!.startAt, isTrial: true}),
+      api().post(`${v1}/bookings`).set(client).send({
+        sessionTypeId: individualType.id,
+        startAt: freeSlots[2]!.startAt,
+        isTrial: true,
+        format: 'in_person',
+      }),
     409,
     'errorTrialUsed',
   );
@@ -311,10 +315,12 @@ async function main() {
   await step(
     'book with a credit',
     () =>
-      api()
-        .post(`${v1}/bookings`)
-        .set(client)
-        .send({sessionTypeId: individualType.id, startAt: freeSlots[1]!.startAt, useCredits: true}),
+      api().post(`${v1}/bookings`).set(client).send({
+        sessionTypeId: individualType.id,
+        startAt: freeSlots[1]!.startAt,
+        useCredits: true,
+        format: 'online',
+      }),
     201,
     'bookingWithCredits',
   );
@@ -366,6 +372,7 @@ async function main() {
           time: '18:00',
           weeks: 3,
           startDate: from.toISODate(),
+          format: 'in_person',
         }),
     200,
     'seriesPreview',
@@ -383,6 +390,7 @@ async function main() {
           time: '18:00',
           weeks: 3,
           startDate: from.toISODate(),
+          format: 'in_person',
           dates,
         }),
     201,

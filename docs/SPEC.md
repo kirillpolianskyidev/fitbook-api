@@ -422,6 +422,15 @@ Endpoints: `GET /coaches/:id/reviews`, `GET|PUT /coaches/:id/my-review`.
 its package unless expired). `DELETE` undoes it in the same window unless refunded (`NO_SHOW_REFUNDED`) -> `completed`
 (ended) / `confirmed`. Not counted in progress, reviews or `/coach/clients` totals.
 
+### Online trainings
+
+`coachProfile.online { enabled, meetingUrl }` (https, <= 500; enabling needs it; turning off with active online/both
+types -> `ONLINE_TYPES_ACTIVE`), `coachProfile.formats` (denormalized). `sessionTypes.format: in_person | online |
+both` (both: individual only; online/both need online on -> `ONLINE_NOT_ENABLED`). `trainingSessions.format:
+in_person | online` (group: from the type; individual: chosen with `format` when booking, required for both).
+Online sessions have no location. Booking DTO: `format`, `meetingUrl` (coach's current link, participants only).
+Completeness: `defaultLocation` or online. Catalog `formats` + `?format=` filter.
+
 ### Completion
 
 Job every 10 minutes: sessions whose `endAt < now` -> `completed`; their `confirmed` bookings -> `completed`.
@@ -605,6 +614,8 @@ Validation errors list fields: `details: { fields: { email: "Invalid email" } }`
 | 409  | PACKAGE_INACTIVE                        | buying an inactive package                                                                                          |
 | 403  | REVIEW_NOT_ALLOWED                      | review without a completed training with the coach                                                                  |
 | 409  | REVIEW_EDIT_WINDOW_PASSED               | review changed more than 24 hours after creation                                                                    |
+| 409  | ONLINE_NOT_ENABLED                      | online / both training type while online is off                                                                     |
+| 409  | ONLINE_TYPES_ACTIVE                     | turning online off with active online / both types                                                                  |
 | 409  | NO_SHOW_WINDOW_PASSED                   | no-show before the start or after start + 48h                                                                       |
 | 409  | NO_SHOW_NOT_ALLOWED                     | no-show on a booking that is not confirmed / completed (DELETE: not no_show)                                        |
 | 409  | NO_SHOW_REFUNDED                        | removing a refunded no-show                                                                                         |

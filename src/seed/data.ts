@@ -129,6 +129,8 @@ export type SeedType = {
   priceCents: number;
   capacity?: number;
   location?: SeedLocation;
+  /** in_person (default) | online | both (individual only). */
+  format?: 'in_person' | 'online' | 'both';
   description: string;
   /** Group types: weekly schedule (weekday + local start time). */
   schedule?: {weekday: number; time: string}[];
@@ -149,7 +151,10 @@ export type SeedCoach = {
   languages: string[];
   rating: {average: number; count: number};
   freeCancelHours: number;
-  defaultLocation: SeedLocation;
+  /** null: online-only coach. */
+  defaultLocation: SeedLocation | null;
+  /** Online trainings: the coach's permanent meeting link. */
+  meetingUrl?: string;
   weekly: Weekly[];
   types: SeedType[];
 };
@@ -184,6 +189,7 @@ export const COACHES: SeedCoach[] = [
     rating: {average: 4.9, count: 142},
     freeCancelHours: 24,
     defaultLocation: LOCATIONS.ironLoop,
+    meetingUrl: 'https://zoom.us/j/5550123456',
     weekly: [
       ...days(MON_FRI, '06:00', '11:00'),
       ...days(MON_FRI, '16:00', '20:00'),
@@ -194,6 +200,7 @@ export const COACHES: SeedCoach[] = [
         key: 'alex-1on1',
         title: '1:1 Strength Session',
         kind: 'individual',
+        format: 'both',
         durationMin: 60,
         priceCents: 8500,
         description: 'Personal strength session with technique coaching and a plan for the week.',
@@ -218,6 +225,20 @@ export const COACHES: SeedCoach[] = [
           {weekday: 1, time: '12:00'},
           {weekday: 3, time: '12:00'},
           {weekday: 5, time: '12:00'},
+        ],
+      },
+      {
+        key: 'alex-live',
+        title: 'Live Online HIIT',
+        kind: 'group',
+        format: 'online',
+        durationMin: 30,
+        priceCents: 1500,
+        capacity: 12,
+        description: '30-minute bodyweight HIIT over Zoom. Camera on, no equipment needed.',
+        schedule: [
+          {weekday: 2, time: '19:00'},
+          {weekday: 4, time: '19:00'},
         ],
       },
     ],
@@ -427,10 +448,10 @@ export const COACHES: SeedCoach[] = [
     lastName: 'Novak',
     avatar: 45,
     homeArea: CHICAGO,
-    headline: 'Pilates for a strong core and a happy back',
+    headline: 'Online Pilates for a strong core and a happy back',
     bio:
-      'Former dancer turned Pilates instructor. I specialize in core strength, posture and back-pain friendly ' +
-      'programs, in private sessions or small groups of up to six people.',
+      'Former dancer turned Pilates instructor, now teaching fully online. I specialize in core strength, posture ' +
+      'and back-pain friendly programs, in private video sessions or small online groups of up to six people.',
     specializations: ['pilates', 'mobility'],
     experienceYears: 10,
     certifications: [
@@ -441,21 +462,25 @@ export const COACHES: SeedCoach[] = [
     languages: ['English', 'Czech'],
     rating: {average: 4.85, count: 110},
     freeCancelHours: 24,
-    defaultLocation: LOCATIONS.coreStudio,
+    // Online only: no studio.
+    defaultLocation: null,
+    meetingUrl: 'https://meet.google.com/emi-pila-tes',
     weekly: [...days([1, 2, 3, 4], '08:00', '13:00'), ...days([2, 4], '17:00', '20:00')],
     types: [
       {
         key: 'emily-private',
-        title: 'Private Mat Pilates',
+        title: 'Private Mat Pilates (online)',
         kind: 'individual',
+        format: 'online',
         durationMin: 60,
         priceCents: 8000,
         description: 'Personal mat session focused on core and posture.',
       },
       {
         key: 'emily-small',
-        title: 'Small Group Pilates',
+        title: 'Small Group Pilates (online)',
         kind: 'group',
+        format: 'online',
         durationMin: 60,
         priceCents: 3500,
         capacity: 6,
