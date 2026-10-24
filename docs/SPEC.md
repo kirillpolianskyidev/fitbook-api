@@ -471,6 +471,15 @@ books nothing. Not with trial / credits (`PROMO_NOT_APPLICABLE`). Bookings and p
 `listPrice` and `promo { code, discountCents }`; refunds and earnings use `price`. `POST /promo-codes/check` quotes
 without using the code. Coach CRUD at `/coach/promo-codes` (a used code is deactivated instead of deleted).
 
+### Assignments (homework)
+
+`assignments`: coachId, clientId, title, note, dueDate (YYYY-MM-DD), exercises (1-30: name, sets, reps, duration,
+note, videoUrl, result `{ status: done | partial | skipped, note, updatedAt } | null`), clientNote. Status is computed
+(open / in_progress / done / partial) with progress counts. Coach: list / create for clients with a booking (else
+NOT_FOUND), PATCH (exercises by id keep their result; new without id; missing removed), DELETE. Client: list
+(`status=active|all`, nearest dueDate first), get, set / clear an exercise result, client note. Socket.IO
+`assignment:new` to the client, `assignment:updated` to the coach.
+
 ### Completion
 
 Job every 10 minutes: sessions whose `endAt < now` -> `completed`; their `confirmed` bookings -> `completed`.
@@ -689,7 +698,8 @@ other US cities to demonstrate location filtering: New York NY, Austin TX, Los A
 - **Demo accounts** (password `Password123!`):
   - `coach@fitbook.dev` - Alex Carter, strength & conditioning, Chicago, full schedule, group + individual types,
     promo codes `WELCOME20` (−20%, new clients only) and `SAVE10` (−$10)
-  - `client@fitbook.dev` - Jamie Lee, Chicago, trial already used, past and upcoming bookings, a series, notes, chats
+  - `client@fitbook.dev` - Jamie Lee, Chicago, trial already used, past and upcoming bookings, a series, notes, chats,
+    two assignments from Alex (one in progress with 2 of 4 exercises marked, one done)
   - `newclient@fitbook.dev` - fresh client, trial still available, no bookings
   - `newcoach@fitbook.dev` - coach with an incomplete, unpublished profile (to show onboarding)
 - **10 coaches** (7 in Chicago, 3 elsewhere): strength, yoga, running, boxing, pilates, crossfit, swimming,

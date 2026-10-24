@@ -21,3 +21,4 @@ export * from './user.js';
 export * from './waitlistEntry.js';
 export * from './seatLock.js';
 export * from './promoCode.js';
+export * from './assignment.js';

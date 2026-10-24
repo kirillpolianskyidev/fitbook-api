@@ -415,6 +415,27 @@ ${example('earnings', 'Example: GET /coach/earnings?period=month')}
 
 ${example('bookingNoShow', 'Example: POST /coach/bookings/:id/no-show')}
 
+### 5c. Homework (assignments)
+
+- Coach, only for own clients (a booking with the coach, otherwise \`NOT_FOUND\`):
+  \`GET /coach/clients/:clientId/assignments\` (newest first), \`POST /coach/clients/:clientId/assignments\`
+  (201; \`{ title 1-80, note? <=2000, dueDate? YYYY-MM-DD, exercises: 1-30 [{ name 1-80, sets? 1-50, reps? <=20,
+  duration? <=20, note? <=500, videoUrl? https <=500 }] }\`), \`PATCH /coach/assignments/:id\` (any field;
+  \`exercises\` = the full new list: an item with an existing \`id\` is updated and keeps its \`result\`, an item without
+  \`id\` is new, missing ones are removed; an unknown \`id\` -> \`VALIDATION_ERROR\`), \`DELETE /coach/assignments/:id\`
+  (204).
+- Client: \`GET /me/assignments?status=active|all\` (default \`active\` = \`open\` + \`in_progress\`; nearest
+  \`dueDate\` first, then without a date, newer first), \`GET /me/assignments/:id\`,
+  \`PUT /me/assignments/:id/exercises/:exerciseId/result { status: done|partial|skipped, note? <=500 }\` and
+  \`DELETE\` of the same path (both 200 \`Assignment\`), \`PUT /me/assignments/:id/note { note | null }\` (<=1000).
+  Someone else's assignment -> \`NOT_FOUND\`.
+- \`status\` (computed): \`open\` nothing marked, \`in_progress\` some marked, \`done\` all done, \`partial\` all marked but
+  not all done. \`progress { done, partial, skipped, total }\`.
+- Socket.IO: \`assignment:new { assignment }\` to the client; \`assignment:updated { assignment }\` to the coach.
+
+${example('assignmentCreated', 'Example: POST /coach/clients/:clientId/assignments')}
+${example('assignmentMarked', 'Example: PUT /me/assignments/:id/exercises/:exerciseId/result')}
+
 ## 6. Realtime chat (Socket.IO)
 
 \`\`\`ts
@@ -426,7 +447,9 @@ const socket = io(SOCKET_URL, {auth: {token: accessToken}, transports: ['websock
   A rejected handshake emits \`connect_error\` with message \`UNAUTHORIZED\` or \`TOKEN_EXPIRED\`.
 - Server -> app events: \`message:new { conversationId, message }\`, \`message:read { conversationId, readerId,
   readAt }\`, \`conversation:updated { conversation }\`, \`typing { conversationId, userId }\`,
-  \`waitlist:offered { entry: WaitlistEntry }\` (a held group place is waiting to be booked).
+  \`waitlist:offered { entry: WaitlistEntry }\` (a held group place is waiting to be booked),
+  \`assignment:new { assignment }\` (to the client: new homework), \`assignment:updated { assignment }\` (to the coach:
+  the client marked an exercise or changed the note).
 - App -> server events (with ack \`{ ok: true, data? } | { ok: false, error: { code, message } }\`):
   \`message:send { conversationId, text }\`, \`typing { conversationId }\`, \`conversation:read { conversationId }\`.
 - REST equivalents: \`GET /conversations\`, \`POST /conversations\` (get or create), \`GET/POST
@@ -451,6 +474,8 @@ ${example('errorValidation', 'Example: validation error')}
 - Training format: \`in_person | online\`; Training type format: \`in_person | online | both\`
 - Booking status: \`pending_payment | confirmed | cancelled | completed | no_show\`; Payment status: \`unpaid | paid | refunded | not_required\`; Payment method: \`mock | credits\`
 - Session status: \`scheduled | cancelled | completed\`; Note phase: \`before | after\`
+- Promo discount type: \`percent | amount\`; Promo appliesTo: \`bookings | packages\`
+- Assignment status: \`open | in_progress | done | partial\`; Exercise result status: \`done | partial | skipped\`
 - Specializations: ${SPECIALIZATIONS.map(s => `\`${s}\``).join(', ')}
 - States: 2-letter US state codes (\`IL\`, \`NY\`, ...); country is always \`US\`.
 
@@ -482,6 +507,7 @@ ${example('availability', 'GET /coach/availability')}
 ${example('coachClients', 'GET /coach/clients')}
 ${example('coachClientProgress', 'GET /coach/clients/:clientId/progress')}
 ${example('measurements', 'GET /me/measurements')}
+${example('myAssignments', 'GET /me/assignments')}
 ${example('errorSlotUnavailable', 'Error: SLOT_UNAVAILABLE')}
 ${example('errorTrialUsed', 'Error: TRIAL_ALREADY_USED')}
 ${example('errorForbidden', 'Error: FORBIDDEN')}
@@ -495,7 +521,7 @@ Password for all: \`Password123!\`. Every password sign-in asks for an emailed c
 | Email | Who |
 | --- | --- |
 | \`coach@fitbook.dev\` | Alex Carter - coach in Chicago with a full schedule, group classes, clients and chats; promo codes \`WELCOME20\` (−20%, new clients only) and \`SAVE10\` (−$10, everybody) |
-| \`client@fitbook.dev\` | Jamie Lee - client in Chicago: trial used, Tue/Thu series with Alex, notes, chats, a pending and a cancelled booking |
+| \`client@fitbook.dev\` | Jamie Lee - client in Chicago: trial used, Tue/Thu series with Alex, notes, chats, a pending and a cancelled booking, homework from Alex (one in progress, one done) |
 | \`newclient@fitbook.dev\` | Riley Chen - client in Chicago with the free trial still available (can use Alex's \`WELCOME20\`) |
 | \`newcoach@fitbook.dev\` | Taylor Morgan - coach with an incomplete, unpublished profile (onboarding demo) |
 

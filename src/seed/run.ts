@@ -27,6 +27,7 @@ import {
   ClientPackageModel,
   PackageModel,
   PromoCodeModel,
+  AssignmentModel,
   FavoriteModel,
   MeasurementModel,
 } from '../models/index.js';
@@ -748,6 +749,64 @@ async function main() {
       code: 'SAVE10',
       discount: {type: 'amount', value: 1000},
       appliesTo: ['bookings', 'packages'],
+    },
+  ]);
+
+  // --- Assignments: Jamie's homework from Alex (one in progress, one done) -----------------------
+  const markedAt = (daysAgo: number) => new Date(Date.now() - daysAgo * 86_400_000);
+  const dueIn = (days: number) =>
+    DateTime.now().setZone('America/Chicago').plus({days}).toISODate()!;
+  await AssignmentModel.create([
+    {
+      coachId: alex.user._id,
+      clientId: jamie._id,
+      title: 'Week 3: lower body and core',
+      note: 'Do this twice before our next session. Stop if anything hurts.',
+      dueDate: dueIn(4),
+      exercises: [
+        {
+          name: 'Goblet squat',
+          sets: 3,
+          reps: '10-12',
+          videoUrl: 'https://www.youtube.com/watch?v=MeIiIdhvXT4',
+          result: {status: 'done', note: null, updatedAt: markedAt(1)},
+        },
+        {
+          name: 'Romanian deadlift',
+          sets: 3,
+          reps: '8',
+          note: 'Light dumbbells, flat back',
+          result: {
+            status: 'partial',
+            note: 'Only 2 sets, lower back got tired',
+            updatedAt: markedAt(1),
+          },
+        },
+        {name: 'Plank', sets: 3, duration: '40 sec'},
+        {name: 'Easy walk', duration: '30 min'},
+      ],
+    },
+    {
+      coachId: alex.user._id,
+      clientId: jamie._id,
+      title: 'Week 2: mobility',
+      dueDate: dueIn(-5),
+      exercises: [
+        {
+          name: 'Hip flexor stretch',
+          duration: '2 min',
+          result: {status: 'done', updatedAt: markedAt(7)},
+        },
+        {name: 'Cat-cow', reps: '10', result: {status: 'done', updatedAt: markedAt(7)}},
+        {
+          name: 'Thoracic rotations',
+          sets: 2,
+          reps: '8',
+          result: {status: 'done', updatedAt: markedAt(6)},
+        },
+      ],
+      clientNote: 'Felt much looser after this!',
+      createdAt: markedAt(12),
     },
   ]);
 

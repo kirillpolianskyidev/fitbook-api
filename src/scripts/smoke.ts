@@ -624,6 +624,54 @@ async function main() {
     200,
     'promoCodes',
   );
+  const jamieId = (login.body.user as {id: string}).id;
+  const myAssignments = await step(
+    'my active assignments',
+    () => api().get(`${v1}/me/assignments`).set(client),
+    200,
+    'myAssignments',
+  );
+  const activeAssignment = (
+    myAssignments.body.items as {id: string; exercises: {id: string; result: unknown}[]}[]
+  )[0];
+  const unmarked = activeAssignment?.exercises.find(e => !e.result);
+  if (activeAssignment && unmarked) {
+    await step(
+      'mark an exercise done',
+      () =>
+        api()
+          .put(`${v1}/me/assignments/${activeAssignment.id}/exercises/${unmarked.id}/result`)
+          .set(client)
+          .send({status: 'done', note: 'Easy'}),
+      200,
+      'assignmentMarked',
+    );
+  } else {
+    failures += 1;
+    console.log('✗ no active assignment with an unmarked exercise (seed)');
+  }
+  await step(
+    'coach: give homework',
+    () =>
+      api()
+        .post(`${v1}/coach/clients/${jamieId}/assignments`)
+        .set(coach)
+        .send({
+          title: 'Recovery week',
+          dueDate: DateTime.now().setZone('America/Chicago').plus({days: 6}).toISODate(),
+          exercises: [
+            {name: 'Foam rolling', duration: '10 min'},
+            {name: 'Glute bridge', sets: 3, reps: '15'},
+          ],
+        }),
+    201,
+    'assignmentCreated',
+  );
+  await step(
+    "coach: client's assignments",
+    () => api().get(`${v1}/coach/clients/${jamieId}/assignments`).set(coach),
+    200,
+  );
   await step(
     'client calling coach endpoint',
     () => api().get(`${v1}/coach/schedule`).set(client),
