@@ -350,6 +350,20 @@ Profile (\`/coach/profile\`, publish when \`completeness.complete\`), training t
 
 ${example('schedule', 'Example: coach schedule')}
 
+### 5b. Earnings
+
+\`GET /coach/earnings?period=week|month|year&date=YYYY-MM-DD\` (default \`week\` and today; coach's time zone, weeks
+Monday-Sunday) -> \`{ period, from, to, total, upcoming, previousTotal, changePercent, breakdown { individual, group,
+packages, refunds }, counts { trainings, packagesSold, clients }, chart, topClients }\`.
+- Earned: card-paid (\`payment.method = "mock"\`, \`payment.status = "paid"\`) bookings that started in the period
+  (\`confirmed\`, \`completed\` or \`no_show\` without refund); \`upcoming\`: paid ones later in the period.
+  Credit bookings are not income (the money is in the package sale); trials / free bookings are 0.
+- Packages: purchase price by purchase date. Refunds (informational): refunded card payments by refund date.
+- \`total\` = earned + packages; \`changePercent\` vs the previous period (\`null\` if it was 0). \`chart\`: 7 days,
+  every day of the month, or 12 months (future buckets 0). \`topClients\`: up to 5 by trainings + packages.
+
+${example('earnings', 'Example: GET /coach/earnings?period=month')}
+
 ### 5a. No-show
 
 - From the start of a training until \`noShowDeadline\` (start + 48h) the coach can mark a client of a

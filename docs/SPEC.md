@@ -453,6 +453,13 @@ cards; `GET /coaches/filters`.
 `GET /coaches?bbox=minLng,minLat,maxLng,maxLat` filters on `coachProfile.defaultLocation` (index on lat/lng), works
 with every filter and sort, `pageSize <= 100` with bbox. Coach cards: `location { lat, lng, name, city, state }`.
 
+### Earnings
+
+`GET /coach/earnings?period&date` (coach time zone): earned = mock-paid bookings (`confirmed | completed | no_show`,
+payment `paid`) by `startAt <= now` in the period, upcoming = the rest of the period; package purchases by
+`purchasedAt`; refunds (mock) by `refundedAt` (informational); credit bookings are not income. Previous period for
+`changePercent`; chart per day (week / month) or month (year); top 5 clients.
+
 ### Completion
 
 Job every 10 minutes: sessions whose `endAt < now` -> `completed`; their `confirmed` bookings -> `completed`.

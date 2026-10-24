@@ -1927,6 +1927,219 @@
           "measurements"
         ]
       },
+      "Earnings": {
+        "type": "object",
+        "properties": {
+          "period": {
+            "type": "string",
+            "enum": [
+              "week",
+              "month",
+              "year"
+            ]
+          },
+          "from": {
+            "type": "string",
+            "description": "First day of the period (YYYY-MM-DD)"
+          },
+          "to": {
+            "type": "string",
+            "description": "Last day of the period (YYYY-MM-DD)"
+          },
+          "total": {
+            "type": "object",
+            "properties": {
+              "amountCents": {
+                "type": "integer",
+                "minimum": 0,
+                "example": 4500
+              },
+              "currency": {
+                "type": "string",
+                "enum": [
+                  "USD"
+                ]
+              }
+            },
+            "required": [
+              "amountCents",
+              "currency"
+            ],
+            "description": "Earned trainings + packages sold in the period"
+          },
+          "upcoming": {
+            "type": "object",
+            "properties": {
+              "amountCents": {
+                "type": "integer",
+                "minimum": 0,
+                "example": 4500
+              },
+              "currency": {
+                "type": "string",
+                "enum": [
+                  "USD"
+                ]
+              }
+            },
+            "required": [
+              "amountCents",
+              "currency"
+            ],
+            "description": "Paid trainings later in the period (not started yet)"
+          },
+          "previousTotal": {
+            "$ref": "#/components/schemas/Money"
+          },
+          "changePercent": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "description": "null when previousTotal is 0"
+          },
+          "breakdown": {
+            "type": "object",
+            "properties": {
+              "individual": {
+                "$ref": "#/components/schemas/Money"
+              },
+              "group": {
+                "$ref": "#/components/schemas/Money"
+              },
+              "packages": {
+                "$ref": "#/components/schemas/Money"
+              },
+              "refunds": {
+                "type": "object",
+                "properties": {
+                  "amountCents": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "example": 4500
+                  },
+                  "currency": {
+                    "type": "string",
+                    "enum": [
+                      "USD"
+                    ]
+                  }
+                },
+                "required": [
+                  "amountCents",
+                  "currency"
+                ],
+                "description": "Money refunded in the period (informational)"
+              }
+            },
+            "required": [
+              "individual",
+              "group",
+              "packages",
+              "refunds"
+            ]
+          },
+          "counts": {
+            "type": "object",
+            "properties": {
+              "trainings": {
+                "type": "integer"
+              },
+              "packagesSold": {
+                "type": "integer"
+              },
+              "clients": {
+                "type": "integer"
+              }
+            },
+            "required": [
+              "trainings",
+              "packagesSold",
+              "clients"
+            ]
+          },
+          "chart": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "start": {
+                  "type": "string"
+                },
+                "amount": {
+                  "$ref": "#/components/schemas/Money"
+                }
+              },
+              "required": [
+                "start",
+                "amount"
+              ]
+            },
+            "description": "week: 7 days, month: every day, year: 12 months"
+          },
+          "topClients": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "client": {
+                  "$ref": "#/components/schemas/UserSummary"
+                },
+                "amount": {
+                  "$ref": "#/components/schemas/Money"
+                },
+                "trainings": {
+                  "type": "integer"
+                }
+              },
+              "required": [
+                "client",
+                "amount",
+                "trainings"
+              ]
+            }
+          }
+        },
+        "required": [
+          "period",
+          "from",
+          "to",
+          "total",
+          "upcoming",
+          "previousTotal",
+          "changePercent",
+          "breakdown",
+          "counts",
+          "chart",
+          "topClients"
+        ]
+      },
+      "UserSummary": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "firstName": {
+            "type": "string"
+          },
+          "lastName": {
+            "type": "string"
+          },
+          "avatarUrl": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        },
+        "required": [
+          "id",
+          "firstName",
+          "lastName",
+          "avatarUrl"
+        ]
+      },
       "Availability": {
         "type": "object",
         "properties": {
@@ -2279,32 +2492,6 @@
           "paidAt",
           "clientPackageId",
           "refundedAt"
-        ]
-      },
-      "UserSummary": {
-        "type": "object",
-        "properties": {
-          "id": {
-            "type": "string"
-          },
-          "firstName": {
-            "type": "string"
-          },
-          "lastName": {
-            "type": "string"
-          },
-          "avatarUrl": {
-            "type": [
-              "string",
-              "null"
-            ]
-          }
-        },
-        "required": [
-          "id",
-          "firstName",
-          "lastName",
-          "avatarUrl"
         ]
       },
       "IndividualBookingRequest": {
@@ -6725,6 +6912,91 @@
           },
           "404": {
             "description": "NOT_FOUND",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/coach/earnings": {
+      "get": {
+        "tags": [
+          "Coach: earnings"
+        ],
+        "summary": "My earnings for a week, month or year (coach time zone): total, upcoming, breakdown, chart, top clients",
+        "description": "Earned = card-paid (mock) trainings that started in the period (confirmed, completed or no-show without refund); upcoming = paid trainings later in the period; packages by purchase date; credit bookings are not counted again; refunds are listed separately. total = earned + packages.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "x-auth": "coach",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "enum": [
+                "week",
+                "month",
+                "year"
+              ],
+              "default": "week"
+            },
+            "required": false,
+            "name": "period",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "format": "date",
+              "example": "2026-11-03",
+              "description": "Any day inside the period (coach's time zone), default today"
+            },
+            "required": false,
+            "description": "Any day inside the period (coach's time zone), default today",
+            "name": "date",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Earnings"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "VALIDATION_ERROR",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED, TOKEN_EXPIRED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN",
             "content": {
               "application/json": {
                 "schema": {

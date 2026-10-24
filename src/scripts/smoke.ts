@@ -575,6 +575,12 @@ async function main() {
     'coachClients',
   );
   await step(
+    'coach earnings (month)',
+    () => api().get(`${v1}/coach/earnings?period=month`).set(coach),
+    200,
+    'earnings',
+  );
+  await step(
     'client calling coach endpoint',
     () => api().get(`${v1}/coach/schedule`).set(client),
     403,

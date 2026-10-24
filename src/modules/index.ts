@@ -6,6 +6,7 @@ import './coaches/coaches.routes.js';
 import './reviews/reviews.routes.js';
 import './favorites/favorites.routes.js';
 import './progress/progress.routes.js';
+import './earnings/earnings.routes.js';
 import './sessionTypes/sessionTypes.routes.js';
 import './availability/availability.routes.js';
 import './bookings/bookings.routes.js';
