@@ -414,6 +414,14 @@ needs a `completed` booking with the coach (`REVIEW_NOT_ALLOWED`, 403); `PUT` ag
 { average (2 decimals), count }` is recalculated from reviews after each change (and on server start).
 Endpoints: `GET /coaches/:id/reviews`, `GET|PUT /coaches/:id/my-review`.
 
+### No-show
+
+`POST /coach/bookings/:id/no-show { refund }` (the booking's coach; status `confirmed` / `completed`, else
+`NO_SHOW_NOT_ALLOWED`; between `startAt` and `startAt + 48h`, else `NO_SHOW_WINDOW_PASSED`) sets `status = no_show`,
+`noShow { markedAt, refunded }`; `refund: true` on a paid booking refunds it like a coach cancellation (credit back to
+its package unless expired). `DELETE` undoes it in the same window unless refunded (`NO_SHOW_REFUNDED`) -> `completed`
+(ended) / `confirmed`. Not counted in progress, reviews or `/coach/clients` totals.
+
 ### Completion
 
 Job every 10 minutes: sessions whose `endAt < now` -> `completed`; their `confirmed` bookings -> `completed`.
@@ -597,6 +605,9 @@ Validation errors list fields: `details: { fields: { email: "Invalid email" } }`
 | 409  | PACKAGE_INACTIVE                        | buying an inactive package                                                                                          |
 | 403  | REVIEW_NOT_ALLOWED                      | review without a completed training with the coach                                                                  |
 | 409  | REVIEW_EDIT_WINDOW_PASSED               | review changed more than 24 hours after creation                                                                    |
+| 409  | NO_SHOW_WINDOW_PASSED                   | no-show before the start or after start + 48h                                                                       |
+| 409  | NO_SHOW_NOT_ALLOWED                     | no-show on a booking that is not confirmed / completed (DELETE: not no_show)                                        |
+| 409  | NO_SHOW_REFUNDED                        | removing a refunded no-show                                                                                         |
 | 409  | RESCHEDULE_WINDOW_PASSED                | too late to reschedule, or the booking is not active                                                                |
 | 409  | CANCELLATION_WINDOW_PASSED              | too late to cancel (`details.freeCancelHours`, `details.deadline`)                                                  |
 | 409  | BOOKING_NOT_PAYABLE                     | not pending or expired                                                                                              |

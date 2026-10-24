@@ -493,6 +493,42 @@ async function main() {
     'schedule',
   );
   console.log(`  ${(schedule.body.items as unknown[]).length} sessions this week`);
+  const recent = await step(
+    'coach schedule last 2 days',
+    () =>
+      api()
+        .get(`${v1}/coach/schedule`)
+        .query({
+          from: DateTime.now().minus({hours: 47}).toUTC().toISO(),
+          to: DateTime.now().toUTC().toISO(),
+        })
+        .set(coach),
+    200,
+  );
+  type Participant = {bookingId: string; noShowMarkable: boolean};
+  const markable = (recent.body.items as {participants: Participant[]}[])
+    .flatMap(item => item.participants)
+    .find(p => p.noShowMarkable);
+  if (markable) {
+    await step(
+      'mark a no-show',
+      () =>
+        api()
+          .post(`${v1}/coach/bookings/${markable.bookingId}/no-show`)
+          .set(coach)
+          .send({refund: false}),
+      200,
+      'bookingNoShow',
+    );
+    await step(
+      'remove the no-show',
+      () => api().delete(`${v1}/coach/bookings/${markable.bookingId}/no-show`).set(coach),
+      200,
+    );
+  } else {
+    failures += 1;
+    console.log('✗ no markable booking in the last 48 hours (seed)');
+  }
   await step(
     'coach clients',
     () => api().get(`${v1}/coach/clients`).set(coach),

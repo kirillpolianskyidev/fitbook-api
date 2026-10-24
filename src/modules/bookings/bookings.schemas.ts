@@ -12,8 +12,35 @@ import {
 import {UserSummarySchema} from '../users/users.schemas.js';
 
 export const BookingStatusSchema = z
-  .enum(['pending_payment', 'confirmed', 'cancelled', 'completed'])
+  .enum(['pending_payment', 'confirmed', 'cancelled', 'completed', 'no_show'])
   .meta({id: 'BookingStatus'});
+
+export const NoShowSchema = z
+  .object({markedAt: z.string(), refunded: z.boolean()})
+  .meta({id: 'NoShow'});
+
+/** No-show fields shared by Booking and Participant. */
+export const NoShowFields = {
+  noShow: NoShowSchema.nullable().meta({
+    description: 'Set when the coach marked the client as a no-show',
+  }),
+  noShowMarkable: z.boolean().meta({
+    description: 'The coach making the request can mark a no-show now (always false for clients)',
+  }),
+  noShowUndoable: z.boolean().meta({
+    description: 'The coach can remove the no-show now (inside the window and not refunded)',
+  }),
+  noShowDeadline: z.string().meta({description: 'startAt + 48h: end of the no-show window'}),
+};
+
+export const NoShowBody = z
+  .object({
+    refund: z.boolean().meta({
+      description:
+        'true: full refund like a coach cancellation (credit back for credit bookings); false: the payment stays',
+    }),
+  })
+  .meta({id: 'NoShowRequest'});
 
 export const PaymentSchema = z
   .object({
@@ -57,6 +84,7 @@ export const BookingSchema = z
       .string()
       .nullable()
       .meta({description: 'When the booking was last rescheduled'}),
+    ...NoShowFields,
     cancelDeadline: z.string().nullable(),
     cancelledAt: z.string().nullable(),
     cancelledBy: z.enum(['coach', 'client', 'system']).nullable(),

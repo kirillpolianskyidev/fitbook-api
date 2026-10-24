@@ -9,6 +9,7 @@ import {
   CancelBody,
   CoachCancelBody,
   CreateBookingBody,
+  NoShowBody,
   RescheduleBody,
   SeriesBody,
   SeriesPreviewBody,
@@ -16,6 +17,7 @@ import {
   SeriesResultSchema,
 } from './bookings.schemas.js';
 import * as service from './bookings.service.js';
+import {markNoShow, undoNoShow} from './noShow.js';
 
 const tags = ['Bookings'];
 
@@ -194,4 +196,42 @@ route({
   errors: ['NOT_FOUND', 'CANCELLATION_WINDOW_PASSED'],
   handler: async ({user, params, body}) =>
     service.toBookingDto(await service.cancelByCoach(user, params.id, body.reason), user._id),
+});
+
+route({
+  method: 'post',
+  path: '/coach/bookings/:id/no-show',
+  tags: ['Coach: schedule'],
+  summary: 'Mark the client as a no-show (from the start until 48 hours later)',
+  description:
+    '`refund: true` returns the payment like a coach cancellation (a credit goes back to its package); ' +
+    '`refund: false` keeps it. Ignored for trial / free bookings. Group sessions: per participant booking.',
+  auth: 'coach',
+  status: 200,
+  params: IdParams,
+  body: NoShowBody,
+  response: BookingSchema,
+  errors: ['NOT_FOUND', 'FORBIDDEN', 'NO_SHOW_WINDOW_PASSED', 'NO_SHOW_NOT_ALLOWED'],
+  handler: async ({user, params, body}) =>
+    service.toBookingDto(await markNoShow(user, params.id, body.refund), user._id),
+});
+
+route({
+  method: 'delete',
+  path: '/coach/bookings/:id/no-show',
+  tags: ['Coach: schedule'],
+  summary: 'Remove a no-show (only without a refund, inside the 48-hour window)',
+  auth: 'coach',
+  status: 200,
+  params: IdParams,
+  response: BookingSchema,
+  errors: [
+    'NOT_FOUND',
+    'FORBIDDEN',
+    'NO_SHOW_WINDOW_PASSED',
+    'NO_SHOW_NOT_ALLOWED',
+    'NO_SHOW_REFUNDED',
+  ],
+  handler: async ({user, params}) =>
+    service.toBookingDto(await undoNoShow(user, params.id), user._id),
 });

@@ -49,6 +49,9 @@
                   "ALREADY_ON_WAITLIST",
                   "TRIAL_ALREADY_USED",
                   "CANCELLATION_WINDOW_PASSED",
+                  "NO_SHOW_WINDOW_PASSED",
+                  "NO_SHOW_NOT_ALLOWED",
+                  "NO_SHOW_REFUNDED",
                   "REVIEW_EDIT_WINDOW_PASSED",
                   "RESCHEDULE_WINDOW_PASSED",
                   "BOOKING_NOT_PAYABLE",
@@ -1881,6 +1884,37 @@
             ],
             "description": "When the booking was last rescheduled"
           },
+          "noShow": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "properties": {
+              "markedAt": {
+                "type": "string"
+              },
+              "refunded": {
+                "type": "boolean"
+              }
+            },
+            "required": [
+              "markedAt",
+              "refunded"
+            ],
+            "description": "Set when the coach marked the client as a no-show"
+          },
+          "noShowMarkable": {
+            "type": "boolean",
+            "description": "The coach making the request can mark a no-show now (always false for clients)"
+          },
+          "noShowUndoable": {
+            "type": "boolean",
+            "description": "The coach can remove the no-show now (inside the window and not refunded)"
+          },
+          "noShowDeadline": {
+            "type": "string",
+            "description": "startAt + 48h: end of the no-show window"
+          },
           "cancelDeadline": {
             "type": [
               "string",
@@ -1973,6 +2007,10 @@
           "cancellable",
           "reschedulable",
           "rescheduledAt",
+          "noShow",
+          "noShowMarkable",
+          "noShowUndoable",
+          "noShowDeadline",
           "cancelDeadline",
           "cancelledAt",
           "cancelledBy",
@@ -1990,7 +2028,8 @@
           "pending_payment",
           "confirmed",
           "cancelled",
-          "completed"
+          "completed",
+          "no_show"
         ]
       },
       "Payment": {
@@ -2375,6 +2414,18 @@
         ],
         "description": "Data for adding the training to the device calendar"
       },
+      "NoShowRequest": {
+        "type": "object",
+        "properties": {
+          "refund": {
+            "type": "boolean",
+            "description": "true: full refund like a coach cancellation (credit back for credit bookings); false: the payment stays"
+          }
+        },
+        "required": [
+          "refund"
+        ]
+      },
       "CreatePackageRequest": {
         "type": "object",
         "properties": {
@@ -2721,16 +2772,41 @@
             "type": "string"
           },
           "status": {
-            "type": "string",
-            "enum": [
-              "pending_payment",
-              "confirmed",
-              "cancelled",
-              "completed"
-            ]
+            "$ref": "#/components/schemas/BookingStatus"
           },
           "isTrial": {
             "type": "boolean"
+          },
+          "noShow": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "properties": {
+              "markedAt": {
+                "type": "string"
+              },
+              "refunded": {
+                "type": "boolean"
+              }
+            },
+            "required": [
+              "markedAt",
+              "refunded"
+            ],
+            "description": "Set when the coach marked the client as a no-show"
+          },
+          "noShowMarkable": {
+            "type": "boolean",
+            "description": "The coach making the request can mark a no-show now (always false for clients)"
+          },
+          "noShowUndoable": {
+            "type": "boolean",
+            "description": "The coach can remove the no-show now (inside the window and not refunded)"
+          },
+          "noShowDeadline": {
+            "type": "string",
+            "description": "startAt + 48h: end of the no-show window"
           },
           "client": {
             "$ref": "#/components/schemas/UserSummary"
@@ -2743,6 +2819,10 @@
           "bookingId",
           "status",
           "isTrial",
+          "noShow",
+          "noShowMarkable",
+          "noShowUndoable",
+          "noShowDeadline",
           "client",
           "notesCount"
         ]
@@ -7760,6 +7840,192 @@
           },
           "409": {
             "description": "CANCELLATION_WINDOW_PASSED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/coach/bookings/{id}/no-show": {
+      "post": {
+        "tags": [
+          "Coach: schedule"
+        ],
+        "summary": "Mark the client as a no-show (from the start until 48 hours later)",
+        "description": "`refund: true` returns the payment like a coach cancellation (a credit goes back to its package); `refund: false` keeps it. Ignored for trial / free bookings. Group sessions: per participant booking.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "x-auth": "coach",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "description": "Object id",
+              "example": "6650f0c2a1b2c3d4e5f60718"
+            },
+            "required": true,
+            "description": "Object id",
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/NoShowRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Booking"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "VALIDATION_ERROR",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED, TOKEN_EXPIRED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "NOT_FOUND",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "NO_SHOW_WINDOW_PASSED, NO_SHOW_NOT_ALLOWED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Coach: schedule"
+        ],
+        "summary": "Remove a no-show (only without a refund, inside the 48-hour window)",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "x-auth": "coach",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "description": "Object id",
+              "example": "6650f0c2a1b2c3d4e5f60718"
+            },
+            "required": true,
+            "description": "Object id",
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Booking"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "VALIDATION_ERROR",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED, TOKEN_EXPIRED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "NOT_FOUND",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "NO_SHOW_WINDOW_PASSED, NO_SHOW_NOT_ALLOWED, NO_SHOW_REFUNDED",
             "content": {
               "application/json": {
                 "schema": {

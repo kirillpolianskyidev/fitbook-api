@@ -34,6 +34,7 @@ import {
   restoreOfferedSeat,
 } from '../waitlist/waitlist.service.js';
 import {creditsAvailable, returnCredit, takeCredit} from '../packages/packages.service.js';
+import {noShowFields} from './noShow.js';
 import {toUserSummary} from '../users/users.service.js';
 import type {
   BookingDto,
@@ -43,7 +44,7 @@ import type {
 } from './bookings.schemas.js';
 
 const ACTIVE = ['pending_payment', 'confirmed'] as const;
-type Status = 'pending_payment' | 'confirmed' | 'cancelled' | 'completed';
+type Status = 'pending_payment' | 'confirmed' | 'cancelled' | 'completed' | 'no_show';
 type CancelledBy = 'coach' | 'client' | 'system';
 
 const activeKey = (sessionId: Types.ObjectId, clientId: Types.ObjectId) =>
@@ -118,6 +119,7 @@ export async function toBookingDtos(
       cancellable,
       reschedulable,
       rescheduledAt: booking.rescheduledAt?.toISOString() ?? null,
+      ...noShowFields(booking, viewerId),
       cancelDeadline: isActive ? deadline.toISOString() : null,
       cancelledAt: booking.cancelledAt?.toISOString() ?? null,
       cancelledBy: (booking.cancelledBy as CancelledBy | undefined) ?? null,

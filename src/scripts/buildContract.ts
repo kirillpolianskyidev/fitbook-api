@@ -77,6 +77,9 @@ const UI_HINTS: Partial<Record<ErrorCode, string>> = {
   PACKAGE_INACTIVE: 'Reload the coach profile (the package was withdrawn).',
   REVIEW_NOT_ALLOWED: 'Hide "Write a review" (`canCreate` is false until a training is completed).',
   REVIEW_EDIT_WINDOW_PASSED: 'Show the review as read-only.',
+  NO_SHOW_WINDOW_PASSED: 'Hide the no-show action (`noShowMarkable` / `noShowUndoable` are false).',
+  NO_SHOW_NOT_ALLOWED: 'Reload the booking.',
+  NO_SHOW_REFUNDED: 'Explain that the payment was returned; the mark stays.',
   RESCHEDULE_WINDOW_PASSED: 'Hide "Reschedule"; reload the booking (`reschedulable` is false now).',
   BOOKING_NOT_PAYABLE: 'Reload the booking; it was paid or released.',
   RATE_LIMITED: 'Ask to try again later (`details.retryAfterSeconds` when present).',
@@ -199,7 +202,7 @@ ${example('errorResendTooEarly', 'Example: resend before resendAvailableAt')}
   the coach and the client can edit; \`lastEditedBy\` tells who changed it.
 
 Booking statuses: \`pending_payment\` -> \`confirmed\` -> \`completed\`, or \`cancelled\` (by \`client\`, \`coach\`
-or \`system\`).
+or \`system\`), or \`no_show\` (the coach marked that the client did not come; see 5a).
 
 ${example('bookingPending', 'Example: new booking (pending payment)')}
 ${example('seriesPreview', 'Example: series preview')}
@@ -295,6 +298,21 @@ Profile (\`/coach/profile\`, publish when \`completeness.complete\`), training t
 
 ${example('schedule', 'Example: coach schedule')}
 
+### 5a. No-show
+
+- From the start of a training until \`noShowDeadline\` (start + 48h) the coach can mark a client of a
+  \`confirmed\` / \`completed\` booking as a no-show: \`POST /coach/bookings/:id/no-show { refund }\` -> Booking with
+  \`status: "no_show"\` and \`noShow { markedAt, refunded }\`. \`refund: true\` returns the payment like a coach
+  cancellation (\`payment.status = "refunded"\`; a credit goes back to its package if not expired); \`refund: false\`
+  keeps it (a credit stays used). Ignored for trial / free bookings. Group sessions: per participant booking.
+- \`DELETE /coach/bookings/:id/no-show\` removes it inside the same window, only if it was not refunded
+  (\`NO_SHOW_REFUNDED\`); the booking goes back to \`completed\` (ended) or \`confirmed\`.
+- Booking and schedule participants have \`noShow\`, \`noShowMarkable\`, \`noShowUndoable\` (true only for the
+  booking's coach), \`noShowDeadline\`. Without a mark nothing changes: the training becomes \`completed\`.
+- No-shows do not count in progress, do not allow a review and are not counted in \`/coach/clients\`.
+
+${example('bookingNoShow', 'Example: POST /coach/bookings/:id/no-show')}
+
 ## 6. Realtime chat (Socket.IO)
 
 \`\`\`ts
@@ -328,7 +346,7 @@ ${example('errorValidation', 'Example: validation error')}
 ## 8. Enums
 
 - Role: \`coach | client\`; Theme: \`light | dark | system\`; Training kind: \`individual | group\`
-- Booking status: \`pending_payment | confirmed | cancelled | completed\`; Payment status: \`unpaid | paid | refunded | not_required\`; Payment method: \`mock | credits\`
+- Booking status: \`pending_payment | confirmed | cancelled | completed | no_show\`; Payment status: \`unpaid | paid | refunded | not_required\`; Payment method: \`mock | credits\`
 - Session status: \`scheduled | cancelled | completed\`; Note phase: \`before | after\`
 - Specializations: ${SPECIALIZATIONS.map(s => `\`${s}\``).join(', ')}
 - States: 2-letter US state codes (\`IL\`, \`NY\`, ...); country is always \`US\`.

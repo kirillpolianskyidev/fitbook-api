@@ -685,6 +685,30 @@ async function main() {
     await purchase.save();
   }
 
+  // --- No-shows (Alex): one training yesterday that can still be marked, one past no-show ---------
+  const alexType = alex.types.get('alex-1on1')!;
+  const markable = clientsIn('IL')[5] ?? clientsIn('IL')[0]!;
+  for (const time of ['17:00', '18:00', '19:00', '20:00', '12:00']) {
+    const startAt = at(chicago, -1, time);
+    if (startAt > addMinutes(now, -120)) continue;
+    const session = await createSession(alex, alexType, startAt);
+    if (session && (await addBooking(session, markable))) break;
+  }
+  const noShowBooking = individualBookings
+    .filter(
+      b =>
+        b.coachId.equals(alex.user._id) &&
+        b.status === 'completed' &&
+        b.startAt < addMinutes(now, -5 * 1440) &&
+        !b.clientId.equals(jamie._id),
+    )
+    .sort((a, b) => +b.startAt - +a.startAt)[0];
+  if (noShowBooking) {
+    noShowBooking.status = 'no_show';
+    noShowBooking.noShow = {markedAt: addMinutes(noShowBooking.endAt, 30), refunded: false};
+    await noShowBooking.save();
+  }
+
   // --- Favorites: Jamie's two regular coaches ---------------------------------------------------
   await FavoriteModel.create({clientId: jamie._id, coachId: maya.user._id});
   await FavoriteModel.create({clientId: jamie._id, coachId: alex.user._id});
