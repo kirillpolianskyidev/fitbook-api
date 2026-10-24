@@ -272,6 +272,44 @@ async function main() {
     'errorTrialUsed',
   );
   await step(
+    'check promo code',
+    () =>
+      api()
+        .post(`${v1}/promo-codes/check`)
+        .set(client)
+        .send({
+          coachId,
+          code: 'save10',
+          target: {type: 'booking', sessionTypeId: individualType.id, count: 4},
+        }),
+    200,
+    'promoCheck',
+  );
+  await step(
+    'new-clients-only promo for a regular client',
+    () =>
+      api().post(`${v1}/bookings`).set(client).send({
+        sessionTypeId: individualType.id,
+        startAt: freeSlots[4]!.startAt,
+        format: 'in_person',
+        promoCode: 'WELCOME20',
+      }),
+    409,
+    'errorPromoNewClientsOnly',
+  );
+  await step(
+    'book with a promo code',
+    () =>
+      api().post(`${v1}/bookings`).set(client).send({
+        sessionTypeId: individualType.id,
+        startAt: freeSlots[4]!.startAt,
+        format: 'in_person',
+        promoCode: 'SAVE10',
+      }),
+    201,
+    'bookingWithPromo',
+  );
+  await step(
     'pay booking',
     () => api().post(`${v1}/bookings/${bookingId}/pay`).set(client),
     200,
@@ -579,6 +617,12 @@ async function main() {
     () => api().get(`${v1}/coach/earnings?period=month`).set(coach),
     200,
     'earnings',
+  );
+  await step(
+    'coach promo codes',
+    () => api().get(`${v1}/coach/promo-codes`).set(coach),
+    200,
+    'promoCodes',
   );
   await step(
     'client calling coach endpoint',

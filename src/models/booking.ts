@@ -14,7 +14,14 @@ const bookingSchema = new Schema(
       required: true,
     },
     isTrial: {type: Boolean, default: false},
+    // What the client pays (after a promo discount).
     price: {type: moneySchema, required: true},
+    // Price before the promo discount (null = same as price; bookings made before promo codes).
+    listPrice: {type: moneySchema, default: null},
+    promo: {
+      type: new Schema({code: String, discountCents: Number}, {_id: false}),
+      default: null,
+    },
     payment: {
       type: new Schema(
         {

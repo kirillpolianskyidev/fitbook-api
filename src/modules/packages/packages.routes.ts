@@ -6,8 +6,10 @@ import {
   MyPackagesQuery,
   MyPackagesSchema,
   PackageSchema,
+  PurchasePackageBody,
   UpdatePackageBody,
 } from './packages.schemas.js';
+import {promoErrors} from '../promos/promos.schemas.js';
 import * as service from './packages.service.js';
 
 const coachTags = ['Coach: packages'];
@@ -73,9 +75,10 @@ route({
   summary: 'Buy a package (mock payment, paid immediately)',
   auth: 'client',
   params: IdParams,
+  body: PurchasePackageBody,
   response: ClientPackageSchema,
-  errors: ['NOT_FOUND', 'PACKAGE_INACTIVE'],
-  handler: ({user, params}) => service.purchasePackage(user, params.id),
+  errors: ['NOT_FOUND', 'PACKAGE_INACTIVE', ...promoErrors],
+  handler: ({user, params, body}) => service.purchasePackage(user, params.id, body.promoCode),
 });
 
 route({

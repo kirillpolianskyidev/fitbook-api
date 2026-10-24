@@ -316,6 +316,7 @@ export async function extendSeries(
     dates: input.dates,
     useCredits: input.useCredits,
     format: preview.format,
+    promoCode: input.promoCode,
   });
   series.weeks += input.weeks;
   await series.save();

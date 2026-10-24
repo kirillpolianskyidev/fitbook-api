@@ -26,6 +26,7 @@ import {
   ReviewModel,
   ClientPackageModel,
   PackageModel,
+  PromoCodeModel,
   FavoriteModel,
   MeasurementModel,
 } from '../models/index.js';
@@ -732,6 +733,23 @@ async function main() {
     noShowBooking.noShow = {markedAt: addMinutes(noShowBooking.endAt, 30), refunded: false};
     await noShowBooking.save();
   }
+
+  // --- Promo codes: Alex has a welcome code for new clients and a $10 code for everybody ----------
+  await PromoCodeModel.create([
+    {
+      coachId: alex.user._id,
+      code: 'WELCOME20',
+      discount: {type: 'percent', value: 20},
+      newClientsOnly: true,
+      appliesTo: ['bookings', 'packages'],
+    },
+    {
+      coachId: alex.user._id,
+      code: 'SAVE10',
+      discount: {type: 'amount', value: 1000},
+      appliesTo: ['bookings', 'packages'],
+    },
+  ]);
 
   // --- Favorites: Jamie's two regular coaches ---------------------------------------------------
   await FavoriteModel.create({clientId: jamie._id, coachId: maya.user._id});

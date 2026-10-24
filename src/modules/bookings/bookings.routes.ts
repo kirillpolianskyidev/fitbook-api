@@ -23,6 +23,7 @@ import {
   SeriesPreviewItemSchema,
   SeriesResultSchema,
 } from './bookings.schemas.js';
+import {promoErrors} from '../promos/promos.schemas.js';
 import * as service from './bookings.service.js';
 import {markNoShow, undoNoShow} from './noShow.js';
 import * as seriesService from './series.service.js';
@@ -50,11 +51,18 @@ route({
     'TRIAL_NOT_ALLOWED',
     'SESSION_TYPE_INACTIVE',
     'NO_CREDITS',
+    ...promoErrors,
   ],
   handler: async ({user, body}) => {
     const booking =
       'sessionId' in body
-        ? await service.joinGroupSession(user, body.sessionId, body.isTrial, body.useCredits)
+        ? await service.joinGroupSession(
+            user,
+            body.sessionId,
+            body.isTrial,
+            body.useCredits,
+            body.promoCode,
+          )
         : await service.createIndividualBooking(user, body);
     return service.toBookingDto(booking);
   },
@@ -81,7 +89,7 @@ route({
   auth: 'client',
   body: SeriesBody,
   response: SeriesResultSchema,
-  errors: ['NOT_FOUND', 'SESSION_TYPE_INACTIVE', 'INSUFFICIENT_CREDITS'],
+  errors: ['NOT_FOUND', 'SESSION_TYPE_INACTIVE', 'INSUFFICIENT_CREDITS', ...promoErrors],
   handler: ({user, body}) => service.createSeries(user, body),
 });
 
@@ -339,6 +347,7 @@ route({
     'SERIES_NOT_EXTENDABLE',
     'SESSION_TYPE_INACTIVE',
     'INSUFFICIENT_CREDITS',
+    ...promoErrors,
   ],
   handler: ({user, params, body}) => seriesService.extendSeries(user, params.id, body),
 });

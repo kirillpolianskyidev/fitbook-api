@@ -1,5 +1,7 @@
 import {z} from 'zod';
 
+import {AppliedPromoSchema, promoCodeField} from '../promos/promos.schemas.js';
+
 import {
   dateYMD,
   isoDateTime,
@@ -67,7 +69,11 @@ export const BookingSchema = z
     id: z.string(),
     status: BookingStatusSchema,
     isTrial: z.boolean(),
-    price: MoneySchema,
+    price: MoneySchema.meta({description: 'What the client pays (after the promo discount)'}),
+    listPrice: MoneySchema.meta({
+      description: 'Price before the promo discount (= price without a promo)',
+    }),
+    promo: AppliedPromoSchema.nullable().meta({description: 'Promo code used for this booking'}),
     payment: PaymentSchema,
     expiresAt: z
       .string()
@@ -126,6 +132,7 @@ const IndividualBookingBody = z
     startAt: isoDateTime,
     isTrial: z.boolean().default(false),
     useCredits,
+    promoCode: promoCodeField,
     format: TrainingFormatSchema.optional().meta({
       description: 'Required for "both" training types; must match in_person / online types',
     }),
@@ -141,6 +148,7 @@ const GroupBookingBody = z
     sessionId: objectId,
     isTrial: z.boolean().optional().meta({description: 'Not allowed for group sessions'}),
     useCredits,
+    promoCode: promoCodeField,
   })
   .refine(body => !(body.isTrial && body.useCredits), notTrialWithCredits)
   .meta({id: 'GroupBookingRequest'});
@@ -168,6 +176,9 @@ export const SeriesBody = SeriesPreviewBody.extend({
   useCredits: z.boolean().default(false).meta({
     description:
       '1 credit per booked date; all bookings confirmed. Not enough credits -> INSUFFICIENT_CREDITS, nothing booked',
+  }),
+  promoCode: promoCodeField.meta({
+    description: 'Discount applies to every booked date (one use of the code); not with useCredits',
   }),
 });
 
@@ -197,6 +208,7 @@ export const SeriesExtendBody = z
       .max(84)
       .meta({description: 'Dates chosen from the extend preview'}),
     useCredits: z.boolean().default(false),
+    promoCode: promoCodeField,
   })
   .meta({id: 'SeriesExtendRequest'});
 

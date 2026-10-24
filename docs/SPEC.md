@@ -460,6 +460,17 @@ payment `paid`) by `startAt <= now` in the period, upcoming = the rest of the pe
 `purchasedAt`; refunds (mock) by `refundedAt` (informational); credit bookings are not income. Previous period for
 `changePercent`; chart per day (week / month) or month (year); top 5 clients.
 
+### Promo codes
+
+`promoCodes` (coachId + code unique, code stored upper case): `discount { type: percent | amount, value }`,
+`validFrom` / `validUntil` (inclusive, coach time zone), `maxUses`, `usesCount`, `newClientsOnly`, `appliesTo`
+(`bookings`, `packages`), `isActive`. `promoRedemptions` (promoCodeId + clientId unique): one use per client.
+`promoCode` in `POST /bookings`, `/bookings/series`, `/bookings/series/:id/extend`, `/packages/:id/purchase`;
+re-validated, one use per request (discount on every booked date of a series), released if the request fails or
+books nothing. Not with trial / credits (`PROMO_NOT_APPLICABLE`). Bookings and purchases keep `price` (paid),
+`listPrice` and `promo { code, discountCents }`; refunds and earnings use `price`. `POST /promo-codes/check` quotes
+without using the code. Coach CRUD at `/coach/promo-codes` (a used code is deactivated instead of deleted).
+
 ### Completion
 
 Job every 10 minutes: sessions whose `endAt < now` -> `completed`; their `confirmed` bookings -> `completed`.
@@ -649,6 +660,13 @@ Validation errors list fields: `details: { fields: { email: "Invalid email" } }`
 | 409  | NO_SHOW_WINDOW_PASSED                   | no-show before the start or after start + 48h                                                                       |
 | 409  | NO_SHOW_NOT_ALLOWED                     | no-show on a booking that is not confirmed / completed (DELETE: not no_show)                                        |
 | 409  | NO_SHOW_REFUNDED                        | removing a refunded no-show                                                                                         |
+| 409  | PROMO_INVALID                           | unknown or inactive promo code                                                                                      |
+| 409  | PROMO_EXPIRED                           | outside validFrom / validUntil                                                                                      |
+| 409  | PROMO_USED_UP                           | maxUses reached                                                                                                     |
+| 409  | PROMO_ALREADY_USED                      | the client already used this code                                                                                   |
+| 409  | PROMO_NEW_CLIENTS_ONLY                  | newClientsOnly and the client has a booking / package with the coach                                                |
+| 409  | PROMO_NOT_APPLICABLE                    | with isTrial / useCredits, or appliesTo does not include bookings / packages                                        |
+| 409  | PROMO_CODE_TAKEN                        | the coach already has this code                                                                                     |
 | 409  | RESCHEDULE_WINDOW_PASSED                | too late to reschedule, or the booking is not active                                                                |
 | 409  | CANCELLATION_WINDOW_PASSED              | too late to cancel (`details.freeCancelHours`, `details.deadline`)                                                  |
 | 409  | BOOKING_NOT_PAYABLE                     | not pending or expired                                                                                              |
@@ -669,7 +687,8 @@ Language: English. Currency: USD. Main city: **Chicago, IL** (`America/Chicago`)
 other US cities to demonstrate location filtering: New York NY, Austin TX, Los Angeles CA, Miami FL.
 
 - **Demo accounts** (password `Password123!`):
-  - `coach@fitbook.dev` - Alex Carter, strength & conditioning, Chicago, full schedule, group + individual types
+  - `coach@fitbook.dev` - Alex Carter, strength & conditioning, Chicago, full schedule, group + individual types,
+    promo codes `WELCOME20` (−20%, new clients only) and `SAVE10` (−$10)
   - `client@fitbook.dev` - Jamie Lee, Chicago, trial already used, past and upcoming bookings, a series, notes, chats
   - `newclient@fitbook.dev` - fresh client, trial still available, no bookings
   - `newcoach@fitbook.dev` - coach with an incomplete, unpublished profile (to show onboarding)

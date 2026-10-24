@@ -35,6 +35,8 @@ import {
 } from '../waitlist/waitlist.service.js';
 import {creditsAvailable, returnCredit, takeCredit} from '../packages/packages.service.js';
 import {noShowFields} from './noShow.js';
+import type {PromoCodeDoc} from '../../models/promoCode.js';
+import {discountOf, redeemPromo, type Redemption} from '../promos/promos.service.js';
 import {toUserSummary} from '../users/users.service.js';
 import type {
   BookingDto,
@@ -109,6 +111,8 @@ export async function toBookingDtos(
       status,
       isTrial: booking.isTrial,
       price: toMoneyDto(booking.price),
+      listPrice: toMoneyDto(booking.listPrice ?? booking.price),
+      promo: promoDto(booking.promo),
       payment: {
         status: booking.payment.status as 'unpaid' | 'paid' | 'refunded' | 'not_required',
         method: (booking.payment.method ?? 'mock') as 'mock' | 'credits',
@@ -180,6 +184,38 @@ async function assertPublishedCoach(coachId: Types.ObjectId) {
   }
 }
 
+export function promoDto(
+  promo: {code?: string | null; discountCents?: number | null} | null | undefined,
+) {
+  return promo?.code
+    ? {
+        code: promo.code,
+        discount: {amountCents: promo.discountCents ?? 0, currency: 'USD' as const},
+      }
+    : null;
+}
+
+/** Price fields of a booking / purchase with an optional promo discount. */
+export function promoPricing(promo: PromoCodeDoc | null | undefined, listCents: number) {
+  const discountCents = promo ? discountOf(promo, listCents) : 0;
+  return {
+    price: {amountCents: listCents - discountCents, currency: 'USD' as const},
+    listPrice: {amountCents: listCents, currency: 'USD' as const},
+    promo: promo ? {code: promo.code, discountCents} : null,
+  };
+}
+
+/** A promo code cannot be combined with the free trial or credits. */
+export function assertPromoCombinable(input: {
+  promoCode?: string;
+  isTrial?: boolean;
+  useCredits?: boolean;
+}) {
+  if (input.promoCode && (input.isTrial || input.useCredits)) {
+    throw new AppError('PROMO_NOT_APPLICABLE');
+  }
+}
+
 /** A booking paid with a credit: confirmed immediately. */
 function creditPayment(clientPackageId: Types.ObjectId) {
   return {
@@ -220,6 +256,7 @@ type IndividualInput = {
   useCredits?: boolean;
   format?: 'in_person' | 'online';
   location?: Location;
+  promoCode?: string;
 };
 
 /** The format of a new individual booking: required for "both" types, must match the others. */
@@ -247,8 +284,9 @@ export function bookingFormat(
 export async function createIndividualBooking(
   client: UserDoc,
   input: IndividualInput,
-  options: {seriesId?: Types.ObjectId} = {},
+  options: {seriesId?: Types.ObjectId; promo?: PromoCodeDoc} = {},
 ) {
+  assertPromoCombinable(input);
   const type = await SessionTypeModel.findById(input.sessionTypeId);
   if (!type) {
     throw new AppError('NOT_FOUND', 'Training type not found.');
@@ -269,12 +307,24 @@ export async function createIndividualBooking(
     throw new AppError('SLOT_UNAVAILABLE');
   }
 
+  // A promo code is used before the time is locked and released if anything below fails.
+  const redemption = input.promoCode
+    ? await redeemPromo(client, type.coachId, input.promoCode, 'bookings', 'booking')
+    : null;
+  const promo = options.promo ?? redemption?.promo ?? null;
   // A credit is taken before the time is locked and given back if anything below fails.
-  const credit = input.useCredits ? await takeCredit(client._id, type.coachId) : null;
+  let credit: Awaited<ReturnType<typeof takeCredit>> | null = null;
+  try {
+    credit = input.useCredits ? await takeCredit(client._id, type.coachId) : null;
+  } catch (error) {
+    await redemption?.release();
+    throw error;
+  }
 
   // Claim the trial first: the unique index on emailKey makes it race-safe across accounts.
   if (input.isTrial) {
     if (client.trialUsed) {
+      if (credit) await returnCredit(credit._id);
       throw new AppError('TRIAL_ALREADY_USED');
     }
     try {
@@ -286,9 +336,10 @@ export async function createIndividualBooking(
   }
 
   const profile = await CoachProfileModel.findOne({userId: type.coachId}).lean();
-  const price = input.isTrial
-    ? {amountCents: 0, currency: 'USD' as const}
-    : {amountCents: type.price.amountCents, currency: 'USD' as const};
+  const pricing = input.isTrial
+    ? promoPricing(null, 0)
+    : promoPricing(promo, type.price.amountCents);
+  const {price} = pricing;
   let session: TrainingSessionDoc;
   try {
     session = await createLockedSession({
@@ -312,6 +363,7 @@ export async function createIndividualBooking(
     if (input.isTrial)
       await TrialClaimModel.deleteOne({emailKey: client.emailKey, bookingId: null});
     if (credit) await returnCredit(credit._id);
+    await redemption?.release();
     throw error;
   }
 
@@ -321,7 +373,7 @@ export async function createIndividualBooking(
     clientId: client._id,
     seriesId: options.seriesId ?? null,
     isTrial: input.isTrial,
-    price,
+    ...pricing,
     startAt: session.startAt,
     endAt: session.endAt,
     activeKey: activeKey(session._id, client._id),
@@ -345,10 +397,12 @@ export async function joinGroupSession(
   sessionId: string,
   isTrial?: boolean,
   useCredits = false,
+  promoCode?: string,
 ) {
   if (isTrial) {
     throw new AppError('TRIAL_NOT_ALLOWED');
   }
+  assertPromoCombinable({promoCode, useCredits});
   const session = await TrainingSessionModel.findOne({
     _id: sessionId,
     kind: 'group',
@@ -367,18 +421,23 @@ export async function joinGroupSession(
   const claimed = await claimOfferedSeat(session._id, client._id);
   const seat = claimed ?? (await takeSeat(session._id, client._id, session.capacity));
   let credit: Awaited<ReturnType<typeof takeCredit>> | null = null;
+  let redemption: Redemption | null = null;
   try {
     credit = useCredits ? await takeCredit(client._id, session.coachId) : null;
+    redemption = promoCode
+      ? await redeemPromo(client, session.coachId, promoCode, 'bookings', 'booking')
+      : null;
+    const pricing = promoPricing(redemption?.promo, session.price.amountCents);
     const booking = await BookingModel.create({
       sessionId: session._id,
       coachId: session.coachId,
       clientId: client._id,
       isTrial: false,
-      price: session.price,
+      ...pricing,
       startAt: session.startAt,
       endAt: session.endAt,
       activeKey: activeKey(session._id, client._id),
-      ...(credit ? creditPayment(credit._id) : initialPayment(session.price.amountCents, false)),
+      ...(credit ? creditPayment(credit._id) : initialPayment(pricing.price.amountCents, false)),
     });
     await markBooked(session._id, client._id);
     await syncParticipants(session._id);
@@ -387,6 +446,7 @@ export async function joinGroupSession(
     if (claimed) await restoreOfferedSeat(session._id, client._id);
     else await SeatLockModel.deleteOne({_id: seat._id});
     if (credit) await returnCredit(credit._id);
+    await redemption?.release();
     if (isDuplicateKeyError(error)) throw new AppError('ALREADY_BOOKED');
     throw error;
   }
@@ -521,8 +581,10 @@ export async function bookSeriesDates(
     dates: string[];
     useCredits?: boolean;
     format?: 'in_person' | 'online';
+    promoCode?: string;
   },
 ) {
+  assertPromoCombinable(input);
   const byDate = new Map(preview.map(item => [item.date, item]));
   if (input.useCredits) {
     const needed = [...new Set(input.dates)].filter(date => byDate.get(date)!.available).length;
@@ -535,48 +597,63 @@ export async function bookSeriesDates(
     }
   }
 
-  const bookings: BookingDoc[] = [];
-  const skipped: {date: string; reason: 'UNAVAILABLE' | 'PAST' | 'EXCEPTION'}[] = [];
-  for (const date of [...new Set(input.dates)].sort()) {
-    const item = byDate.get(date)!;
-    if (!item.available) {
-      skipped.push({date, reason: item.reason ?? 'UNAVAILABLE'});
-      continue;
-    }
-    try {
-      bookings.push(
-        await createIndividualBooking(
-          client,
-          {
-            sessionTypeId: input.sessionTypeId,
-            startAt: item.startAt,
-            isTrial: false,
-            useCredits: input.useCredits,
-            format: input.format,
-          },
-          {seriesId: series._id},
-        ),
-      );
-    } catch (error) {
-      if (error instanceof AppError && error.code === 'SLOT_UNAVAILABLE') {
-        skipped.push({date, reason: 'UNAVAILABLE'});
+  // One use of the code for the whole request: the discount applies to every booked date.
+  const redemption = input.promoCode
+    ? await redeemPromo(client, series.coachId, input.promoCode, 'bookings', 'series')
+    : null;
+  try {
+    const result = await bookDates();
+    if (!result.bookings.length) await redemption?.release();
+    return result;
+  } catch (error) {
+    await redemption?.release();
+    throw error;
+  }
+
+  async function bookDates() {
+    const bookings: BookingDoc[] = [];
+    const skipped: {date: string; reason: 'UNAVAILABLE' | 'PAST' | 'EXCEPTION'}[] = [];
+    for (const date of [...new Set(input.dates)].sort()) {
+      const item = byDate.get(date)!;
+      if (!item.available) {
+        skipped.push({date, reason: item.reason ?? 'UNAVAILABLE'});
         continue;
       }
-      if (error instanceof AppError && error.code === 'NO_CREDITS') {
-        // Credits were used up in parallel: nothing is booked (credits go back).
-        for (const booking of bookings) await cancelBookingInternal(booking, 'system');
-        await BookingModel.deleteMany({_id: {$in: bookings.map(b => b._id)}});
-        throw new AppError('INSUFFICIENT_CREDITS', undefined, {
-          creditsAvailable: await creditsAvailable(client._id, series.coachId),
-        });
+      try {
+        bookings.push(
+          await createIndividualBooking(
+            client,
+            {
+              sessionTypeId: input.sessionTypeId,
+              startAt: item.startAt,
+              isTrial: false,
+              useCredits: input.useCredits,
+              format: input.format,
+            },
+            {seriesId: series._id, ...(redemption && {promo: redemption.promo})},
+          ),
+        );
+      } catch (error) {
+        if (error instanceof AppError && error.code === 'SLOT_UNAVAILABLE') {
+          skipped.push({date, reason: 'UNAVAILABLE'});
+          continue;
+        }
+        if (error instanceof AppError && error.code === 'NO_CREDITS') {
+          // Credits were used up in parallel: nothing is booked (credits go back).
+          for (const booking of bookings) await cancelBookingInternal(booking, 'system');
+          await BookingModel.deleteMany({_id: {$in: bookings.map(b => b._id)}});
+          throw new AppError('INSUFFICIENT_CREDITS', undefined, {
+            creditsAvailable: await creditsAvailable(client._id, series.coachId),
+          });
+        }
+        throw error;
       }
-      throw error;
     }
+    series.bookingIds = [...series.bookingIds, ...bookings.map(b => b._id)];
+    series.skippedDates = [...series.skippedDates, ...skipped.map(s => s.date)];
+    await series.save();
+    return {bookings: await toBookingDtos(bookings), skipped};
   }
-  series.bookingIds = [...series.bookingIds, ...bookings.map(b => b._id)];
-  series.skippedDates = [...series.skippedDates, ...skipped.map(s => s.date)];
-  await series.save();
-  return {bookings: await toBookingDtos(bookings), skipped};
 }
 
 // ---------------------------------------------------------------------------------------------

@@ -1,5 +1,7 @@
 import {z} from 'zod';
 
+import {AppliedPromoSchema, promoCodeField} from '../promos/promos.schemas.js';
+
 import {MoneySchema, objectId} from '../../lib/schemas.js';
 import {UserSummarySchema} from '../users/users.schemas.js';
 
@@ -28,7 +30,9 @@ export const ClientPackageSchema = z
     coach: UserSummarySchema,
     creditsTotal: z.number().int(),
     creditsLeft: z.number().int(),
-    price: MoneySchema.meta({description: 'What was paid'}),
+    price: MoneySchema.meta({description: 'What was paid (after the promo discount)'}),
+    listPrice: MoneySchema.meta({description: 'Package price before the promo discount'}),
+    promo: AppliedPromoSchema.nullable(),
     purchasedAt: z.string(),
     expiresAt: z.string(),
     expired: z
@@ -66,3 +70,7 @@ export const UpdatePackageBody = z
   .meta({id: 'UpdatePackageRequest'});
 
 export const MyPackagesQuery = z.object({coachId: objectId.optional()});
+
+export const PurchasePackageBody = z
+  .object({promoCode: promoCodeField})
+  .meta({id: 'PurchasePackageRequest'});

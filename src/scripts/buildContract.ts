@@ -83,6 +83,14 @@ const UI_HINTS: Partial<Record<ErrorCode, string>> = {
   NO_SHOW_WINDOW_PASSED: 'Hide the no-show action (`noShowMarkable` / `noShowUndoable` are false).',
   NO_SHOW_NOT_ALLOWED: 'Reload the booking.',
   NO_SHOW_REFUNDED: 'Explain that the payment was returned; the mark stays.',
+  PROMO_INVALID: 'Show under the promo field.',
+  PROMO_EXPIRED: 'Show under the promo field.',
+  PROMO_USED_UP: 'Show under the promo field.',
+  PROMO_ALREADY_USED: 'Show under the promo field.',
+  PROMO_NEW_CLIENTS_ONLY: 'Show under the promo field.',
+  PROMO_NOT_APPLICABLE:
+    'Show under the promo field (not with the free trial / credits, or not for this kind of purchase).',
+  PROMO_CODE_TAKEN: 'Show under the code input.',
   RESCHEDULE_WINDOW_PASSED: 'Hide "Reschedule"; reload the booking (`reschedulable` is false now).',
   BOOKING_NOT_PAYABLE: 'Reload the booking; it was paid or released.',
   RATE_LIMITED: 'Ask to try again later (`details.retryAfterSeconds` when present).',
@@ -278,6 +286,34 @@ ${example('coachMap', 'Example: GET /coaches?bbox=...')}
 ${example('clientPackage', 'Example: POST /packages/:id/purchase')}
 ${example('bookingWithCredits', 'Example: POST /bookings with useCredits')}
 
+## 4f. Promo codes
+
+- Client: \`POST /promo-codes/check { coachId, code, target }\` with \`target = { type: "booking", sessionTypeId |
+  sessionId, count = 1 }\` (individual type / group session; \`count\` = number of trainings, e.g. series dates) or
+  \`{ type: "package", packageId }\` -> \`{ code, label: "−20%", unitPrice, unitDiscount, total, totalDiscount }\`.
+  Checking does not use the code. Codes are case-insensitive.
+- Apply with \`promoCode\` in \`POST /bookings\` (individual or group), \`POST /bookings/series\`,
+  \`POST /bookings/series/:id/extend\` and \`POST /packages/:id/purchase\` (body \`{ promoCode? }\`, optional). The
+  server checks again. One request = one use: in a series every booked date gets the discount. An amount discount is
+  per training and never goes below 0. Price 0 -> the booking is \`confirmed\` with \`payment.status = "not_required"\`.
+  Not with \`isTrial\` / \`useCredits\` -> \`PROMO_NOT_APPLICABLE\` (also when \`appliesTo\` does not include
+  \`bookings\` / \`packages\`).
+- Each client can use a code once (also if the booking was cancelled later). \`newClientsOnly\`: no non-cancelled booking
+  and no package purchase with this coach. \`validFrom\` / \`validUntil\`: inclusive, coach's time zone. A failed
+  request does not use the code.
+- \`Booking\` and \`ClientPackage\`: \`price\` = what is paid (after the discount), \`listPrice\` = before the discount,
+  \`promo { code, discount } | null\`. Refunds return \`price\` (the paid amount); earnings use \`price\`.
+- Coach: \`GET /coach/promo-codes\` (newest first), \`POST /coach/promo-codes\` (201; \`code\` 4-20 A-Z/0-9, stored upper
+  case, unique per coach -> \`PROMO_CODE_TAKEN\`), \`PATCH /coach/promo-codes/:id\` (everything except \`code\`),
+  \`DELETE /coach/promo-codes/:id\` (204; a used code is deactivated instead). Errors: \`PROMO_INVALID\` (unknown or
+  inactive), \`PROMO_EXPIRED\`, \`PROMO_USED_UP\` (\`maxUses\` reached), \`PROMO_ALREADY_USED\`,
+  \`PROMO_NEW_CLIENTS_ONLY\`, \`PROMO_NOT_APPLICABLE\` - all 409.
+
+${example('promoCheck', 'Example: POST /promo-codes/check')}
+${example('bookingWithPromo', 'Example: POST /bookings with promoCode')}
+${example('promoCodes', 'Example: GET /coach/promo-codes')}
+${example('errorPromoNewClientsOnly', 'Error: PROMO_NEW_CLIENTS_ONLY')}
+
 ## 4b. Waitlist (full group sessions)
 
 - \`GET /coaches/:id/group-sessions\` items have \`waitlist { count, myStatus, myPosition, offerExpiresAt }\`.
@@ -458,9 +494,9 @@ Password for all: \`Password123!\`. Every password sign-in asks for an emailed c
 
 | Email | Who |
 | --- | --- |
-| \`coach@fitbook.dev\` | Alex Carter - coach in Chicago with a full schedule, group classes, clients and chats |
+| \`coach@fitbook.dev\` | Alex Carter - coach in Chicago with a full schedule, group classes, clients and chats; promo codes \`WELCOME20\` (−20%, new clients only) and \`SAVE10\` (−$10, everybody) |
 | \`client@fitbook.dev\` | Jamie Lee - client in Chicago: trial used, Tue/Thu series with Alex, notes, chats, a pending and a cancelled booking |
-| \`newclient@fitbook.dev\` | Riley Chen - client in Chicago with the free trial still available |
+| \`newclient@fitbook.dev\` | Riley Chen - client in Chicago with the free trial still available (can use Alex's \`WELCOME20\`) |
 | \`newcoach@fitbook.dev\` | Taylor Morgan - coach with an incomplete, unpublished profile (onboarding demo) |
 
 Other coaches: Maya Patel (yoga), Marcus Reed (boxing), Sofia Alvarez (running), Daniel Kim (CrossFit),
