@@ -171,6 +171,90 @@ export const SeriesBody = SeriesPreviewBody.extend({
   }),
 });
 
+export const SeriesRescheduleBody = z
+  .object({
+    weekdays: z
+      .array(z.number().int().min(0).max(6))
+      .min(1)
+      .max(7)
+      .refine(days => new Set(days).size === days.length, 'Weekdays must be unique')
+      .meta({description: '0 = Sunday ... 6 = Saturday'}),
+    time: timeHHmm.meta({description: "Start time in the coach's time zone"}),
+    startDate: dateYMD.meta({description: 'First date of the new pattern (not before today)'}),
+  })
+  .meta({id: 'SeriesRescheduleRequest'});
+
+export const SeriesExtendPreviewBody = z
+  .object({weeks: z.number().int().min(1).max(12)})
+  .meta({id: 'SeriesExtendPreviewRequest'});
+
+export const SeriesExtendBody = z
+  .object({
+    weeks: z.number().int().min(1).max(12),
+    dates: z
+      .array(dateYMD)
+      .min(1)
+      .max(84)
+      .meta({description: 'Dates chosen from the extend preview'}),
+    useCredits: z.boolean().default(false),
+  })
+  .meta({id: 'SeriesExtendRequest'});
+
+export const SeriesSchema = z
+  .object({
+    id: z.string(),
+    sessionType: z.object({
+      id: z.string(),
+      title: z.string(),
+      durationMin: z.number().int(),
+      isActive: z.boolean(),
+    }),
+    coach: UserSummarySchema,
+    weekdays: z.array(z.number().int()),
+    time: z.string().meta({description: "Current pattern, coach's time zone"}),
+    timezone: z.string(),
+    format: TrainingFormatSchema,
+    bookings: z.array(BookingSchema).meta({description: 'All bookings of the series, by startAt'}),
+    upcomingCount: z.number().int(),
+    nextAt: z.string().nullable(),
+    lastAt: z.string().nullable(),
+    canExtend: z.boolean(),
+    extendFrom: z
+      .string()
+      .meta({description: "Monday after the last training (YYYY-MM-DD, coach's time zone)"}),
+  })
+  .meta({id: 'Series'});
+
+export const SeriesCancelResultSchema = z
+  .object({
+    cancelled: z.array(BookingSchema),
+    kept: z.array(z.object({bookingId: z.string(), startAt: z.string(), reason: z.string()})),
+  })
+  .meta({id: 'SeriesCancelResult'});
+
+export const SeriesReschedulePreviewSchema = z
+  .object({
+    items: z.array(
+      z.object({
+        bookingId: z.string(),
+        fromStartAt: z.string(),
+        date: z.string(),
+        startAt: z.string(),
+        endAt: z.string(),
+        available: z.boolean(),
+        reason: z.enum(['UNAVAILABLE', 'PAST', 'EXCEPTION']).nullable(),
+      }),
+    ),
+  })
+  .meta({id: 'SeriesReschedulePreview'});
+
+export const SeriesRescheduleResultSchema = z
+  .object({
+    moved: z.array(BookingSchema),
+    kept: z.array(z.object({bookingId: z.string(), reason: z.string()})),
+  })
+  .meta({id: 'SeriesRescheduleResult'});
+
 export const SeriesPreviewItemSchema = z
   .object({
     date: z.string(),

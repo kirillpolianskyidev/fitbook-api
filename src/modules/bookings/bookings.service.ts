@@ -10,7 +10,7 @@ import {BOOKING_LEAD_MINUTES, isWholeDayOff} from '../../lib/slots.js';
 import {addMinutes, isOnSlotGrid, zonedDateTime} from '../../lib/time.js';
 import {AvailabilityModel} from '../../models/availability.js';
 import {BookingModel, type BookingDoc} from '../../models/booking.js';
-import {BookingSeriesModel} from '../../models/bookingSeries.js';
+import {BookingSeriesModel, type BookingSeriesDoc} from '../../models/bookingSeries.js';
 import {CoachProfileModel} from '../../models/coachProfile.js';
 import {NoteModel} from '../../models/note.js';
 import {SeatLockModel} from '../../models/seatLock.js';
@@ -412,7 +412,7 @@ export const syncParticipants = (sessionId: Types.ObjectId) => syncSeatCounts(se
 // Recurring series (individual)
 // ---------------------------------------------------------------------------------------------
 
-type PreviewItem = {
+export type PreviewItem = {
   date: string;
   startAt: string;
   endAt: string;
@@ -420,7 +420,7 @@ type PreviewItem = {
   reason?: 'UNAVAILABLE' | 'PAST' | 'EXCEPTION';
 };
 
-async function seriesType(sessionTypeId: string) {
+export async function seriesType(sessionTypeId: string) {
   const type = await SessionTypeModel.findById(sessionTypeId);
   if (!type) throw new AppError('NOT_FOUND', 'Training type not found.');
   if (!type.isActive) throw new AppError('SESSION_TYPE_INACTIVE');
@@ -475,25 +475,10 @@ export async function previewSeries(
 }
 
 export async function createSeries(client: UserDoc, input: z.infer<typeof SeriesBody>) {
-  const preview = await previewSeries(input);
-  const byDate = new Map(preview.map(item => [item.date, item]));
-  const unknown = input.dates.filter(date => !byDate.has(date));
-  if (unknown.length) {
-    throw new AppError('VALIDATION_ERROR', 'Some dates are not part of this series.', {
-      fields: {dates: `Not in the series: ${unknown.join(', ')}`},
-    });
-  }
   const type = await seriesType(input.sessionTypeId);
-  if (input.useCredits) {
-    const needed = [...new Set(input.dates)].filter(date => byDate.get(date)!.available).length;
-    const available = await creditsAvailable(client._id, type.coachId);
-    if (available < needed) {
-      throw new AppError('INSUFFICIENT_CREDITS', undefined, {
-        creditsAvailable: available,
-        creditsNeeded: needed,
-      });
-    }
-  }
+  const format = bookingFormat(type.format, input.format);
+  const preview = await previewSeries(input);
+  assertDatesInPreview(input.dates, preview);
   const series = await BookingSeriesModel.create({
     clientId: client._id,
     coachId: type.coachId,
@@ -502,7 +487,53 @@ export async function createSeries(client: UserDoc, input: z.infer<typeof Series
     time: input.time,
     weeks: input.weeks,
     startDate: input.startDate,
+    format,
   });
+  try {
+    const result = await bookSeriesDates(client, series, preview, {...input, format});
+    return {seriesId: series.id as string, ...result};
+  } catch (error) {
+    await series.deleteOne();
+    throw error;
+  }
+}
+
+export function assertDatesInPreview(dates: string[], preview: PreviewItem[]) {
+  const known = new Set(preview.map(item => item.date));
+  const unknown = dates.filter(date => !known.has(date));
+  if (unknown.length) {
+    throw new AppError('VALIDATION_ERROR', 'Some dates are not part of this series.', {
+      fields: {dates: `Not in the series: ${unknown.join(', ')}`},
+    });
+  }
+}
+
+/**
+ * Books the chosen dates of a preview into a series (new or extended). Taken dates are skipped. With credits,
+ * all dates are paid with credits or nothing is booked (INSUFFICIENT_CREDITS).
+ */
+export async function bookSeriesDates(
+  client: UserDoc,
+  series: BookingSeriesDoc,
+  preview: PreviewItem[],
+  input: {
+    sessionTypeId: string;
+    dates: string[];
+    useCredits?: boolean;
+    format?: 'in_person' | 'online';
+  },
+) {
+  const byDate = new Map(preview.map(item => [item.date, item]));
+  if (input.useCredits) {
+    const needed = [...new Set(input.dates)].filter(date => byDate.get(date)!.available).length;
+    const available = await creditsAvailable(client._id, series.coachId);
+    if (available < needed) {
+      throw new AppError('INSUFFICIENT_CREDITS', undefined, {
+        creditsAvailable: available,
+        creditsNeeded: needed,
+      });
+    }
+  }
 
   const bookings: BookingDoc[] = [];
   const skipped: {date: string; reason: 'UNAVAILABLE' | 'PAST' | 'EXCEPTION'}[] = [];
@@ -535,18 +566,17 @@ export async function createSeries(client: UserDoc, input: z.infer<typeof Series
         // Credits were used up in parallel: nothing is booked (credits go back).
         for (const booking of bookings) await cancelBookingInternal(booking, 'system');
         await BookingModel.deleteMany({_id: {$in: bookings.map(b => b._id)}});
-        await series.deleteOne();
         throw new AppError('INSUFFICIENT_CREDITS', undefined, {
-          creditsAvailable: await creditsAvailable(client._id, type.coachId),
+          creditsAvailable: await creditsAvailable(client._id, series.coachId),
         });
       }
       throw error;
     }
   }
-  series.bookingIds = bookings.map(b => b._id);
-  series.skippedDates = skipped.map(s => s.date);
+  series.bookingIds = [...series.bookingIds, ...bookings.map(b => b._id)];
+  series.skippedDates = [...series.skippedDates, ...skipped.map(s => s.date)];
   await series.save();
-  return {seriesId: series.id as string, bookings: await toBookingDtos(bookings), skipped};
+  return {bookings: await toBookingDtos(bookings), skipped};
 }
 
 // ---------------------------------------------------------------------------------------------

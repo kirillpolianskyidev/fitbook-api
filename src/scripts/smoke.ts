@@ -359,7 +359,8 @@ async function main() {
       'errorSessionFull',
     );
 
-  const weekday = from.plus({days: 1}).weekday % 7;
+  // Tuesday: a working day of the demo coach whatever weekday the smoke runs on.
+  const weekday = 2;
   const preview = await step(
     'series preview',
     () =>
@@ -378,7 +379,7 @@ async function main() {
     'seriesPreview',
   );
   const dates = (preview.body.items as {date: string; available: boolean}[]).map(i => i.date);
-  await step(
+  const seriesBooked = await step(
     'series booking',
     () =>
       api()
@@ -395,6 +396,19 @@ async function main() {
         }),
     201,
     'seriesResult',
+  );
+  const seriesId = seriesBooked.body.seriesId as string;
+  await step(
+    'series details',
+    () => api().get(`${v1}/bookings/series/${seriesId}`).set(client),
+    200,
+    'series',
+  );
+  await step(
+    'series extend preview',
+    () =>
+      api().post(`${v1}/bookings/series/${seriesId}/extend/preview`).set(client).send({weeks: 2}),
+    200,
   );
 
   const upcoming = await step(

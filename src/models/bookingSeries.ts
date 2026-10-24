@@ -1,4 +1,4 @@
-import {model, Schema, type InferSchemaType} from 'mongoose';
+import {model, Schema, type HydratedDocument, type InferSchemaType} from 'mongoose';
 
 const bookingSeriesSchema = new Schema(
   {
@@ -11,9 +11,12 @@ const bookingSeriesSchema = new Schema(
     startDate: {type: String, required: true},
     bookingIds: {type: [Schema.Types.ObjectId], default: []},
     skippedDates: {type: [String], default: []},
+    // in_person | online (individual series); older series: taken from their bookings.
+    format: {type: String, enum: ['in_person', 'online'], default: null},
   },
   {timestamps: true},
 );
 
 export type BookingSeries = InferSchemaType<typeof bookingSeriesSchema>;
+export type BookingSeriesDoc = HydratedDocument<BookingSeries>;
 export const BookingSeriesModel = model('BookingSeries', bookingSeriesSchema);

@@ -77,6 +77,7 @@ const UI_HINTS: Partial<Record<ErrorCode, string>> = {
   PACKAGE_INACTIVE: 'Reload the coach profile (the package was withdrawn).',
   REVIEW_NOT_ALLOWED: 'Hide "Write a review" (`canCreate` is false until a training is completed).',
   REVIEW_EDIT_WINDOW_PASSED: 'Show the review as read-only.',
+  SERIES_NOT_EXTENDABLE: 'Offer a new series instead.',
   ONLINE_NOT_ENABLED: 'Ask the coach to turn on online trainings in the profile first.',
   ONLINE_TYPES_ACTIVE: 'Change the online / both training types to in person first.',
   NO_SHOW_WINDOW_PASSED: 'Hide the no-show action (`noShowMarkable` / `noShowUndoable` are false).',
@@ -178,6 +179,17 @@ ${example('errorResendTooEarly', 'Example: resend before resendAvailableAt')}
 - **Group:** \`GET /coaches/:id/group-sessions?from&to\` (shows \`spotsLeft\`) -> \`POST /bookings { sessionId }\`.
 - **Series:** \`POST /bookings/series/preview\` (weekdays 0 = Sunday, local time, weeks 1-12) shows free / taken
   dates -> user picks -> \`POST /bookings/series { ..., dates }\` -> \`POST /bookings/series/:id/pay\`.
+- **Manage a series:** \`GET /bookings/series/:id\` (client or its coach) -> \`Series { sessionType, coach, weekdays,
+  time, timezone, format, bookings, upcomingCount, nextAt, lastAt, canExtend, extendFrom }\`.
+  \`POST /bookings/series/:id/cancel { reason? }\` cancels every upcoming booking with the usual rules (refunds,
+  credits back) -> \`{ cancelled, kept }\` (kept = past the deadline; none cancelled -> \`CANCELLATION_WINDOW_PASSED\`).
+  New day / time for all upcoming: \`POST /bookings/series/:id/reschedule/preview\` and \`/reschedule\` with
+  \`{ weekdays, time, startDate }\`: the movable bookings (reschedulable, by start) are paired in order with the first
+  dates of the new pattern; free ones move (payment, credits, notes stay), taken ones stay -> \`{ moved, kept }\`; the
+  pattern is updated. Extend: \`POST /bookings/series/:id/extend/preview { weeks }\` (from \`extendFrom\`, same items
+  as the series preview) and \`POST /bookings/series/:id/extend { weeks, dates, useCredits? }\` -> same as
+  \`POST /bookings/series\` with the same \`seriesId\`; pay new bookings with \`/bookings/series/:id/pay\`.
+  \`canExtend: false\` -> \`SERIES_NOT_EXTENDABLE\`.
 - **Mock payment:** paid bookings start as \`pending_payment\` with \`expiresAt\` (15 minutes); call
   \`POST /bookings/:id/pay\`. Unpaid bookings are released automatically (\`cancelled\`, \`cancelledBy: system\`).
 - **Location:** individual bookings may pass a \`location\` chosen on the map (Google Places), including an optional
@@ -389,6 +401,7 @@ ${example('bookingConfirmed', 'POST /bookings/:id/pay')}
 ${example('bookingCancelled', 'POST /bookings/:id/cancel')}
 ${example('bookingRescheduled', 'POST /bookings/:id/reschedule')}
 ${example('seriesResult', 'POST /bookings/series')}
+${example('series', 'GET /bookings/series/:id')}
 ${example('calendarEvent', 'GET /bookings/:id/calendar-event')}
 ${example('notes', 'GET /bookings/:id/notes')}
 ${example('messages', 'GET /conversations/:id/messages')}

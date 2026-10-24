@@ -431,6 +431,15 @@ in_person | online` (group: from the type; individual: chosen with `format` when
 Online sessions have no location. Booking DTO: `format`, `meetingUrl` (coach's current link, participants only).
 Completeness: `defaultLocation` or online. Catalog `formats` + `?format=` filter.
 
+### Series management
+
+`GET /bookings/series/:id` (client or coach), `POST .../cancel` (every upcoming booking with the single-cancel rules;
+kept ones listed; none -> `CANCELLATION_WINDOW_PASSED`), `POST .../reschedule/preview|reschedule { weekdays, time,
+startDate }` (movable = reschedulable bookings by start, paired in order with the first dates of the new pattern;
+taken dates stay; the pattern is updated; none movable -> `RESCHEDULE_WINDOW_PASSED`), `POST .../extend/preview|extend`
+(from `extendFrom` = Monday after the last training; `canExtend` = active type and upcoming bookings or last training
+ended <= 14 days ago, else `SERIES_NOT_EXTENDABLE`). `bookingSeries.format` stores the format.
+
 ### Completion
 
 Job every 10 minutes: sessions whose `endAt < now` -> `completed`; their `confirmed` bookings -> `completed`.
@@ -614,6 +623,7 @@ Validation errors list fields: `details: { fields: { email: "Invalid email" } }`
 | 409  | PACKAGE_INACTIVE                        | buying an inactive package                                                                                          |
 | 403  | REVIEW_NOT_ALLOWED                      | review without a completed training with the coach                                                                  |
 | 409  | REVIEW_EDIT_WINDOW_PASSED               | review changed more than 24 hours after creation                                                                    |
+| 409  | SERIES_NOT_EXTENDABLE                   | extending a series with canExtend false                                                                             |
 | 409  | ONLINE_NOT_ENABLED                      | online / both training type while online is off                                                                     |
 | 409  | ONLINE_TYPES_ACTIVE                     | turning online off with active online / both types                                                                  |
 | 409  | NO_SHOW_WINDOW_PASSED                   | no-show before the start or after start + 48h                                                                       |

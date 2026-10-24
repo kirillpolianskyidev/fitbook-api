@@ -12,12 +12,20 @@ import {
   NoShowBody,
   RescheduleBody,
   SeriesBody,
+  SeriesCancelResultSchema,
+  SeriesExtendBody,
+  SeriesExtendPreviewBody,
+  SeriesReschedulePreviewSchema,
+  SeriesRescheduleBody,
+  SeriesRescheduleResultSchema,
+  SeriesSchema,
   SeriesPreviewBody,
   SeriesPreviewItemSchema,
   SeriesResultSchema,
 } from './bookings.schemas.js';
 import * as service from './bookings.service.js';
 import {markNoShow, undoNoShow} from './noShow.js';
+import * as seriesService from './series.service.js';
 
 const tags = ['Bookings'];
 
@@ -234,4 +242,103 @@ route({
   ],
   handler: async ({user, params}) =>
     service.toBookingDto(await undoNoShow(user, params.id), user._id),
+});
+
+const seriesTags = ['Bookings: series'];
+
+route({
+  method: 'get',
+  path: '/bookings/series/:id',
+  tags: seriesTags,
+  summary:
+    'A recurring series: pattern, all bookings, upcoming count and whether it can be extended',
+  auth: 'user',
+  params: IdParams,
+  response: SeriesSchema,
+  errors: ['NOT_FOUND', 'FORBIDDEN'],
+  handler: ({user, params}) => seriesService.getSeries(user, params.id),
+});
+
+route({
+  method: 'post',
+  path: '/bookings/series/:id/cancel',
+  tags: seriesTags,
+  summary: 'Cancel every upcoming booking of the series (same rules as one cancellation)',
+  description: 'Bookings past their deadline are kept and listed in `kept`. None cancelled -> 409.',
+  auth: 'client',
+  status: 200,
+  params: IdParams,
+  body: CancelBody,
+  response: SeriesCancelResultSchema,
+  errors: ['NOT_FOUND', 'FORBIDDEN', 'CANCELLATION_WINDOW_PASSED'],
+  handler: ({user, params, body}) => seriesService.cancelSeries(user, params.id, body.reason),
+});
+
+route({
+  method: 'post',
+  path: '/bookings/series/:id/reschedule/preview',
+  tags: seriesTags,
+  summary: 'Preview moving all movable upcoming bookings to new weekdays / time',
+  description:
+    'Movable bookings (reschedulable, by start) are paired in order with the first dates of the new pattern from ' +
+    '`startDate`. No movable booking -> RESCHEDULE_WINDOW_PASSED.',
+  auth: 'client',
+  status: 200,
+  params: IdParams,
+  body: SeriesRescheduleBody,
+  response: SeriesReschedulePreviewSchema,
+  errors: ['NOT_FOUND', 'FORBIDDEN', 'RESCHEDULE_WINDOW_PASSED'],
+  handler: ({user, params, body}) => seriesService.previewSeriesReschedule(user, params.id, body),
+});
+
+route({
+  method: 'post',
+  path: '/bookings/series/:id/reschedule',
+  tags: seriesTags,
+  summary: 'Move all movable upcoming bookings to new weekdays / time (taken dates stay unchanged)',
+  auth: 'client',
+  status: 200,
+  params: IdParams,
+  body: SeriesRescheduleBody,
+  response: SeriesRescheduleResultSchema,
+  errors: ['NOT_FOUND', 'FORBIDDEN', 'RESCHEDULE_WINDOW_PASSED'],
+  handler: ({user, params, body}) => seriesService.rescheduleSeries(user, params.id, body),
+});
+
+route({
+  method: 'post',
+  path: '/bookings/series/:id/extend/preview',
+  tags: seriesTags,
+  summary:
+    'Preview extending the series by N weeks from extendFrom (same format as the series preview)',
+  auth: 'client',
+  status: 200,
+  params: IdParams,
+  body: SeriesExtendPreviewBody,
+  response: z.object({items: z.array(SeriesPreviewItemSchema)}),
+  errors: ['NOT_FOUND', 'FORBIDDEN', 'SERIES_NOT_EXTENDABLE'],
+  handler: async ({user, params, body}) =>
+    seriesService.previewSeriesExtend(user, params.id, body.weeks),
+});
+
+route({
+  method: 'post',
+  path: '/bookings/series/:id/extend',
+  tags: seriesTags,
+  summary: 'Extend the series: book the chosen dates into the same series',
+  description:
+    'Like POST /bookings/series: new bookings are pending_payment (pay with /bookings/series/:id/pay) or ' +
+    'confirmed with useCredits.',
+  auth: 'client',
+  params: IdParams,
+  body: SeriesExtendBody,
+  response: SeriesResultSchema,
+  errors: [
+    'NOT_FOUND',
+    'FORBIDDEN',
+    'SERIES_NOT_EXTENDABLE',
+    'SESSION_TYPE_INACTIVE',
+    'INSUFFICIENT_CREDITS',
+  ],
+  handler: ({user, params, body}) => seriesService.extendSeries(user, params.id, body),
 });
