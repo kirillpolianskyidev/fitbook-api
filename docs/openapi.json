@@ -4465,7 +4465,22 @@
             "type": [
               "string",
               "null"
-            ]
+            ],
+            "description": "Latest startAt of any non-cancelled booking (may be in the future; kept for old apps)"
+          },
+          "nextBookingAt": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Nearest upcoming startAt of a pending_payment / confirmed booking"
+          },
+          "lastTrainedAt": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Latest started (startAt <= now) confirmed / completed booking"
           }
         },
         "required": [
@@ -4474,7 +4489,9 @@
           "lastName",
           "avatarUrl",
           "totalBookings",
-          "lastBookingAt"
+          "lastBookingAt",
+          "nextBookingAt",
+          "lastTrainedAt"
         ]
       },
       "Note": {
@@ -12817,6 +12834,7 @@
           "Coach: schedule"
         ],
         "summary": "Clients who booked with me",
+        "description": "Sorted: clients with nextBookingAt (soonest first), then without it by lastTrainedAt (latest first), then the rest by firstName, lastName. Clients with only cancelled bookings are not listed.",
         "security": [
           {
             "bearerAuth": []

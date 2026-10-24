@@ -384,6 +384,13 @@ Profile (\`/coach/profile\`, publish when \`completeness.complete\`), training t
 (\`/coach/schedule?from&to\` with participants), session details (\`/coach/sessions/:id\`), clients
 (\`/coach/clients\`), cancel a client's booking (\`/coach/bookings/:id/cancel\`).
 
+Clients list (\`GET /coach/clients?search=\`): \`totalBookings\` (no-shows not counted), \`nextBookingAt\` = nearest
+upcoming \`pending_payment\` / \`confirmed\` booking, \`lastTrainedAt\` = latest started \`confirmed\` / \`completed\`
+booking (no-shows, cancelled and unpaid ones do not count), both \`null\` when there is none; \`lastBookingAt\` (latest
+non-cancelled booking, may be in the future) is kept for older apps. Order: clients with \`nextBookingAt\` (soonest
+first), then by \`lastTrainedAt\` (latest first), then by \`firstName\`, \`lastName\`. Clients with only cancelled
+bookings are not listed. Show "next …" from \`nextBookingAt\`, otherwise "last …" from \`lastTrainedAt\`.
+
 ${example('schedule', 'Example: coach schedule')}
 
 ### 5b. Earnings

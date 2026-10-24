@@ -182,32 +182,65 @@ export async function coachSessionDetails(coach: UserDoc, sessionId: string) {
   return item!;
 }
 
+/**
+ * Clients with a non-cancelled booking with the coach. nextBookingAt: nearest upcoming pending / confirmed booking;
+ * lastTrainedAt: latest started confirmed / completed booking. Sorted: with nextBookingAt (soonest first), then by
+ * lastTrainedAt (latest first), then by name.
+ */
 export async function coachClients(coach: UserDoc, search?: string) {
   const bookings = await BookingModel.find({coachId: coach._id, status: {$ne: 'cancelled'}})
     .select('clientId startAt status')
     .lean();
-  const stats = new Map<string, {total: number; last: Date}>();
+  const now = Date.now();
+  type Stats = {total: number; last: Date; next: Date | null; trained: Date | null};
+  const stats = new Map<string, Stats>();
   for (const b of bookings) {
     const key = b.clientId.toString();
-    const current = stats.get(key);
-    stats.set(key, {
-      // A no-show is not a training: the client stays in the list but it is not counted.
-      total: (current?.total ?? 0) + (b.status === 'no_show' ? 0 : 1),
-      last: current && current.last > b.startAt ? current.last : b.startAt,
-    });
+    const current: Stats = stats.get(key) ?? {total: 0, last: b.startAt, next: null, trained: null};
+    const started = b.startAt.getTime() <= now;
+    // A no-show is not a training: the client stays in the list but it is not counted.
+    if (b.status !== 'no_show') current.total += 1;
+    if (b.startAt > current.last) current.last = b.startAt;
+    if (
+      !started &&
+      (b.status === 'pending_payment' || b.status === 'confirmed') &&
+      (!current.next || b.startAt < current.next)
+    ) {
+      current.next = b.startAt;
+    }
+    if (
+      started &&
+      (b.status === 'confirmed' || b.status === 'completed') &&
+      (!current.trained || b.startAt > current.trained)
+    ) {
+      current.trained = b.startAt;
+    }
+    stats.set(key, current);
   }
   const users = await UserModel.find({_id: {$in: [...stats.keys()]}})
     .select('firstName lastName avatarUrl')
     .lean();
   const pattern = search?.toLowerCase();
-  return {
-    items: users
-      .filter(u => !pattern || `${u.firstName} ${u.lastName ?? ''}`.toLowerCase().includes(pattern))
-      .map(u => ({
+  const items = users
+    .filter(u => !pattern || `${u.firstName} ${u.lastName ?? ''}`.toLowerCase().includes(pattern))
+    .map(u => {
+      const s = stats.get(u._id.toString())!;
+      return {
         ...toUserSummary(u),
-        totalBookings: stats.get(u._id.toString())?.total ?? 0,
-        lastBookingAt: stats.get(u._id.toString())?.last.toISOString() ?? null,
-      }))
-      .sort((a, b) => (b.lastBookingAt ?? '').localeCompare(a.lastBookingAt ?? '')),
-  };
+        totalBookings: s.total,
+        lastBookingAt: s.last.toISOString(),
+        nextBookingAt: s.next?.toISOString() ?? null,
+        lastTrainedAt: s.trained?.toISOString() ?? null,
+      };
+    });
+  const group = (c: (typeof items)[number]) => (c.nextBookingAt ? 0 : c.lastTrainedAt ? 1 : 2);
+  items.sort((a, b) => {
+    const ga = group(a);
+    const gb = group(b);
+    if (ga !== gb) return ga - gb;
+    if (ga === 0) return a.nextBookingAt!.localeCompare(b.nextBookingAt!);
+    if (ga === 1) return b.lastTrainedAt!.localeCompare(a.lastTrainedAt!);
+    return a.firstName.localeCompare(b.firstName) || a.lastName.localeCompare(b.lastName);
+  });
+  return {items};
 }

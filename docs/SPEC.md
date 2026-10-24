@@ -566,26 +566,26 @@ cancellationPolicy, sessionTypes: SessionType[] }`
 
 ### Coach self-management
 
-| Method | Path                                 | Who | Body / query                                                              | Response                                                                               |
-| ------ | ------------------------------------ | --- | ------------------------------------------------------------------------- | -------------------------------------------------------------------------------------- |
-| GET    | /coach/profile                       | 🏋️  |                                                                           | `CoachProfile` (+ `completeness: { missing: string[] }`)                               |
-| PUT    | /coach/profile                       | 🏋️  | profile fields                                                            | `CoachProfile`                                                                         |
-| POST   | /coach/profile/publish               | 🏋️  | `{ isPublished }`                                                         | `CoachProfile` (`PROFILE_INCOMPLETE` if missing fields)                                |
-| PUT    | /coach/settings/cancellation         | 🏋️  | `{ freeCancelHours }`                                                     | `CoachProfile`                                                                         |
-| GET    | /coach/session-types                 | 🏋️  |                                                                           | `{ items: SessionType[] }`                                                             |
-| POST   | /coach/session-types                 | 🏋️  | `{ title, kind, durationMin, price, capacity?, location?, description? }` | 201 `SessionType`                                                                      |
-| PATCH  | /coach/session-types/:id             | 🏋️  | partial (price, title, isActive, ...)                                     | `SessionType`                                                                          |
-| DELETE | /coach/session-types/:id             | 🏋️  |                                                                           | 204 (soft: `isActive = false` if used)                                                 |
-| GET    | /coach/availability                  | 🏋️  |                                                                           | `Availability`                                                                         |
-| PUT    | /coach/availability                  | 🏋️  | `{ weekly }` (non-overlapping, start < end)                               | `Availability`                                                                         |
-| POST   | /coach/availability/exceptions       | 🏋️  | `{ date, start?, end?, reason? }`                                         | `Availability`                                                                         |
-| DELETE | /coach/availability/exceptions/:date | 🏋️  |                                                                           | `Availability`                                                                         |
-| POST   | /coach/group-sessions                | 🏋️  | `{ sessionTypeId, startAt, repeat? }`                                     | 201 `{ created: GroupSession[], skipped }`                                             |
-| POST   | /coach/group-sessions/:id/cancel     | 🏋️  | `{ reason }`                                                              | `GroupSession`                                                                         |
-| GET    | /coach/schedule                      | 🏋️  | `from, to`                                                                | `{ items: ScheduleItem[] }` (session + participants with booking status + notes count) |
-| GET    | /coach/sessions/:id                  | 🏋️  |                                                                           | `ScheduleItem` with participants and their bookings                                    |
-| GET    | /coach/clients                       | 🏋️  | `search?`                                                                 | clients who have bookings with this coach                                              |
-| POST   | /coach/bookings/:id/cancel           | 🏋️  | `{ reason }`                                                              | `Booking`                                                                              |
+| Method | Path                                 | Who | Body / query                                                              | Response                                                                                  |
+| ------ | ------------------------------------ | --- | ------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------- |
+| GET    | /coach/profile                       | 🏋️  |                                                                           | `CoachProfile` (+ `completeness: { missing: string[] }`)                                  |
+| PUT    | /coach/profile                       | 🏋️  | profile fields                                                            | `CoachProfile`                                                                            |
+| POST   | /coach/profile/publish               | 🏋️  | `{ isPublished }`                                                         | `CoachProfile` (`PROFILE_INCOMPLETE` if missing fields)                                   |
+| PUT    | /coach/settings/cancellation         | 🏋️  | `{ freeCancelHours }`                                                     | `CoachProfile`                                                                            |
+| GET    | /coach/session-types                 | 🏋️  |                                                                           | `{ items: SessionType[] }`                                                                |
+| POST   | /coach/session-types                 | 🏋️  | `{ title, kind, durationMin, price, capacity?, location?, description? }` | 201 `SessionType`                                                                         |
+| PATCH  | /coach/session-types/:id             | 🏋️  | partial (price, title, isActive, ...)                                     | `SessionType`                                                                             |
+| DELETE | /coach/session-types/:id             | 🏋️  |                                                                           | 204 (soft: `isActive = false` if used)                                                    |
+| GET    | /coach/availability                  | 🏋️  |                                                                           | `Availability`                                                                            |
+| PUT    | /coach/availability                  | 🏋️  | `{ weekly }` (non-overlapping, start < end)                               | `Availability`                                                                            |
+| POST   | /coach/availability/exceptions       | 🏋️  | `{ date, start?, end?, reason? }`                                         | `Availability`                                                                            |
+| DELETE | /coach/availability/exceptions/:date | 🏋️  |                                                                           | `Availability`                                                                            |
+| POST   | /coach/group-sessions                | 🏋️  | `{ sessionTypeId, startAt, repeat? }`                                     | 201 `{ created: GroupSession[], skipped }`                                                |
+| POST   | /coach/group-sessions/:id/cancel     | 🏋️  | `{ reason }`                                                              | `GroupSession`                                                                            |
+| GET    | /coach/schedule                      | 🏋️  | `from, to`                                                                | `{ items: ScheduleItem[] }` (session + participants with booking status + notes count)    |
+| GET    | /coach/sessions/:id                  | 🏋️  |                                                                           | `ScheduleItem` with participants and their bookings                                       |
+| GET    | /coach/clients                       | 🏋️  | `search?`                                                                 | clients with `nextBookingAt`, `lastTrainedAt` (sorted: next asc, last trained desc, name) |
+| POST   | /coach/bookings/:id/cancel           | 🏋️  | `{ reason }`                                                              | `Booking`                                                                                 |
 
 ### Bookings (client)
 

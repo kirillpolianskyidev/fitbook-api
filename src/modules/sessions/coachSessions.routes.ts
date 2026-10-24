@@ -101,12 +101,24 @@ route({
   path: '/coach/clients',
   tags,
   summary: 'Clients who booked with me',
+  description:
+    'Sorted: clients with nextBookingAt (soonest first), then without it by lastTrainedAt (latest first), ' +
+    'then the rest by firstName, lastName. Clients with only cancelled bookings are not listed.',
   auth: 'coach',
   query: z.object({search: z.string().trim().max(80).optional()}),
   response: itemsOf(
     UserSummarySchema.extend({
       totalBookings: z.number().int(),
-      lastBookingAt: z.string().nullable(),
+      lastBookingAt: z.string().nullable().meta({
+        description:
+          'Latest startAt of any non-cancelled booking (may be in the future; kept for old apps)',
+      }),
+      nextBookingAt: z.string().nullable().meta({
+        description: 'Nearest upcoming startAt of a pending_payment / confirmed booking',
+      }),
+      lastTrainedAt: z.string().nullable().meta({
+        description: 'Latest started (startAt <= now) confirmed / completed booking',
+      }),
     }).meta({
       id: 'CoachClient',
     }),
